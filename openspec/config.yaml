@@ -1,0 +1,137 @@
+schema: spec-driven
+
+context: |
+  ## Project: EasyVocaBook (簡易單字練習本)
+
+  A vocabulary practice notebook app — like a physical flashcard book where each page is one word.
+  Supports practicing English, Japanese, and other foreign languages.
+  Part of the "Easy XXX" personal app series by woofdogtw (tw.idv.woofdog.*).
+
+  ## Tech Stack
+
+  - **PC (Desktop):** Rust + iced UI framework
+  - **Android:** Kotlin + Material Design 3 + AndroidX
+  - **Database:** SQLite (local file per vocabulary book)
+  - **API Spec:** OpenAPI (OpenSpec) — defines the REST API for sync/server communication
+  - **Build (Android):** Gradle with Kotlin DSL (.gradle.kts)
+  - **Android target:** compileSdk 34, minSdk 29, Java 1.8
+
+  ## Architecture Patterns (inherited from Easy-series)
+
+  The Easy-series apps use a consistent layered architecture:
+  - Abstract DB interface (`DbTableBase` in C++/C#, Kotlin `interface`, Rust `trait`)
+  - Two implementations: `DbTableSQLite` (production) and `DbTableMemory` (see below)
+  - Read-only mode support for backward compatibility with older database formats
+  - DB schema versioning with automatic migration (`db_info` table stores version)
+  - Date/time encoded as integers (e.g., YYYYMMDD or YYYYMMDDHHMM as Long)
+
+  DbTableMemory is NOT only for unit testing. Its purposes are:
+  1. Holding search/filter results in memory for display (the list UI component works against the
+     same interface regardless of whether data comes from SQLite or memory)
+  2. Opening old/legacy DB formats in read-only mode — old format data is loaded into memory so
+     the write logic for that format does not need to be maintained; the same list UI works unchanged
+
+  Root directory layout (internal structure of rust/, kotlin/ etc. is not prescribed here):
+  ```
+  easyvocabook/
+  ├── doc/
+  │   ├── schema.md        # SQLite DB schema documentation
+  │   └── explore/         # explore session notes (one .md per session)
+  ├── kotlin/              # Android app (Kotlin + Jetpack Compose)
+  ├── rust/                # Desktop app (Rust + iced)
+  ├── openspec/            # API specs and change proposals
+  ├── .gitignore
+  ├── LICENSE
+  └── README.md
+  ```
+
+  Explore session notes in doc/explore/:
+  - File naming: YYYYMMDDhhmm-<topic>.md (timestamp = moment the file is created)
+  - Written in Traditional Chinese (繁體中文)
+  - Capture key decisions and open questions from each explore session
+
+  ## Domain Model
+
+  There is only ONE vocabulary book (one SQLite file) — unlike EasyCashAccount/EasyHealthRecord
+  which manage multiple database files. There is no "open/switch DB" or `set_db_name()` concept.
+
+  The DB filename is fixed: `easyvocabook.db` (same name on all platforms, required for sync).
+  DB file location per platform:
+  - Windows (Rust): `%LOCALAPPDATA%\easyvocabook\easyvocabook.db`
+    (Local, not Roaming — app manages its own sync, avoid conflict with Windows auto-sync)
+  - Linux (Rust): `~/.local/share/easyvocabook/easyvocabook.db`
+  - Android: app's internal `filesDir/easyvocabook.db`
+  Use the `dirs` crate (`data_local_dir()`) in Rust to resolve the platform path.
+
+  The vocabulary book contains:
+  - Book metadata: name, description, language pair, last_modified
+  - **Words**: the core entity — each word is one "page" in the notebook
+    - word (the target language word, e.g., English or Japanese)
+    - reading (pronunciation/furigana, optional)
+    - meaning (translation, typically Chinese)
+    - example sentences (0 or more)
+    - category/tags (for grouping)
+    - created_at, last_practiced_at
+    - familiarity score (for spaced repetition or simple tracking)
+
+  ## Conventions
+
+  - Package name: `tw.idv.woofdog.easyvocabook`
+  - MIT license, copyright Chien-Hong Chan
+  - All code, comments, and OpenSpec artifacts (proposals, designs, specs, tasks) MUST be in English
+  - Exception: locale resource files (strings.xml zh-rTW, zh-rCN, etc.) are in their respective languages
+  - explore mode conversations are conducted in Traditional Chinese (繁體中文)
+  - Localization: English (default), Traditional Chinese (zh-rTW), Simplified Chinese (zh-rCN)
+  - UI theme: purple + teal, Day/Night mode
+  - Cloud sync: FTP/FTPS/SFTP, Google Drive, OneDrive (same as other Easy-series apps)
+  - No external frameworks beyond platform-standard (no Firebase SDK)
+  - Android UI uses Jetpack Compose (not XML layouts); use LazyColumn instead of RecyclerView
+  - Single-module Android project structure
+  - AI agents MAY git add but MUST NEVER git commit
+  - NEVER access /mnt/* paths
+  - Each change is developed on its own git branch and merged to main via PR
+  - Each change follows a 3-commit pattern on its branch:
+      1. "propose: <change-name>" — explore notes (doc/explore/) + all planning artifacts (proposal, design, specs, tasks)
+      2. "implement: <change-name>" — after implementation and test/verification
+      3. "archive: <change-name>" — after the change is archived in openspec
+
+  ## Key Differences from Other Easy-series Apps
+
+  - First app with a **PC desktop version** (Rust + iced), previous apps were Android-only
+  - **OpenAPI spec** defines a REST sync API (instead of raw file sync via FTP/Drive)
+  - Vocabulary domain has richer data model (nested example sentences, familiarity scores)
+  - Practice/quiz mode is a core feature (not just data recording like cash/health apps)
+
+  ## DB Versioning and Migration Strategy
+
+  - Version is stored as an integer in `db_info.version` (same pattern as EasyCashAccount)
+  - Migration SQL is the single source of truth, documented in `doc/schema.md`
+  - Both Rust and Kotlin implement the same migration SQL independently (no shared migration tool)
+  - Migrations must be additive-first: prefer adding columns/tables over modifying or dropping them
+
+  On DB open, check version:
+  - version == current → open normally
+  - version <  current → run sequential migrations (v1→v2→...→current)
+  - version >  current → refuse to open, show "please update the app" error
+
+  Sync strategy:
+  - Always sync the raw `easyvocabook.db` file
+  - Before accepting a synced DB, check its `db_info.version`
+  - If remote DB version > app's supported version → refuse sync, prompt user to update app first
+
+  ## Testing Strategy
+
+  - DB layer: test BOTH implementations — DbTableMemory (logic) and DbTableSQLite (real SQL behavior)
+  - SQLite tests use a temporary file per test (Rust: tempfile crate; Android: getCacheDir())
+  - Network layer: test business logic via mock trait/interface implementations; do not test actual connections
+  - GUI: manual verification only (no automated GUI tests)
+  - Coverage reports: cargo llvm-cov (Rust), JaCoCo (Android)
+
+rules:
+  proposal:
+    - Always include a "Non-goals" section to keep scope clear
+    - Call out which platforms (PC/Android/both) each feature targets
+  tasks:
+    - Separate tasks by platform (Rust/PC tasks vs Kotlin/Android tasks vs OpenAPI tasks)
+    - Each task should be completable in a focused session
+    - Database schema tasks must come before UI tasks that depend on them
