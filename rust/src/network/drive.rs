@@ -78,7 +78,7 @@ impl std::fmt::Debug for DriveAuthPending {
     }
 }
 
-fn extract_code_from_request(http_request: &str) -> Option<String> {
+fn extract_query_param_from_request(http_request: &str, param: &str) -> Option<String> {
     let first_line = http_request.lines().next()?;
     let path = first_line.split_whitespace().nth(1)?;
     let query = path.split_once('?')?.1;
@@ -86,7 +86,7 @@ fn extract_code_from_request(http_request: &str) -> Option<String> {
         .split('&')
         .filter_map(|kv| kv.split_once('='))
         .collect();
-    params.get("code").map(|v| urlencoded_decode(v))
+    params.get(param).map(|v| urlencoded_decode(v))
 }
 
 fn urlencoded_decode(s: &str) -> String {
@@ -173,8 +173,11 @@ impl DriveClient {
                 .await
                 .ok();
             drop(stream);
-            if let Some(c) = extract_code_from_request(&request) {
+            if let Some(c) = extract_query_param_from_request(&request, "code") {
                 break c;
+            }
+            if let Some(err) = extract_query_param_from_request(&request, "error") {
+                return Err(format!("Authorization denied: {err}"));
             }
         };
 
@@ -459,7 +462,8 @@ impl crate::network::SyncClient for DriveClient {
                     let _ = std::fs::remove_file(&tmp);
                     v
                 }
-                Err(_) => Ok(None), // file doesn't exist yet
+                Err(e) if e.contains("Remote file does not exist") => Ok(None),
+                Err(e) => Err(e),
             }
         })
     }

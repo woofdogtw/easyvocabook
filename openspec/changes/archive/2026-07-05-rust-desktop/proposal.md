@@ -22,7 +22,7 @@ layer, quiz engine, UI, and cloud sync.
 - **Three-layer storage**: DB file (synced), OS keychain (secrets), local `settings.toml` (UI prefs)
 - **Local config** (`settings.toml`): UI language, theme, sync method, FTP/cloud folder, last-used
   word language
-- **Whole-file sync** with three-way conflict detection (`last_synced` baseline in local config)
+- **Whole-file sync** with latest-wins resolution (no `last_synced`, no conflict dialog)
 
 ## Capabilities
 
@@ -44,7 +44,7 @@ layer, quiz engine, UI, and cloud sync.
 - `settings-ui`: Settings tab — App section (language, theme), Sync section (method radio + per-method
   fields), Practice section (clear stats), fixed About footer
 - `cloud-sync`: FTP/FTPS/SFTP file transfer; Google Drive + OneDrive OAuth2 PKCE flow; whole-file
-  sync with three-way conflict detection; UI lock during sync; post-sync DbTableMemory reload
+  whole-file sync with latest-wins resolution; UI lock during sync; post-sync DbTableMemory reload
 
 ### Modified Capabilities
 
