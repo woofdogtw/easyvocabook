@@ -64,6 +64,9 @@ where
         if let Some(c) = extract_query_param(&request, "code") {
             break c;
         }
+        if let Some(err) = extract_query_param(&request, "error") {
+            return Err(format!("Authorization denied: {err}"));
+        }
         // Pre-connect probe or empty connection — keep waiting.
     };
 

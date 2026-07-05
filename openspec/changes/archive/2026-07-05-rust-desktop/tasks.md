@@ -47,7 +47,7 @@
 
 ## 7. Config & Keychain (Rust/PC)
 
-- [x] 7.1 Implement `config::Settings` load/save with all fields (ui_language, theme, sync_method, FTP fields, Drive/OneDrive folder, last_word_language, last_synced)
+- [x] 7.1 Implement `config::Settings` load/save with all fields (ui_language, theme, sync_method, FTP fields, Drive/OneDrive folder, last_word_language)
 - [x] 7.2 Implement keychain helpers in `config::keychain`: `store(service, key, secret)`, `load(service, key)`, `delete(service, key)` using `keyring` crate
 - [x] 7.3 Write config unit tests: round-trip serialize/deserialize `Settings`
 
@@ -59,8 +59,8 @@
 - [x] 8.4 Implement OAuth2 PKCE helper in `network::oauth`: bind TCP on port 0, open browser, await callback, exchange code for tokens, store in keychain
 - [x] 8.5 Implement `network::DriveClient` (Google Drive API v3): find-or-create folder by name, upload file, download file, refresh token if expired
 - [x] 8.6 Implement `network::OneDriveClient` (Microsoft Graph API): find-or-create folder, upload, download, token refresh
-- [x] 8.7 Implement sync orchestrator in `network::sync`: three-way conflict detection using `db_info.last_modified` vs `last_synced`; prompt conflict resolution; after download: close SQLite, replace file, reopen, reload DbTableMemory
-- [x] 8.8 Write sync unit tests using mock `SyncClient`: fast-forward download, fast-forward upload, conflict detection
+- [x] 8.7 Implement sync orchestrator in `network::sync`: latest-wins (compare local vs remote last_modified); after download: close SQLite, replace file, reopen, reload DbTableMemory
+- [x] 8.8 Write sync unit tests using mock `SyncClient`: latest-wins decide(): upload / download / no-op / first-upload
 
 ## 9. UI — Application Shell (Rust/PC)
 
@@ -107,7 +107,7 @@
 - [x] 13.5 Implement SFTP fields; save password to keychain
 - [x] 13.6 Implement Google Drive fields: [Log in] → OAuth PKCE flow → show logged-in state with email; [Log out]; folder name input
 - [x] 13.7 Implement OneDrive fields (same pattern as Google Drive)
-- [x] 13.8 Implement [Sync Now] button: trigger sync, lock UI, show progress, handle conflict dialog
+- [x] 13.8 Implement [Sync Now] button: trigger sync, lock UI, show progress (upload / download / no-op)
 - [x] 13.9 Implement Practice section: [Clear Practice Statistics] with confirmation dialog
 
 ## 14. i18n & Theme (Rust/PC)

@@ -136,13 +136,20 @@ impl crate::network::SyncClient for OneDriveClient {
                 "{GRAPH_API}/me/drive/root:/{}/easyvocabook.db:/content",
                 self.folder_name
             );
-            let bytes = self
+            let resp = self
                 .http
                 .get(&url)
                 .bearer_auth(&token)
                 .send()
                 .await
-                .map_err(|e| format!("OneDrive download failed: {e}"))?
+                .map_err(|e| format!("OneDrive download failed: {e}"))?;
+            if resp.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err("Remote file does not exist".into());
+            }
+            if !resp.status().is_success() {
+                return Err(format!("OneDrive download HTTP {}", resp.status()));
+            }
+            let bytes = resp
                 .bytes()
                 .await
                 .map_err(|e| format!("OneDrive read failed: {e}"))?;
@@ -168,7 +175,8 @@ impl crate::network::SyncClient for OneDriveClient {
                     let _ = std::fs::remove_file(&tmp);
                     v
                 }
-                Err(_) => Ok(None),
+                Err(e) if e.contains("Remote file does not exist") => Ok(None),
+                Err(e) => Err(e),
             }
         })
     }

@@ -80,7 +80,7 @@ switching. A neutral key is stable across locales and Rust/Kotlin implementation
 |-------|----------|----------|
 | DB (synced) | `{data_local_dir}/easyvocabook/easyvocabook.db` | words, word_meanings, word_forms, sentences, db_info |
 | Keychain | OS keychain (`keyring` crate) | FTP password, SFTP password, Google/OneDrive OAuth tokens |
-| Local config | `{config_dir}/easyvocabook/settings.toml` | ui_language, theme, sync_method, FTP host/port/user/dir, Drive/OneDrive folder name, last_word_language, last_synced timestamp |
+| Local config | `{config_dir}/easyvocabook/settings.toml` | ui_language, theme, sync_method, FTP host/port/user/dir, Drive/OneDrive folder name, last_word_language |
 
 `settings.toml` is never synced. DB is synced. Keychain is device-local.
 
@@ -95,16 +95,17 @@ the current recommended approach for desktop native apps (same mechanism used by
 Claude Code). No custom scheme registration required on Windows/Linux.
 **Alternative rejected**: WebView — deprecated by both providers for OAuth.
 
-### D8: Whole-file sync with three-way conflict detection
+### D8: Whole-file sync with latest-wins resolution
 
-**Decision**: Sync uploads/downloads the entire `easyvocabook.db` file. Conflict detection
-compares `db_info.last_modified` against a `last_synced` baseline stored in `settings.toml`.
-- `local.last_modified == last_synced` → remote is newer, safe download (fast-forward)
-- `remote.last_modified == last_synced` → local is newer, safe upload (fast-forward)
-- Both differ → true conflict → prompt user: keep local / use remote
-**Rationale**: Consistent with other Easy-series apps. AUTOINCREMENT IDs are safe under
-whole-file replace (no record-level merge needed). Epoch-second timestamps are sufficient;
-clock-skew is acceptable given manual user resolution of conflicts.
+**Decision**: Sync uploads/downloads the entire `easyvocabook.db` file. Conflict resolution
+compares `db_info.last_modified` from local and remote:
+- remote newer → download and replace local
+- local newer → upload to remote
+- equal → no-op
+No `last_synced` baseline is stored. No conflict dialog. The newer side always wins.
+**Rationale**: Simpler than three-way detection; eliminates a class of baseline drift bugs.
+AUTOINCREMENT IDs are safe under whole-file replace (no record-level merge needed).
+Fresh installs set `last_modified = 0` so the first sync always downloads from remote.
 **Alternative rejected**: Record-level merge — incompatible with AUTOINCREMENT IDs across devices.
 
 ### D9: Quiz weighting — unified pool with count-based weights
