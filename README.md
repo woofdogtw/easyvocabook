@@ -1,5 +1,9 @@
 # EasyVocaBook
 
+![CI](https://github.com/woofdogtw/easyvocabook/actions/workflows/build-test.yaml/badge.svg)
+[![Coverage](https://img.shields.io/endpoint?url=https://woofdogtw.github.io/easyvocabook/badge.json)](https://woofdogtw.github.io/easyvocabook/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A simple vocabulary practice notebook app — like a physical flashcard book where each page is one word.
 Supports practicing English, Japanese, and other foreign languages.
 

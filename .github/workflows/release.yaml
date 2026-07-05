@@ -1,0 +1,66 @@
+name: Release EasyVocaBook
+on:
+  push:
+    tags:
+      - v*
+jobs:
+  release:
+    name: Build ${{ matrix.os_name }} release
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            os_name: Windows
+            archive: easyvocabook-windows-x86_64.zip
+          - os: ubuntu-22.04
+            os_name: Linux
+            archive: easyvocabook-linux-x86_64.tar.xz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Linux system dependencies
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libdbus-1-dev
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Build release binary
+        working-directory: rust
+        env:
+          DRIVE_CLIENT_ID: ${{ secrets.DRIVE_CLIENT_ID }}
+          DRIVE_CLIENT_SECRET: ${{ secrets.DRIVE_CLIENT_SECRET }}
+        run: cargo build --release
+      - name: Package Windows release
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp rust/target/release/easyvocabook.exe dist/
+          cd dist
+          7z a ${{ matrix.archive }} easyvocabook.exe
+          sha256sum ${{ matrix.archive }} > SHA256SUMS-windows
+      - name: Package Linux release
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          mkdir -p dist
+          cp rust/target/release/easyvocabook dist/
+          cd dist
+          tar cJf ${{ matrix.archive }} easyvocabook
+          sha256sum ${{ matrix.archive }} > SHA256SUMS-linux
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/${{ matrix.archive }}
+            dist/SHA256SUMS-*

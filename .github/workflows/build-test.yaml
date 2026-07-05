@@ -1,0 +1,88 @@
+name: Build and Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+env:
+  LLVM_COV_VER: v0.6.16
+jobs:
+  # PR: fast build + test only, no coverage instrumentation
+  test:
+    name: Build and test
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libdbus-1-dev
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Build
+        working-directory: rust
+        run: cargo build
+      - name: Run tests
+        working-directory: rust
+        run: cargo test
+
+  # Push to main: coverage report published to GitHub Pages
+  coverage:
+    name: Coverage
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libdbus-1-dev
+      - name: Install cargo-llvm-cov
+        run: |
+          rustup component add llvm-tools-preview
+          curl -kLO https://github.com/taiki-e/cargo-llvm-cov/releases/download/${LLVM_COV_VER}/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz
+          tar xf cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz
+          mv cargo-llvm-cov ~/.cargo/bin/
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run tests with coverage (collect only)
+        working-directory: rust
+        run: cargo llvm-cov --no-report
+      - name: Generate HTML report
+        working-directory: rust
+        run: cargo llvm-cov report --html --output-dir ../coverage
+      - name: Generate coverage badge
+        working-directory: rust
+        run: |
+          cargo llvm-cov report --json --summary-only --output-path ../coverage/coverage.json
+          PCT=$(jq '.data[0].totals.lines.percent | floor' ../coverage/coverage.json)
+          if [ "$PCT" -ge 80 ]; then COLOR="brightgreen"
+          elif [ "$PCT" -ge 60 ]; then COLOR="yellow"
+          else COLOR="red"; fi
+          echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${PCT}%\",\"color\":\"${COLOR}\"}" \
+            > ../coverage/badge.json
+      - name: Publish coverage to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: coverage
