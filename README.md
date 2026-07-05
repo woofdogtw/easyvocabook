@@ -1,5 +1,9 @@
 # EasyVocaBook
 
+![CI](https://github.com/woofdogtw/easyvocabook/actions/workflows/build-test.yaml/badge.svg)
+[![Coverage](https://img.shields.io/endpoint?url=https://woofdogtw.github.io/easyvocabook/badge.json)](https://woofdogtw.github.io/easyvocabook/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A simple vocabulary practice notebook app — like a physical flashcard book where each page is one word.
 Supports practicing English, Japanese, and other foreign languages.
 
@@ -15,7 +19,7 @@ Part of the [Easy series](https://github.com/woofdogtw) of personal apps.
 ## Features
 
 - Create and manage multiple vocabulary books (one SQLite file per book)
-- Each word entry: word, reading/pronunciation, meaning, example sentences, category
+- Each word entry: word, reading/pronunciation, meaning, example sentences, note
 - Practice mode with familiarity tracking
 - Cloud sync: FTP/FTPS/SFTP, Google Drive, OneDrive
 - Multilingual UI: English, Traditional Chinese, Simplified Chinese
@@ -30,6 +34,10 @@ easyvocabook/
 ├── doc/            # Documentation and database schema
 └── tools/          # Helper scripts
 ```
+
+## Explore (pending discussion)
+
+- Categories / tags for organizing vocabulary books
 
 ## License
 
