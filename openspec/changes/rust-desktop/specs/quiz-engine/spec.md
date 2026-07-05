@@ -132,7 +132,7 @@ Updates SHALL be written to `DbTableSQLite` and reflected in `DbTableMemory`.
 - **THEN** `practice_count` increases by 1, `correct_count` is unchanged, `practiced_at` is updated
 
 ### Requirement: Synonym definition
-Two words are considered synonyms if their meaning sets (union of `words.meaning` and all
+Two words SHALL be considered synonyms if their meaning sets (union of `words.meaning` and all
 `word_meanings.meaning`) have at least one element in common (exact string match).
 
 #### Scenario: Two words with shared meaning are synonyms

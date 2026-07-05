@@ -67,7 +67,8 @@ stored in OS keychain. No "remember login" checkbox is needed.
 - **THEN** the settings page shows "✓ Logged in: user@gmail.com" and a [Log out] button
 
 ### Requirement: OneDrive configuration
-Same as Google Drive configuration with OneDrive branding and Microsoft OAuth endpoints.
+The system SHALL provide OneDrive configuration with the same fields and behavior as Google Drive
+configuration, using OneDrive branding and Microsoft OAuth endpoints.
 
 #### Scenario: OneDrive login
 - **WHEN** the user clicks [Log in to OneDrive]

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: DbTableBase interface
-`DbTableBase` is the shared interface that abstracts all read and write operations over the
+The system SHALL define a `DbTableBase` trait that abstracts all read and write operations over the
 vocabulary data. Both `DbTableSQLite` and `DbTableMemory` SHALL implement this interface.
 
 The interface SHALL expose the following operations:
@@ -24,8 +24,8 @@ The interface SHALL expose the following operations:
 - **THEN** both implement `DbTableBase` with no missing methods
 
 ### Requirement: DbTableSQLite implementation
-`DbTableSQLite` is the SQLite-backed source of truth. It implements `DbTableBase` by executing SQL
-against the database file. Blocking DB operations SHALL NOT block the UI runtime; the caller is
+`DbTableSQLite` SHALL be the SQLite-backed source of truth, implementing `DbTableBase` by executing
+SQL against the database file. Blocking DB operations SHALL NOT block the UI runtime; the caller is
 responsible for dispatching them off the UI thread.
 
 `DbTableSQLite` SHALL:

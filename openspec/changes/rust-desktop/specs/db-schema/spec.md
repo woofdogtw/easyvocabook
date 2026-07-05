@@ -53,7 +53,12 @@ CREATE TABLE sentences (
 
 #### Scenario: Fresh database creation
 - **WHEN** the app opens and no database file exists
-- **THEN** the system creates `easyvocabook.db` with all v1 tables and sets `db_info.version = 1`
+- **THEN** the system creates `easyvocabook.db` with all v1 tables, sets `db_info.version = 1`,
+  and sets `db_info.last_modified = 0`
+
+Note: `last_modified` is intentionally seeded as `0` (not the current time). Any real remote DB
+will have `last_modified > 0`, so the first sync on a new machine will always download from remote
+rather than overwriting it. See `specs/cloud-sync/spec.md` § Latest-wins conflict resolution.
 
 #### Scenario: Version matches current
 - **WHEN** the app opens an existing database with `db_info.version = 1`
