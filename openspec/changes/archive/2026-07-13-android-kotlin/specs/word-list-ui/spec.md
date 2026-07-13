@@ -29,9 +29,9 @@ add button) and SHALL be hidden during an active sync.
 - **THEN** the `WordEditSheet` ModalBottomSheet slides up in "add" mode
 
 ### Requirement: Android word list — draggable scrollbar
-When the word list `LazyColumn` has more items than the visible viewport, an overlay scrollbar
-SHALL appear on the trailing edge. Implementation uses `rememberLazyListState()` with a custom
-`BoxWithConstraints` composable:
+The word list SHALL display an overlay scrollbar on the trailing edge when the `LazyColumn` has
+more items than the visible viewport. The scrollbar SHALL support drag-to-scroll. Implementation
+uses `rememberLazyListState()` with a custom `BoxWithConstraints` composable:
 
 - **Thumb size**: `(visibleCount / totalItems) × trackHeight`, minimum 32 dp
 - **Thumb position**: proportional to `firstVisibleItemIndex / (totalItems − visibleCount)`

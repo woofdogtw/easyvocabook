@@ -31,14 +31,18 @@ The selected theme SHALL apply immediately and be stored in `settings.toml`.
 - **THEN** the app renders in dark theme
 
 ### Requirement: Sync section — method selection
-The Sync section SHALL provide radio buttons: Disabled, FTP/FTPS, SFTP, Google Drive, OneDrive.
+The Sync section SHALL provide radio buttons: Disabled, FTP/FTPS, SFTP, Google Drive.
 Only the fields relevant to the selected method SHALL be visible; all other method fields SHALL
-be collapsed. The selection SHALL be stored in `settings.toml`.
+be collapsed. The selection SHALL be stored in the platform-appropriate settings store
+(`settings.toml` on PC, `SharedPreferences` on Android).
 
 #### Scenario: FTP selected shows only FTP fields
 - **WHEN** the user selects FTP/FTPS
-- **THEN** Host, Port, Username, Password, Directory fields are visible; Google Drive and OneDrive
-  fields are not rendered
+- **THEN** Host, Port, Username, Password, Directory fields are visible; SFTP and Google Drive fields are not rendered
+
+#### Scenario: Sync Now disabled when Disabled is selected
+- **WHEN** the sync method is set to Disabled
+- **THEN** the [Sync Now] button is greyed out and non-interactive
 
 ### Requirement: FTP/FTPS/SFTP configuration
 When FTP/FTPS or SFTP is selected, the system SHALL display: Host (text), Port (number, default 21
@@ -54,28 +58,32 @@ SHALL be stored in `settings.toml`.
 ### Requirement: Google Drive configuration
 When Google Drive is selected, the system SHALL display:
 - If not logged in: **[Log in to Google Drive]** button
-- If logged in: "✓ Logged in: user@gmail.com" and **[Log out]** button
+- If logged in: "✓ Logged in: user@gmail.com" (if email available) and **[Log out]** button
 - Folder name (text input): the Drive folder name where the DB file is stored; created automatically
-  if it does not exist. Stored in `settings.toml`.
+  if it does not exist
 
-Tapping [Log in] SHALL open the system browser for OAuth2 PKCE authentication. Tokens SHALL be
-stored in OS keychain. No "remember login" checkbox is needed.
+The folder name SHALL be stored in the platform-appropriate settings store.
 
-#### Scenario: Login opens system browser
-- **WHEN** the user clicks [Log in to Google Drive]
-- **THEN** the default system browser opens the Google OAuth authorization URL
+Login behavior is platform-specific:
+- **PC (Rust)**: tapping [Log in] opens the system browser for OAuth2 PKCE authentication; tokens stored in OS keychain
+- **Android (Kotlin)**: tapping [Log in] calls `Authorization.getClient(context).authorize(request)`;
+  if consent is required, the returned `pendingIntent` is launched; Play Services manages tokens — the app stores only the folder name in `SharedPreferences`
 
-#### Scenario: Logged-in state shows email
-- **WHEN** the user has previously authenticated
-- **THEN** the settings page shows "✓ Logged in: user@gmail.com" and a [Log out] button
+#### Scenario: Android Google Drive login shows consent screen when needed
+- **WHEN** the user taps [Log in to Google Drive] on Android and no consent exists
+- **THEN** the `pendingIntent` from `AuthorizationResult` is launched, showing the Google consent screen
 
-### Requirement: OneDrive configuration
-The system SHALL provide OneDrive configuration with the same fields and behavior as Google Drive
-configuration, using OneDrive branding and Microsoft OAuth endpoints.
+#### Scenario: PC Google Drive login opens system browser
+- **WHEN** the user clicks [Log in to Google Drive] on PC
+- **THEN** the default system browser opens the Google OAuth2 PKCE authorization URL
 
-#### Scenario: OneDrive login
-- **WHEN** the user clicks [Log in to OneDrive]
-- **THEN** the system browser opens the Microsoft OAuth authorization URL
+#### Scenario: Logged-in state shows confirmation
+- **WHEN** the user has previously authenticated on either platform
+- **THEN** the settings page shows "✓ Logged in" (and email if available) with a [Log out] button
+
+#### Scenario: Folder created if missing
+- **WHEN** the configured Drive folder name does not exist in the user's Drive
+- **THEN** the folder is created automatically before uploading
 
 ### Requirement: Sync Now button
 A **[Sync Now]** button SHALL be present in the Sync section (and also in the Word List action bar
@@ -97,4 +105,48 @@ reset to 0/0/NULL for all words, and `db_info.last_modified` is bumped.
 #### Scenario: Cancel does not clear
 - **WHEN** the user taps [Cancel] in the confirmation dialog
 - **THEN** no statistics are changed
+
+### Requirement: Android settings screen — Compose structure
+On Android, the Settings screen SHALL be implemented as a scrollable `LazyColumn` Composable
+backed by a `SettingsViewModel` exposing `StateFlow<SettingsUiState>`. All setting values SHALL
+be loaded from `SharedPreferences` on screen entry and saved back on each change.
+
+The screen SHALL have four sections rendered as `ListItem` groups or equivalent Material 3
+components: **App**, **Sync**, **Practice**, **About**.
+
+#### Scenario: Android settings screen loads current values
+- **WHEN** the Android Settings screen enters composition
+- **THEN** all fields reflect the current values from `SharedPreferences`
+
+### Requirement: Android app section — UI language
+On Android, the language selector SHALL store the selected language code in
+`SharedPreferences` (`SP_UI_LANGUAGE`). Changing the language SHALL trigger recreation of the
+`Activity` (via `recreate()`) so the locale takes effect immediately across all Compose
+composables.
+
+Available options: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`).
+
+#### Scenario: Android language change applies immediately
+- **WHEN** the user selects 繁體中文 on the Android Settings screen
+- **THEN** `SP_UI_LANGUAGE = "zh-TW"` is stored and `Activity.recreate()` is called, switching all UI strings
+
+### Requirement: Android app section — theme
+On Android, the theme selector SHALL store the selection in `SharedPreferences`
+(`SP_THEME`: `light`, `dark`, or `auto`). The selection SHALL be passed to
+`MaterialTheme { dynamicColorScheme / darkColorScheme / lightColorScheme }` at the app root.
+`auto` follows the system `isSystemInDarkTheme()` value.
+
+#### Scenario: Android Auto theme follows system
+- **WHEN** the user selects Auto and the OS is in dark mode
+- **THEN** the app renders with the dark color scheme
+
+### Requirement: Android FTP/SFTP credentials — EncryptedSharedPreferences
+On Android, FTP/FTPS and SFTP passwords SHALL be stored in `EncryptedSharedPreferences`
+(`androidx.security:security-crypto`). Non-secret fields (host, port, username, directory,
+sync method) SHALL be stored in plain `SharedPreferences`. No password or token SHALL be stored
+in plain `SharedPreferences`.
+
+#### Scenario: Android SFTP password stored encrypted
+- **WHEN** the user saves SFTP settings with a password on Android
+- **THEN** the password is stored in `EncryptedSharedPreferences`; plain `SharedPreferences` contains no password field
 
