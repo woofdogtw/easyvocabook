@@ -89,6 +89,7 @@ context: |
   - Single-module Android project structure
   - AI agents MAY git add but MUST NEVER git commit
   - NEVER access /mnt/* paths
+  - gh CLI: read-only commands only (view, list, checks, api GET); NEVER write operations (pr create, pr comment, issue create, run rerun, etc.)
   - Each change is developed on its own git branch and merged to main via PR
   - Each change follows a 3-commit pattern on its branch:
       1. "propose: <change-name>" — explore notes (doc/explore/) + all planning artifacts (proposal, design, specs, tasks)

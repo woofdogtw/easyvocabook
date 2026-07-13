@@ -44,6 +44,15 @@ android {
             }
         }
     }
+
+    packaging {
+        resources {
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/*.SF"
+            excludes += "META-INF/*.DSA"
+            excludes += "META-INF/*.RSA"
+        }
+    }
 }
 
 jacoco {
@@ -81,6 +90,7 @@ dependencies {
     androidTestImplementation("org.mockftpserver:MockFtpServer:2.8.0")
     androidTestImplementation("org.apache.sshd:sshd-core:2.13.2")
     androidTestImplementation("org.apache.sshd:sshd-sftp:2.13.2")
+    androidTestImplementation("org.bouncycastle:bcprov-jdk15to18:1.79")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 

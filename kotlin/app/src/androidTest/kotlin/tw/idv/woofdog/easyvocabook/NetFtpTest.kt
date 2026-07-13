@@ -66,41 +66,42 @@ class NetFtpTest {
     @Test
     fun upload_thenDownload_roundTrips() = runBlocking {
         val src = makeDb(12345L)
+        val expectedLm = readLastModified(src)
         val c = client()
         c.upload(src)
 
         val dest = File(context.cacheDir, "ftp_dl_${System.nanoTime()}.db")
         c.download(dest)
 
-        assertEquals(12345L, readLastModified(dest))
+        assertEquals(expectedLm, readLastModified(dest))
 
-        src.delete()
-        dest.delete()
+        src.delete(); dest.delete(); Unit
     }
 
     @Test
     fun remoteLastModified_afterUpload_returnsValue() = runBlocking {
         val src = makeDb(99999L)
+        val expectedLm = readLastModified(src)
         val c = client()
         c.upload(src)
 
         val lm = c.remoteLastModified(context.cacheDir)
-        assertEquals(99999L, lm)
+        assertEquals(expectedLm, lm)
 
-        src.delete()
+        src.delete(); Unit
     }
 
     @Test
     fun upload_withSubdirectory_createsDir() = runBlocking {
         val src = makeDb(42L)
+        val expectedLm = readLastModified(src)
         val c = client(directory = "vocabackup")
         c.upload(src)
 
         val dest = File(context.cacheDir, "ftp_dl_dir_${System.nanoTime()}.db")
         c.download(dest)
-        assertEquals(42L, readLastModified(dest))
+        assertEquals(expectedLm, readLastModified(dest))
 
-        src.delete()
-        dest.delete()
+        src.delete(); dest.delete(); Unit
     }
 }

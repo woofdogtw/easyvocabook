@@ -41,25 +41,29 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
       - name: Install Android platform 37 + emulator image
         run: |
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
             "platforms;android-37.0" \
             "build-tools;36.0.0" \
-            "system-images;android-36;google_apis;x86_64" \
+            "system-images;android-36;default;x86_64" \
             "emulator"
-      - name: Create AVD
-        run: |
-          echo no | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager create avd \
-            --name evb_test --package "system-images;android-36;google_apis;x86_64" --force
       - uses: gradle/actions/setup-gradle@v3
       - name: Run instrumented tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
+          target: default
           arch: x86_64
           profile: Nexus 6
-          avd-name: evb_test
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: cd kotlin && ./gradlew :app:connectedDebugAndroidTest
       - uses: actions/upload-artifact@v4
         if: always()
