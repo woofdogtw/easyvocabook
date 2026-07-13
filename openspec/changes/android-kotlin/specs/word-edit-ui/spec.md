@@ -9,18 +9,24 @@ The system SHALL provide a platform-appropriate editing surface for creating and
 Both surfaces SHALL contain the same fixed fields and sections:
 
 **Fixed fields** (always visible):
-- Language (dropdown, required): options per supported language; remembers last-used value
+- Language (dropdown, required): supported languages are `en` (English) and `ja` (Japanese);
+  option labels are localized (e.g. "英文" / "日文" in Chinese locales); remembers last-used value
 - Word (text input, required)
 - Reading (text input, optional)
 - Primary meaning (text input, required): corresponds to `words.meaning`
 - Additional meanings (0..N text inputs with [×] remove button; [＋ Add meaning] button):
   corresponds to `word_meanings`
-- Part of speech (dropdown, optional): options switch based on selected language
+- Part of speech (dropdown, optional): options switch based on selected language; labels are
+  localized — in Chinese locales displayed as "中文 (english_key)" (e.g. "名詞 (noun)")
 - Note (text input, optional): corresponds to `words.note`
 
 **Dynamic word_forms section**: suggested label fields shown based on language + part_of_speech.
-Each suggested row shows the label name and an empty value input. User may remove suggested rows
-with [×] or add custom rows with [＋ Add custom field].
+Each suggested row shows a **label dropdown** (options = canonical label list for the selected
+language, localized display names) and a value text input. User may remove rows with [×] or add
+custom rows with [＋ Add custom field] (custom label is a free-text input).
+
+On Android (`WordEditSheet`), the sheet SHALL apply `imePadding()` so the soft keyboard does not
+obscure the active field.
 
 **Sentences section**: 0..N rows each with a sentence text input and an optional translation
 input. [＋ Add sentence] appends a new row; [×] removes a row.

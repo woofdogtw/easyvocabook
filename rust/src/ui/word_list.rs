@@ -2,9 +2,10 @@ use std::collections::HashSet;
 
 use iced::alignment;
 use iced::widget::{
-    Space, button, column, container, mouse_area, pick_list, row, scrollable, stack, text,
-    text_input,
+    Space, button, column, container, mouse_area, pick_list, responsive, row, scrollable, stack,
+    text, text_input,
 };
+
 use iced::{Element, Length};
 
 use super::{App, Message};
@@ -106,15 +107,29 @@ pub fn view(app: &App) -> Element<'_, Message> {
             .height(Length::Fill)
             .into()
     } else {
+        let hovered = app.word_list.hovered_row;
         let rows = words
             .into_iter()
-            .fold(column![].spacing(0), |col, entry| col.push(word_row(entry)));
-        scrollable(rows).height(Length::Fill).into()
+            .fold(column![].spacing(0), |col, entry| {
+                col.push(word_row(entry, hovered))
+            });
+        scrollable(rows)
+            .height(Length::Fill)
+            .id("word_list_body")
+            .on_scroll(Message::WordListScrolled)
+            .into()
     };
 
     // ── Assemble ──────────────────────────────────────────────────────────────
-    let main_content: Element<Message> = column![filter_bar, action_bar, header, body]
+    let main_col: Element<Message> = column![filter_bar, action_bar, header, body]
         .spacing(0)
+        .into();
+
+    // Track cursor relative to the word_list area (not the window).
+    // on_exit clears hover when leaving the list entirely (rows only set on_enter).
+    let main_content: Element<Message> = mouse_area(main_col)
+        .on_move(Message::WordListCursorMoved)
+        .on_exit(Message::WordListHover(None))
         .into();
 
     if let Some(ctx_id) = app.word_list.context_word_id {
@@ -126,7 +141,9 @@ pub fn view(app: &App) -> Element<'_, Message> {
     } else if app.word_list.more_menu_open {
         more_menu_overlay(main_content, app)
     } else {
-        main_content
+        // Wrap in stack so scrollable is always at stack[0]→mouse_area→column[3] across all
+        // branches. Without this, iced resets the scrollable's state on every right-click.
+        stack![main_content].into()
     }
 }
 
@@ -155,8 +172,9 @@ fn sort_header(
 
 // ── Word row ──────────────────────────────────────────────────────────────────
 
-fn word_row(entry: WordEntry) -> Element<'static, Message> {
+fn word_row(entry: WordEntry, hovered_id: Option<i64>) -> Element<'static, Message> {
     let id = entry.id;
+    let is_hovered = hovered_id == Some(id);
     let rate = if entry.practice_count == 0 {
         "—".to_owned()
     } else {
@@ -182,8 +200,24 @@ fn word_row(entry: WordEntry) -> Element<'static, Message> {
     ]
     .spacing(0);
 
-    mouse_area(row_content)
+    let styled_row = container(row_content)
+        .width(Length::Fill)
+        .style(move |theme: &iced::Theme| {
+            if is_hovered {
+                iced::widget::container::Style {
+                    background: Some(
+                        theme.extended_palette().background.weak.color.into(),
+                    ),
+                    ..Default::default()
+                }
+            } else {
+                iced::widget::container::Style::default()
+            }
+        });
+
+    mouse_area(styled_row)
         .on_right_press(Message::WordListContextMenu(id))
+        .on_enter(Message::WordListHover(Some(id)))
         .into()
 }
 
@@ -294,39 +328,7 @@ fn context_menu_overlay<'a>(
     app: &'a App,
 ) -> Element<'a, Message> {
     let t = |k| app.t(k);
-
-    let menu = column![
-        button(text(t("words.menu_edit")))
-            .width(Length::Fill)
-            .on_press(Message::WordListEdit(ctx_id)),
-        button(text(t("words.menu_delete")))
-            .width(Length::Fill)
-            .on_press(Message::WordListDeleteAsk(ctx_id)),
-        button(text(t("words.menu_info")))
-            .width(Length::Fill)
-            .on_press(Message::WordListContextMenuClose),
-        button(text(t("words.menu_homophone")))
-            .width(Length::Fill)
-            .on_press(Message::WordListContextMenuClose),
-    ]
-    .spacing(2)
-    .padding(4);
-
-    let menu_box = container(menu)
-        .padding(4)
-        .width(Length::Fixed(160.0))
-        .style(|theme: &iced::Theme| {
-            let palette = theme.palette();
-            iced::widget::container::Style {
-                background: Some(palette.background.into()),
-                border: iced::Border {
-                    color: palette.primary,
-                    width: 1.0,
-                    radius: 4.0.into(),
-                },
-                ..Default::default()
-            }
-        });
+    let pos = app.word_list.context_menu_pos;
 
     let backdrop = mouse_area(
         container(Space::new().width(Length::Fill).height(Length::Fill))
@@ -335,20 +337,72 @@ fn context_menu_overlay<'a>(
     )
     .on_press(Message::WordListContextMenuClose);
 
-    let pos = app.word_list.context_menu_pos;
-    let menu_positioned = container(menu_box)
-        .align_x(alignment::Horizontal::Left)
-        .align_y(alignment::Vertical::Top)
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .padding(iced::Padding {
-            top: pos.y,
-            left: pos.x,
-            right: 0.0,
-            bottom: 0.0,
-        });
+    // Use responsive so we know the overlay's actual dimensions for edge-flip logic.
+    let menu_layer = responsive(move |size| {
+        let menu = column![
+            button(text(t("words.menu_edit")))
+                .width(Length::Fill)
+                .on_press(Message::WordListEdit(ctx_id)),
+            button(text(t("words.menu_delete")))
+                .width(Length::Fill)
+                .on_press(Message::WordListDeleteAsk(ctx_id)),
+            button(text(t("words.menu_info")))
+                .width(Length::Fill)
+                .on_press(Message::WordListContextMenuClose),
+            button(text(t("words.menu_homophone")))
+                .width(Length::Fill)
+                .on_press(Message::WordListContextMenuClose),
+        ]
+        .spacing(2)
+        .padding(4);
 
-    stack![main_content, backdrop, menu_positioned].into()
+        let menu_box = container(menu)
+            .padding(4)
+            .width(Length::Fixed(160.0))
+            .style(|theme: &iced::Theme| {
+                let palette = theme.palette();
+                iced::widget::container::Style {
+                    background: Some(palette.background.into()),
+                    border: iced::Border {
+                        color: palette.primary,
+                        width: 1.0,
+                        radius: 4.0.into(),
+                    },
+                    ..Default::default()
+                }
+            });
+
+        // Estimated menu footprint: fixed width 160 + container padding 8 = 168;
+        // 4 buttons ~36px + spacing 2×3 + inner/outer padding ~24 ≈ 174px tall.
+        const MENU_W: f32 = 176.0;
+        const MENU_H: f32 = 180.0;
+
+        let flip_x = pos.x + MENU_W > size.width;
+        let flip_y = pos.y + MENU_H > size.height;
+
+        container(menu_box)
+            .align_x(if flip_x {
+                alignment::Horizontal::Right
+            } else {
+                alignment::Horizontal::Left
+            })
+            .align_y(if flip_y {
+                alignment::Vertical::Bottom
+            } else {
+                alignment::Vertical::Top
+            })
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .padding(iced::Padding {
+                top: if flip_y { 0.0 } else { pos.y },
+                bottom: if flip_y { size.height - pos.y } else { 0.0 },
+                left: if flip_x { 0.0 } else { pos.x },
+                right: if flip_x { size.width - pos.x } else { 0.0 },
+            })
+            .into()
+    });
+
+    stack![main_content, backdrop, menu_layer].into()
 }
 
 // ── Delete confirmation overlay ───────────────────────────────────────────────

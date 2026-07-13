@@ -15,8 +15,9 @@ the launch destination of the `NavHost`. When the composable enters composition 
 
 ### Requirement: Android quiz language filter — Compose dropdown
 On Android, the language filter on the quiz screen SHALL be implemented as an `ExposedDropdownMenuBox`
-(Material 3) showing "All", "English (en)", "Japanese (ja)", plus any other language present in
-`DbTableMemory`. Selecting a value SHALL call `ViewModel.setLanguageFilter(code)` which triggers
+(Material 3) showing the localized "All languages" label plus one entry per supported language
+(`en`, `ja`), displayed with localized names (e.g. "英文" / "日文" in Chinese locales).
+Selecting a value SHALL call `ViewModel.setLanguageFilter(code)` which triggers
 re-sampling from the filtered pool.
 
 #### Scenario: Android language filter restricts pool
@@ -27,7 +28,8 @@ re-sampling from the filtered pool.
 On Android, the typing quiz card SHALL be implemented as a scrollable `Column` containing:
 - A large `Text` showing the randomly-chosen meaning prompt
 - One `OutlinedTextField` for the base word (always shown)
-- Additional `OutlinedTextField`s for each required `word_form` field (based on language + part_of_speech)
+- Additional `OutlinedTextField`s for each required `word_form` field (based on language + part_of_speech);
+  field labels SHALL use localized names (e.g. "過去式" for `past_tense` in Chinese locales)
 - A row with `[Give Up]` (`TextButton`) and `[Submit]` (`Button`)
 - A `⏭ Skip` `IconButton` in the top action bar
 
@@ -41,6 +43,23 @@ a ✓ or ✗ indicator, the correct value, and any valid synonyms, followed by a
 #### Scenario: Android typing quiz result shows all field verdicts
 - **WHEN** the user submits a partially correct answer on Android
 - **THEN** each field shows its ✓/✗ indicator and the correct value before [Next →] appears
+
+### Requirement: Android typing quiz — single-line inputs with keyboard navigation
+Each `OutlinedTextField` in the typing quiz card SHALL use `singleLine = true` to prevent
+multi-line input. The soft keyboard SHALL support sequential field navigation via the IME action
+button:
+- All fields except the last SHALL use `ImeAction.Next`; pressing it moves focus to the next field
+  via `FocusRequester`.
+- The last field SHALL use `ImeAction.Done`; pressing it moves focus to the `[Submit]` button
+  (via `FocusRequester`) and hides the soft keyboard.
+
+#### Scenario: IME Next moves focus to the following field
+- **WHEN** the user presses the keyboard's Next button on a non-last typing field
+- **THEN** focus moves to the immediately following `OutlinedTextField`
+
+#### Scenario: IME Done on last field focuses submit and hides keyboard
+- **WHEN** the user presses the keyboard's Done button on the last typing field
+- **THEN** focus moves to the `[Submit]` button and the soft keyboard is dismissed
 
 ### Requirement: Android multiple-choice quiz — Compose checkboxes
 On Android, the multiple-choice quiz card SHALL be implemented as a scrollable `LazyColumn`

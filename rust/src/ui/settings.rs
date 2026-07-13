@@ -81,12 +81,6 @@ pub fn view(app: &App) -> Element<'_, Message> {
             Some(s.sync_method.clone()),
             Message::SettingsSyncMethod
         ),
-        radio(
-            t("settings.sync_od"),
-            SyncMethod::OneDrive,
-            Some(s.sync_method.clone()),
-            Message::SettingsSyncMethod
-        ),
     ]
     .spacing(12)
     .wrap();
@@ -96,7 +90,6 @@ pub fn view(app: &App) -> Element<'_, Message> {
         SyncMethod::Ftp => ftp_fields(app),
         SyncMethod::Sftp => sftp_fields(app),
         SyncMethod::GoogleDrive => drive_fields(app),
-        SyncMethod::OneDrive => onedrive_fields(app),
     };
 
     let sync_status_row: Element<Message> = if ui.sync_in_progress {
@@ -310,43 +303,6 @@ fn drive_fields(app: &App) -> Element<'_, Message> {
             t("settings.drive_folder"),
             text_input("EasyVocaBook", &s.drive_folder)
                 .on_input(Message::SettingsDriveFolder)
-                .width(Length::Fill)
-        ),
-        auth_row,
-    ]
-    .spacing(8)
-    .into()
-}
-
-// ── OneDrive fields ───────────────────────────────────────────────────────────
-
-fn onedrive_fields(app: &App) -> Element<'_, Message> {
-    let s = &app.settings;
-    let ui = &app.settings_ui;
-    let t = |k| app.t(k);
-
-    let auth_row: Element<Message> = if ui.onedrive_logged_in {
-        let email = ui.onedrive_email.as_deref().unwrap_or("");
-        row![
-            text(format!("{}{email}", t("settings.logged_in"))),
-            button(text(t("settings.logout")))
-                .style(button::danger)
-                .on_press(Message::SettingsOneDriveLogout),
-        ]
-        .spacing(8)
-        .into()
-    } else {
-        button(text(t("settings.login_ms")))
-            .style(button::primary)
-            .on_press(Message::SettingsOneDriveLogin)
-            .into()
-    };
-
-    column![
-        labeled_row(
-            t("settings.drive_folder"),
-            text_input("EasyVocaBook", &s.onedrive_folder)
-                .on_input(Message::SettingsOneDriveFolder)
                 .width(Length::Fill)
         ),
         auth_row,

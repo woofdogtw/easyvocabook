@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">简易单词练习本</string>
+
+    <!-- Common -->
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="ok">确定</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="add">添加</string>
+
+    <!-- Navigation tabs -->
+    <string name="tab_quiz">练习</string>
+    <string name="tab_word_list">单词</string>
+    <string name="tab_settings">设置</string>
+
+    <!-- Quiz screen -->
+    <string name="quiz_language_all">所有语言</string>
+    <string name="quiz_empty">没有可练习的单词。\n请在「单词」页面添加单词。</string>
+    <string name="quiz_skip">跳过</string>
+    <string name="quiz_give_up">放弃</string>
+    <string name="quiz_submit">提交</string>
+    <string name="quiz_next">下一题</string>
+    <string name="quiz_typing_label">翻译并填写单词形态：</string>
+    <string name="quiz_mcq_label">选出所有正确的意思：</string>
+    <string name="quiz_correct">正确！</string>
+    <string name="quiz_incorrect">错误</string>
+    <string name="quiz_synonyms">同义词：</string>
+    <string name="quiz_correct_form">正确答案：</string>
+    <string name="quiz_enter_form">输入 %1$s</string>
+
+    <!-- Word list screen -->
+    <string name="word_list_search">搜索单词…</string>
+    <string name="word_list_empty_title">暂无单词</string>
+    <string name="word_list_empty_action">点击 + 添加第一个单词。</string>
+    <string name="word_list_sort">排序</string>
+    <string name="word_list_menu_sort">排序</string>
+    <string name="word_list_menu_import">导入</string>
+    <string name="word_list_menu_export">导出</string>
+    <string name="word_list_menu_stats">练习统计</string>
+    <string name="word_list_menu_sync">立即同步</string>
+    <string name="word_list_action_edit">编辑</string>
+    <string name="word_list_action_delete">删除</string>
+    <string name="word_list_delete_title">删除单词</string>
+    <string name="word_list_delete_message">删除「%1$s」？此操作无法撤销。</string>
+    <string name="word_list_action_info">详细信息</string>
+    <string name="word_list_action_homophones">同音词</string>
+    <string name="word_list_no_practice">—</string>
+
+    <!-- Language names -->
+    <string name="lang_en">英文</string>
+    <string name="lang_ja">日文</string>
+
+    <!-- Word edit sheet -->
+    <string name="word_edit_title_add">添加单词</string>
+    <string name="word_edit_title_edit">编辑单词</string>
+    <string name="word_edit_language">语言</string>
+    <string name="word_edit_word">单词</string>
+    <string name="word_edit_reading">读音</string>
+    <string name="word_edit_pos">词性</string>
+    <string name="word_edit_meaning_primary">主要意思</string>
+    <string name="word_edit_additional_meanings">其他意思</string>
+    <string name="word_edit_add_meaning">+ 添加意思</string>
+    <string name="word_edit_note">备注</string>
+    <string name="word_edit_word_forms">单词形态</string>
+    <string name="word_edit_add_form">+ 添加形态</string>
+    <string name="word_edit_form_label">标签</string>
+    <string name="word_edit_form_value">数值</string>
+    <string name="word_edit_sentences">例句</string>
+    <string name="word_edit_add_sentence">+ 添加例句</string>
+    <string name="word_edit_sentence_text">例句</string>
+    <string name="word_edit_sentence_translation">翻译（选填）</string>
+    <string name="word_edit_required_word">请输入单词</string>
+    <string name="word_edit_required_meaning">请输入主要意思</string>
+
+    <!-- Settings screen -->
+    <string name="settings_section_app">应用</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_theme_auto">跟随系统</string>
+    <string name="settings_section_sync">同步</string>
+    <string name="settings_sync_disabled">禁用</string>
+    <string name="settings_sync_drive">Google 云端硬盘</string>
+    <string name="settings_ftp_host">主机</string>
+    <string name="settings_ftp_port">端口</string>
+    <string name="settings_ftp_user">用户名</string>
+    <string name="settings_ftp_pass">密码</string>
+    <string name="settings_ftp_dir">目录</string>
+    <string name="settings_ftp_tls">使用 FTPS（TLS）</string>
+    <string name="settings_sftp_host">主机</string>
+    <string name="settings_sftp_port">端口</string>
+    <string name="settings_sftp_user">用户名</string>
+    <string name="settings_sftp_pass">密码</string>
+    <string name="settings_sftp_dir">目录</string>
+    <string name="settings_drive_folder">文件夹名称</string>
+    <string name="settings_login_google">登录 Google 云端硬盘</string>
+    <string name="settings_logout">退出登录</string>
+    <string name="settings_logged_in">✓ 已登录</string>
+    <string name="settings_save_creds">保存账号设置</string>
+    <string name="settings_sync_now">立即同步</string>
+    <string name="settings_syncing">同步中…</string>
+    <string name="settings_sync_ok">同步完成</string>
+    <string name="settings_section_practice">练习</string>
+    <string name="settings_clear_stats">清除练习统计</string>
+    <string name="settings_clear_stats_confirm">确定要清除所有练习统计？此操作无法撤销。</string>
+    <string name="settings_clear_yes">清除</string>
+    <string name="settings_section_about">关于</string>
+    <string name="settings_about_version">版本</string>
+    <string name="settings_about_author">作者</string>
+
+    <!-- Word form labels -->
+    <string name="form_word">单词</string>
+    <string name="form_base_form">原形</string>
+    <string name="form_past_tense">过去式</string>
+    <string name="form_past_participle">过去分词</string>
+    <string name="form_gerund">动名词</string>
+    <string name="form_singular">单数</string>
+    <string name="form_plural">复数</string>
+    <string name="form_comparative">比较级</string>
+    <string name="form_superlative">最高级</string>
+    <string name="form_dictionary_form">辞书形</string>
+    <string name="form_masu_form">ます形</string>
+    <string name="form_ta_form">た形</string>
+    <string name="form_te_form">て形</string>
+    <string name="form_nai_form">ない形</string>
+    <string name="form_negative">否定形</string>
+    <string name="form_past">过去形</string>
+    <string name="form_particle">助词</string>
+    <string name="form_phonetic">音标</string>
+    <string name="form_collocation">搭配用法</string>
+    <string name="form_kanji">汉字</string>
+    <string name="form_hiragana">平假名</string>
+    <string name="form_pitch_accent">音调</string>
+    <string name="form_counter">量词</string>
+    <string name="form_transitive_pair">对应及物动词</string>
+    <string name="form_origin">语源</string>
+
+    <!-- Errors -->
+    <string name="error_db_too_new">数据库版本过新，请更新应用。</string>
+    <string name="error_sync_failed">同步失败：%1$s</string>
+</resources>

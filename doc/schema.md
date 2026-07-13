@@ -118,5 +118,8 @@ before any other statement. `rusqlite` does not enable this by default.
 `db_info.last_modified` is bumped (to current Unix epoch second) on every write that changes
 vocabulary data: create/update/delete word, clear practice stats.
 
-`last_synced` (stored in `settings.toml`, not in the DB) records the `last_modified` value
-at the time of the last successful sync. This enables three-way conflict detection.
+Sync uses a **latest-wins** model: compare the local `db_info.last_modified` against the
+remote `db_info.last_modified` (read from inside the downloaded remote file — never from
+filesystem mtime or cloud storage metadata). Whichever is larger wins; the other side is
+overwritten. A fresh install seeds `last_modified = 0`, ensuring the first sync always
+downloads the remote copy.

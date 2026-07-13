@@ -15,7 +15,6 @@ use crate::network::{
     SyncClient,
     drive::DriveClient,
     ftp::FtpClient,
-    onedrive::OneDriveClient,
     sftp::SftpClient,
     sync::{SyncResult, decide, download_and_reload, read_local_last_modified_async},
 };
@@ -40,8 +39,11 @@ pub struct WordListState {
     pub more_menu_open: bool,
     pub context_word_id: Option<i64>,
     pub context_menu_pos: Point,
+    pub local_cursor_pos: Point,
     pub confirm_delete_id: Option<i64>,
     pub info_message: Option<&'static str>,
+    pub scroll_offset: iced::widget::scrollable::AbsoluteOffset,
+    pub hovered_row: Option<i64>,
 }
 
 // ── Word edit sub-state ────────────────────────────────────────────────────────
@@ -260,8 +262,6 @@ pub struct SettingsUiState {
     pub drive_email: Option<String>,
     pub drive_auth_url: Option<String>,
     pub drive_auth_pending: Option<std::sync::Arc<crate::network::drive::DriveAuthPending>>,
-    pub onedrive_logged_in: bool,
-    pub onedrive_email: Option<String>,
     pub sync_in_progress: bool,
     pub sync_message: Option<String>,
     pub clear_stats_confirm: bool,
@@ -273,7 +273,6 @@ impl SettingsUiState {
             ftp_port_str: settings.ftp_port.to_string(),
             sftp_port_str: settings.sftp_port.to_string(),
             drive_logged_in: DriveClient::is_logged_in(),
-            onedrive_logged_in: OneDriveClient::is_logged_in(),
             ..Default::default()
         }
     }
@@ -302,6 +301,8 @@ pub enum Message {
     TabChanged(Tab),
     DbLoaded(Result<DbTableMemory, String>),
     CursorMoved(Point),
+    TabKeyPressed { shift: bool },
+    QuizEnterKey,
 
     // ── Word list ─────────────────────────────────────────────────────────────
     WordListSort(SortField),
@@ -321,6 +322,9 @@ pub enum Message {
     WordListDeleteCancel,
     WordListSyncNow,
     WordDeleted(Result<i64, String>),
+    WordListCursorMoved(Point),
+    WordListScrolled(iced::widget::scrollable::Viewport),
+    WordListHover(Option<i64>),
 
     // ── Word edit dialog ──────────────────────────────────────────────────────
     WordEditClose,
@@ -378,10 +382,6 @@ pub enum Message {
     SettingsDriveAuthCancel,
     SettingsDriveLogout,
     SettingsDriveLoginDone(Result<(), String>),
-    SettingsOneDriveFolder(String),
-    SettingsOneDriveLogin,
-    SettingsOneDriveLogout,
-    SettingsOneDriveLoginDone(Result<String, String>),
     SettingsSyncNow,
     SettingsSyncPhase2(Result<SyncNextStep, String>),
     SettingsSyncDone(Result<SyncResult, String>),
@@ -489,9 +489,27 @@ impl App {
             Message::CursorMoved(pos) => {
                 self.cursor_pos = pos;
             }
+            Message::WordListCursorMoved(pos) => {
+                self.word_list.local_cursor_pos = pos;
+            }
+            Message::WordListScrolled(viewport) => {
+                self.word_list.scroll_offset = viewport.absolute_offset();
+            }
+            Message::WordListHover(id) => {
+                self.word_list.hovered_row = id;
+            }
+            Message::TabKeyPressed { shift } => {
+                return if shift {
+                    iced::widget::operation::focus_previous()
+                } else {
+                    iced::widget::operation::focus_next()
+                };
+            }
             Message::WordListContextMenu(id) => {
                 self.word_list.context_word_id = Some(id);
-                self.word_list.context_menu_pos = self.cursor_pos;
+                // Use view-local cursor pos (relative to word_list area, not window top)
+                // so the overlay padding matches the stack's coordinate origin.
+                self.word_list.context_menu_pos = self.word_list.local_cursor_pos;
                 self.word_list.more_menu_open = false;
             }
             Message::WordListContextMenuClose => {
@@ -545,7 +563,9 @@ impl App {
                     );
                 }
             }
-            Message::WordListSyncNow => {}
+            Message::WordListSyncNow => {
+                return self.update(Message::SettingsSyncNow);
+            }
             Message::WordDeleted(Ok(id)) => {
                 self.memory.remove_entry(id);
             }
@@ -556,6 +576,10 @@ impl App {
             // ── Word edit ─────────────────────────────────────────────────────
             Message::WordEditClose => {
                 self.word_edit.open = false;
+                return iced::widget::operation::scroll_to(
+                    "word_list_body",
+                    self.word_list.scroll_offset,
+                );
             }
             Message::WordEditLanguage(lang) => {
                 self.word_edit.language = lang;
@@ -582,7 +606,15 @@ impl App {
                 }
             }
             Message::WordEditAddForm => {
-                self.word_edit.forms.push((String::new(), String::new()));
+                let default_label = match self.word_edit.language.as_str() {
+                    "ja" => labels::JA_FORM_LABELS,
+                    _ => labels::EN_FORM_LABELS,
+                }
+                .first()
+                .copied()
+                .unwrap_or("")
+                .to_owned();
+                self.word_edit.forms.push((default_label, String::new()));
             }
             Message::WordEditRemoveForm(i) => {
                 if i < self.word_edit.forms.len() {
@@ -673,6 +705,10 @@ impl App {
                 self.settings.last_word_language = entry.language.clone();
                 let _ = self.settings.save();
                 self.word_edit.open = false;
+                return iced::widget::operation::scroll_to(
+                    "word_list_body",
+                    self.word_list.scroll_offset,
+                );
             }
             Message::WordEditSaved(Err(e)) => {
                 self.word_edit.error = Some(format!("Save failed: {e}"));
@@ -682,6 +718,11 @@ impl App {
             Message::QuizLanguage(lang) => {
                 self.quiz.language = if lang.is_empty() { None } else { Some(lang) };
                 self.quiz.load_next(self.memory.all_entries());
+            }
+            Message::QuizEnterKey => {
+                if self.quiz.submitted {
+                    self.quiz.load_next(self.memory.all_entries());
+                }
             }
             Message::QuizNextCard => {
                 self.quiz.load_next(self.memory.all_entries());
@@ -933,45 +974,6 @@ impl App {
                 self.settings_ui.drive_auth_pending = None;
                 self.settings_ui.drive_logged_in = false;
             }
-            Message::SettingsOneDriveFolder(v) => {
-                self.settings.onedrive_folder = v;
-                let _ = self.settings.save();
-            }
-            Message::SettingsOneDriveLogin => {
-                let folder = self.settings.onedrive_folder.clone();
-                return Task::perform(
-                    async move {
-                        let client = OneDriveClient::new(&folder);
-                        client.login().await?;
-                        let email = get_onedrive_email()
-                            .await
-                            .unwrap_or_else(|_| "unknown".into());
-                        Ok(email)
-                    },
-                    Message::SettingsOneDriveLoginDone,
-                );
-            }
-            Message::SettingsOneDriveLogout => {
-                self.settings_ui.onedrive_logged_in = false;
-                self.settings_ui.onedrive_email = None;
-                return Task::perform(
-                    async { OneDriveClient::logout().await },
-                    |r: Result<(), String>| {
-                        if let Err(e) = r {
-                            eprintln!("OneDrive logout: {e}");
-                        }
-                        Message::SettingsOneDriveLoginDone(Err("logged out".into()))
-                    },
-                );
-            }
-            Message::SettingsOneDriveLoginDone(Ok(email)) => {
-                self.settings_ui.onedrive_logged_in = true;
-                self.settings_ui.onedrive_email = Some(email);
-            }
-            Message::SettingsOneDriveLoginDone(Err(e)) => {
-                eprintln!("OneDrive login error: {e}");
-                self.settings_ui.onedrive_logged_in = false;
-            }
             Message::SettingsSyncNow => {
                 self.settings_ui.sync_in_progress = true;
                 self.settings_ui.sync_message =
@@ -1118,12 +1120,20 @@ impl App {
 impl App {
     /// Map Settings.theme → iced::Theme, including custom purple+teal palette.
     pub fn subscription(&self) -> iced::Subscription<Message> {
-        iced::event::listen_with(|event, _status, _id| {
-            if let iced::Event::Mouse(iced::mouse::Event::CursorMoved { position }) = event {
+        iced::event::listen_with(|event, status, _id| match event {
+            iced::Event::Mouse(iced::mouse::Event::CursorMoved { position }) => {
                 Some(Message::CursorMoved(position))
-            } else {
-                None
             }
+            iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
+                key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Tab),
+                modifiers,
+                ..
+            }) => Some(Message::TabKeyPressed { shift: modifiers.shift() }),
+            iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
+                key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Enter),
+                ..
+            }) if status != iced::event::Status::Captured => Some(Message::QuizEnterKey),
+            _ => None,
         })
     }
 
@@ -1220,9 +1230,6 @@ async fn sync_phase1(
         SyncMethod::GoogleDrive => {
             DriveClient::new(&settings.drive_folder).remote_last_modified().await?
         }
-        SyncMethod::OneDrive => {
-            OneDriveClient::new(&settings.onedrive_folder).remote_last_modified().await?
-        }
         SyncMethod::Disabled => return Err("Sync method is disabled.".into()),
     };
 
@@ -1243,9 +1250,6 @@ async fn sync_phase2_upload(
         SyncMethod::Ftp => FtpClient::from_settings(&settings).upload(&path).await,
         SyncMethod::Sftp => SftpClient::from_settings(&settings).upload(&path).await,
         SyncMethod::GoogleDrive => DriveClient::new(&settings.drive_folder).upload(&path).await,
-        SyncMethod::OneDrive => {
-            OneDriveClient::new(&settings.onedrive_folder).upload(&path).await
-        }
         SyncMethod::Disabled => return Err("Sync method is disabled.".into()),
     }?;
     Ok(SyncResult::Uploaded)
@@ -1263,30 +1267,8 @@ async fn sync_phase2_download(
         SyncMethod::GoogleDrive => {
             download_and_reload(&DriveClient::new(&settings.drive_folder), &path).await
         }
-        SyncMethod::OneDrive => {
-            download_and_reload(&OneDriveClient::new(&settings.onedrive_folder), &path).await
-        }
         SyncMethod::Disabled => return Err("Sync method is disabled.".into()),
     }?;
     Ok(SyncResult::Downloaded)
 }
 
-async fn get_onedrive_email() -> Result<String, String> {
-    use crate::config::keychain;
-    let token = keychain::load(keychain::ONEDRIVE_ACCESS_TOKEN)?.ok_or("Not logged in")?;
-    let client = reqwest::Client::new();
-    let resp: serde_json::Value = client
-        .get("https://graph.microsoft.com/v1.0/me")
-        .bearer_auth(token)
-        .send()
-        .await
-        .map_err(|e| format!("Request failed: {e}"))?
-        .json()
-        .await
-        .map_err(|e| format!("Parse failed: {e}"))?;
-    resp["mail"]
-        .as_str()
-        .or_else(|| resp["userPrincipalName"].as_str())
-        .map(|s| s.to_owned())
-        .ok_or("No email in response".into())
-}

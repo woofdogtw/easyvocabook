@@ -17,8 +17,9 @@ The dialog SHALL contain:
 - Note (text input, optional)
 
 **Dynamic word_forms section**: suggested label fields shown based on language + part_of_speech
-combination. Each suggested row shows the label name and an empty value input. User may remove
-suggested rows with [×] or add custom rows with [＋ Add custom field].
+combination. Each suggested row shows a **label dropdown** (options = canonical label list for
+the selected language, localized display names) and a value text input. User may remove suggested
+rows with [×] or add custom rows with [＋ Add custom field].
 
 **Sentences section**: 0..N rows each with a sentence text input and an optional translation
 input. [＋ Add sentence] appends a new row; [×] removes a row.

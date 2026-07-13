@@ -1,6 +1,7 @@
 # Rust
 target/
 **/*.rs.bk
+**/*.profraw
 Cargo.lock
 
 # Android / Kotlin

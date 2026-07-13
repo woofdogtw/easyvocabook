@@ -28,6 +28,23 @@ add button) and SHALL be hidden during an active sync.
 - **WHEN** the user taps the FAB on the Android word list screen
 - **THEN** the `WordEditSheet` ModalBottomSheet slides up in "add" mode
 
+### Requirement: Android word list — draggable scrollbar
+When the word list `LazyColumn` has more items than the visible viewport, an overlay scrollbar
+SHALL appear on the trailing edge. Implementation uses `rememberLazyListState()` with a custom
+`BoxWithConstraints` composable:
+
+- **Thumb size**: `(visibleCount / totalItems) × trackHeight`, minimum 32 dp
+- **Thumb position**: proportional to `firstVisibleItemIndex / (totalItems − visibleCount)`
+- **Drag interaction**: `Modifier.pointerInput` with `detectVerticalDragGestures`
+  - `onDragStart`: tapping anywhere on the track jumps the list so thumb centre = tap Y
+  - `onVerticalDrag`: converts pixel delta → item delta via `dragAmount / maxScrollOffset × movableItems`, calls `listState.scrollToItem()`
+- **Touch target**: 20 dp wide; visual thumb 6 dp wide on the trailing edge
+- **Visual feedback**: thumb alpha increases from 0.3 to 0.6 while dragging
+
+#### Scenario: Android scrollbar tap-to-jump
+- **WHEN** the user taps at 75% down the Android scrollbar track
+- **THEN** the list scrolls to approximately 75% of the total word list
+
 ### Requirement: Android word list — action bar
 On Android, the word list screen SHALL display a top `TopAppBar` containing:
 - App name or screen title

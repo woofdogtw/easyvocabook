@@ -32,5 +32,3 @@ pub const FTP_PASSWORD: &str = "ftp_password";
 pub const SFTP_PASSWORD: &str = "sftp_password";
 pub const DRIVE_ACCESS_TOKEN: &str = "drive_access_token";
 pub const DRIVE_REFRESH_TOKEN: &str = "drive_refresh_token";
-pub const ONEDRIVE_ACCESS_TOKEN: &str = "onedrive_access_token";
-pub const ONEDRIVE_REFRESH_TOKEN: &str = "onedrive_refresh_token";

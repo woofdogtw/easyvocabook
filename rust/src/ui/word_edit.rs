@@ -153,14 +153,40 @@ fn dialog_content(app: &App) -> Element<'_, Message> {
     // ── Word forms ────────────────────────────────────────────────────────────
 
     let forms_section = {
+        let form_canonicals: &[&str] = match state.language.as_str() {
+            "ja" => labels::JA_FORM_LABELS,
+            _ => labels::EN_FORM_LABELS,
+        };
+        let form_displays: Vec<String> = form_canonicals
+            .iter()
+            .map(|&k| app.t(labels::form_locale_key(k)).to_owned())
+            .collect();
+
         let rows = state.forms.iter().enumerate().fold(
             column![].spacing(4),
             |col, (i, (label, value))| {
+                let canonicals: Vec<&'static str> = form_canonicals.to_vec();
+                let displays_for_on_select = form_displays.clone();
+                let displays_for_picker = form_displays.clone();
+                let selected = Some(app.t_label(label));
+                let label_picker = pick_list(
+                    displays_for_picker,
+                    selected,
+                    move |s: String| {
+                        let canonical = canonicals
+                            .iter()
+                            .zip(displays_for_on_select.iter())
+                            .find(|(_, d)| d.as_str() == s)
+                            .map(|(&k, _)| k.to_owned())
+                            .unwrap_or(s);
+                        Message::WordEditFormLabel(i, canonical)
+                    },
+                )
+                .width(Length::Fixed(150.0));
+
                 col.push(
                     row![
-                        text_input("", label)
-                            .on_input(move |s| Message::WordEditFormLabel(i, s))
-                            .width(Length::Fixed(150.0)),
+                        label_picker,
                         text_input("", value)
                             .on_input(move |s| Message::WordEditFormValue(i, s))
                             .width(Length::Fill),

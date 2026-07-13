@@ -104,8 +104,9 @@ implementations. Labels are language-specific:
 **English labels**: `singular`, `plural`, `base_form`, `past_tense`, `past_participle`, `gerund`,
 `comparative`, `superlative`, `phonetic`, `collocation`
 
-**Japanese labels**: `masu_form`, `ta_form`, `te_form`, `nai_form`, `dictionary_form`, `kanji`,
-`hiragana`, `pitch_accent`, `counter`, `particle`, `transitive_pair`, `origin`
+**Japanese labels**: `dictionary_form`, `masu_form`, `ta_form`, `te_form`, `nai_form`,
+`negative`, `past`, `particle`, `kanji`, `hiragana`, `pitch_accent`, `counter`,
+`transitive_pair`, `origin`
 
 UI SHOULD suggest these labels in the word-edit dialog based on `language` + `part_of_speech`.
 Custom labels (outside this list) SHALL be accepted without error.

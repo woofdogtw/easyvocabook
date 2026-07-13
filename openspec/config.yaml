@@ -83,7 +83,7 @@ context: |
   - explore mode conversations are conducted in Traditional Chinese (繁體中文)
   - Localization: English (default), Traditional Chinese (zh-rTW), Simplified Chinese (zh-rCN)
   - UI theme: purple + teal, Day/Night mode
-  - Cloud sync: FTP/FTPS/SFTP, Google Drive, OneDrive (same as other Easy-series apps)
+  - Cloud sync: FTP/FTPS/SFTP, Google Drive
   - No external frameworks beyond platform-standard (no Firebase SDK)
   - Android UI uses Jetpack Compose (not XML layouts); use LazyColumn instead of RecyclerView
   - Single-module Android project structure
