@@ -105,7 +105,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     val debugTree = fileTree("${layout.buildDirectory.get()}/intermediates/javac/debug") {
         exclude(fileFilter)
     }
-    val kotlinDebugTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
+    // AGP 8.x built-in Kotlin compiler outputs here (was tmp/kotlin-classes/debug on older AGP)
+    val kotlinDebugTree = fileTree("${layout.buildDirectory.get()}/intermediates/built_in_kotlinc/debug") {
         exclude(fileFilter)
     }
     sourceDirectories.setFrom(files("src/main/kotlin"))
