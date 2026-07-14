@@ -120,7 +120,8 @@ jobs:
           ANDROID_PCT=$(python3 -c "
           import xml.etree.ElementTree as ET
           root = ET.parse('kotlin/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml').getroot()
-          for c in root.iter('counter'):
+          # report-level totals are direct children of <report>; iter() would hit a nested class first
+          for c in root.findall('counter'):
               if c.get('type') == 'LINE':
                   m, v = int(c.get('missed')), int(c.get('covered'))
                   print(int(v*100/(m+v)) if m+v else 0)

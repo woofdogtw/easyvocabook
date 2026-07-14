@@ -41,6 +41,12 @@ android {
             all { test ->
                 test.maxParallelForks = 1
                 test.maxHeapSize = "512m"
+                // Robolectric loads classes in a sandbox classloader with no source location;
+                // without this JaCoCo drops them and Robolectric tests report 0% coverage.
+                test.extensions.configure(JacocoTaskExtension::class.java) {
+                    isIncludeNoLocationClasses = true
+                    excludes = listOf("jdk.internal.*")
+                }
             }
         }
     }
@@ -105,7 +111,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     val debugTree = fileTree("${layout.buildDirectory.get()}/intermediates/javac/debug") {
         exclude(fileFilter)
     }
-    val kotlinDebugTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
+    // AGP 8.x built-in Kotlin compiler outputs here (was tmp/kotlin-classes/debug on older AGP)
+    val kotlinDebugTree = fileTree("${layout.buildDirectory.get()}/intermediates/built_in_kotlinc/debug") {
         exclude(fileFilter)
     }
     sourceDirectories.setFrom(files("src/main/kotlin"))
