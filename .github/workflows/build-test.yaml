@@ -115,6 +115,22 @@ jobs:
       - name: Run Android tests with JaCoCo
         working-directory: kotlin
         run: ./gradlew :app:jacocoTestReport
+      - name: Generate Android coverage badge
+        run: |
+          ANDROID_PCT=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          root = ET.parse('kotlin/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml').getroot()
+          for c in root.iter('counter'):
+              if c.get('type') == 'LINE':
+                  m, v = int(c.get('missed')), int(c.get('covered'))
+                  print(int(v*100/(m+v)) if m+v else 0)
+                  break
+          ")
+          if [ "$ANDROID_PCT" -ge 80 ]; then COLOR="brightgreen"
+          elif [ "$ANDROID_PCT" -ge 60 ]; then COLOR="yellow"
+          else COLOR="red"; fi
+          echo "{\"schemaVersion\":1,\"label\":\"android coverage\",\"message\":\"${ANDROID_PCT}%\",\"color\":\"${COLOR}\"}" \
+            > kotlin/app/build/reports/jacoco/jacocoTestReport/badge.json
       - uses: actions/upload-artifact@v4
         with:
           name: android-coverage
@@ -124,6 +140,7 @@ jobs:
   coverage:
     name: Coverage
     if: ${{ github.event_name == 'push' }}
+    needs: [coverage-android]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -165,6 +182,13 @@ jobs:
           else COLOR="red"; fi
           echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${PCT}%\",\"color\":\"${COLOR}\"}" \
             > ../coverage/badge.json
+      - name: Download Android coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: android-coverage
+          path: android-coverage/
+      - name: Include Android coverage in pages
+        run: cp -r android-coverage coverage/android
       - name: Publish coverage to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
