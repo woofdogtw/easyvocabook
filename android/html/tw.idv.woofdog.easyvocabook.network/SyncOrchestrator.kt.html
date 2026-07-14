@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SyncOrchestrator.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.network</a> &gt; <span class="el_source">SyncOrchestrator.kt</span></div><h1>SyncOrchestrator.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.network
+
+import android.app.Activity
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import com.google.android.gms.auth.api.identity.Identity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import tw.idv.woofdog.easyvocabook.AppRepository
+import tw.idv.woofdog.easyvocabook.MainActivity
+import tw.idv.woofdog.easyvocabook.data.db.DbTableSQLite
+import tw.idv.woofdog.easyvocabook.ui.settings.SettingsUiState
+import tw.idv.woofdog.easyvocabook.ui.settings.SyncMethod
+import java.io.File
+
+object SyncOrchestrator {
+
+    suspend fun sync(context: Context, repo: AppRepository, prefs: SharedPreferences, state: SettingsUiState) {
+<span class="nc bnc" id="L21" title="All 2 branches missed.">        val client = buildClient(context, prefs, state) ?: throw IllegalStateException(&quot;Sync method not configured&quot;)</span>
+<span class="nc" id="L22">        try {</span>
+<span class="nc" id="L23">            doSync(context, repo, client)</span>
+        } finally {
+<span class="nc" id="L25">            client.close()</span>
+        }
+<span class="nc" id="L27">    }</span>
+
+    private fun buildClient(context: Context, prefs: SharedPreferences, state: SettingsUiState): SyncClient? {
+<span class="nc bnc" id="L30" title="All 4 branches missed.">        return when (state.syncMethod) {</span>
+<span class="nc" id="L31">            SyncMethod.DISABLED -&gt; null</span>
+            SyncMethod.FTP -&gt; {
+<span class="nc bnc" id="L33" title="All 2 branches missed.">                val password = loadEncryptedPref(context, KEY_FTP_PASSWORD) ?: &quot;&quot;</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">                NetFtp(state.ftpHost, state.ftpPort.toIntOrNull() ?: 21,</span>
+<span class="nc" id="L35">                    state.ftpUser, password, state.ftpDir, state.ftpTls)</span>
+            }
+            SyncMethod.SFTP -&gt; {
+<span class="nc bnc" id="L38" title="All 2 branches missed.">                val password = loadEncryptedPref(context, KEY_SFTP_PASSWORD) ?: &quot;&quot;</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">                NetSftp(state.sftpHost, state.sftpPort.toIntOrNull() ?: 22,</span>
+<span class="nc" id="L40">                    state.sftpUser, password, state.sftpDir, context)</span>
+            }
+<span class="nc" id="L42">            SyncMethod.DRIVE -&gt; NetDrive(context, state.driveFolder)</span>
+        }
+    }
+
+<span class="nc" id="L46">    private suspend fun doSync(context: Context, repo: AppRepository, client: SyncClient) = withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L47">        val localLm = repo.memory.getBookInfo().lastModified</span>
+<span class="nc" id="L48">        val cacheDir = context.cacheDir</span>
+<span class="nc" id="L49">        val remoteLm = client.remoteLastModified(cacheDir) // null = not found</span>
+
+<span class="nc" id="L51">        when {</span>
+<span class="nc bnc" id="L52" title="All 4 branches missed.">            remoteLm == null || localLm &gt; remoteLm -&gt; {</span>
+                // Upload local to remote
+<span class="nc" id="L54">                client.upload(DbTableSQLite.dbFile(context))</span>
+            }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">            remoteLm &gt; localLm -&gt; {</span>
+                // Download remote, validate version, then delegate atomic-move+reload to AppRepository
+<span class="nc" id="L58">                val tmp = File(cacheDir, &quot;easyvocabook_sync.db&quot;)</span>
+<span class="nc" id="L59">                try {</span>
+<span class="nc" id="L60">                    client.download(tmp)</span>
+<span class="nc" id="L61">                    val remoteVersion = readDbVersion(tmp)</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">                    if (remoteVersion &gt; DbTableSQLite.CURRENT_VERSION) {</span>
+<span class="nc" id="L63">                        throw IllegalStateException(&quot;Database version $remoteVersion is too new. Please update the app.&quot;)</span>
+                    }
+<span class="nc" id="L65">                    repo.reloadAfterSync(context, tmp)</span>
+                } finally {
+<span class="nc" id="L67">                    tmp.delete() // no-op if reloadAfterSync already moved the file</span>
+                }
+            }
+            // localLm == remoteLm: no-op
+        }
+<span class="nc" id="L72">    }</span>
+
+    private fun readDbVersion(dbFile: File): Int {
+<span class="nc" id="L75">        val db = android.database.sqlite.SQLiteDatabase.openDatabase(</span>
+<span class="nc" id="L76">            dbFile.absolutePath, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY)</span>
+<span class="nc" id="L77">        return try {</span>
+<span class="nc" id="L78">            db.rawQuery(&quot;SELECT version FROM db_info WHERE id = 1&quot;, null).use { c -&gt;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                if (c.moveToFirst()) c.getInt(0) else 0</span>
+            }
+        } finally {
+<span class="nc" id="L82">            db.close()</span>
+        }
+    }
+
+    // ── Encrypted password storage ────────────────────────────────────────────
+
+    private const val KEY_FTP_PASSWORD = &quot;ftp_password&quot;
+    private const val KEY_SFTP_PASSWORD = &quot;sftp_password&quot;
+    private const val ENC_PREFS_FILE = &quot;easyvocabook_enc&quot;
+
+    private fun encryptedPrefs(context: Context): SharedPreferences {
+<span class="nc" id="L93">        val masterKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()</span>
+<span class="nc" id="L94">        return EncryptedSharedPreferences.create(context, ENC_PREFS_FILE, masterKey,</span>
+<span class="nc" id="L95">            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,</span>
+<span class="nc" id="L96">            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)</span>
+    }
+
+    fun saveFtpPassword(context: Context, password: String) {
+<span class="nc" id="L100">        encryptedPrefs(context).edit().putString(KEY_FTP_PASSWORD, password).apply()</span>
+<span class="nc" id="L101">    }</span>
+
+    fun saveSftpPassword(context: Context, password: String) {
+<span class="nc" id="L104">        encryptedPrefs(context).edit().putString(KEY_SFTP_PASSWORD, password).apply()</span>
+<span class="nc" id="L105">    }</span>
+
+    private fun loadEncryptedPref(context: Context, key: String): String? =
+<span class="nc" id="L108">        encryptedPrefs(context).getString(key, null)</span>
+
+    // ── Google Drive auth helpers ─────────────────────────────────────────────
+
+    fun driveAuthorize(
+        activity: Activity,
+        onSuccess: () -&gt; Unit,
+        onNeedsResolution: (android.app.PendingIntent) -&gt; Unit,
+        onFailure: (String) -&gt; Unit,
+    ) {
+<span class="nc" id="L118">        val request = com.google.android.gms.auth.api.identity.AuthorizationRequest.builder()</span>
+<span class="nc" id="L119">            .setRequestedScopes(listOf(com.google.android.gms.common.api.Scope(&quot;https://www.googleapis.com/auth/drive.file&quot;)))</span>
+<span class="nc" id="L120">            .build()</span>
+<span class="nc" id="L121">        Identity.getAuthorizationClient(activity)</span>
+<span class="nc" id="L122">            .authorize(request)</span>
+<span class="nc" id="L123">            .addOnSuccessListener { result -&gt;</span>
+<span class="nc" id="L124">                when {</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                    result.accessToken != null -&gt; onSuccess()</span>
+<span class="nc bnc" id="L126" title="All 4 branches missed.">                    result.hasResolution() -&gt; result.pendingIntent?.let(onNeedsResolution)</span>
+<span class="nc" id="L127">                        ?: onFailure(&quot;hasResolution=true but pendingIntent=null&quot;)</span>
+<span class="nc" id="L128">                    else -&gt; onFailure(&quot;authorize() returned no token and no resolution&quot;)</span>
+                }
+<span class="nc" id="L130">            }</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            .addOnFailureListener { e -&gt; onFailure(e.message ?: e.javaClass.simpleName) }</span>
+<span class="nc" id="L132">    }</span>
+
+    fun driveSignOut(context: Context) {
+        // Clear cached Play Services credentials so next sync triggers fresh consent.
+        // Full token revocation requires an OAuth revoke HTTP call (the Authorization API
+        // doesn't expose a server-side revoke method).
+<span class="nc" id="L138">        Identity.getSignInClient(context).signOut()</span>
+<span class="nc" id="L139">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

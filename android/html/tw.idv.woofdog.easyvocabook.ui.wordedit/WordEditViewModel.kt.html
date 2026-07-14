@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WordEditViewModel.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui.wordedit</a> &gt; <span class="el_source">WordEditViewModel.kt</span></div><h1>WordEditViewModel.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui.wordedit
+
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import tw.idv.woofdog.easyvocabook.AppRepository
+import tw.idv.woofdog.easyvocabook.MainActivity
+import tw.idv.woofdog.easyvocabook.data.model.*
+import tw.idv.woofdog.easyvocabook.quiz.WordFormLabels
+
+<span class="nc" id="L15">data class FormField(val label: String, val value: String)</span>
+
+<span class="nc" id="L17">data class SentenceField(val text: String, val translation: String)</span>
+
+<span class="fc" id="L19">data class WordEditUiState(</span>
+<span class="pc" id="L20">    val wordId: Long? = null,</span>
+<span class="fc" id="L21">    val language: String = &quot;en&quot;,</span>
+<span class="fc" id="L22">    val word: String = &quot;&quot;,</span>
+<span class="fc" id="L23">    val reading: String = &quot;&quot;,</span>
+<span class="fc" id="L24">    val pos: String = &quot;&quot;,</span>
+<span class="fc" id="L25">    val primaryMeaning: String = &quot;&quot;,</span>
+<span class="fc" id="L26">    val additionalMeanings: List&lt;String&gt; = emptyList(),</span>
+<span class="fc" id="L27">    val note: String = &quot;&quot;,</span>
+<span class="fc" id="L28">    val wordForms: List&lt;FormField&gt; = emptyList(),</span>
+<span class="fc" id="L29">    val sentences: List&lt;SentenceField&gt; = emptyList(),</span>
+<span class="fc" id="L30">    val errorWord: Boolean = false,</span>
+<span class="fc" id="L31">    val errorMeaning: Boolean = false,</span>
+<span class="fc" id="L32">    val isSaving: Boolean = false,</span>
+<span class="fc" id="L33">)</span>
+
+<span class="fc" id="L35">class WordEditViewModel(application: Application) : AndroidViewModel(application) {</span>
+
+<span class="fc" id="L37">    private val repo = AppRepository.get(application)</span>
+
+<span class="fc" id="L39">    private val _state = MutableStateFlow(WordEditUiState())</span>
+<span class="fc" id="L40">    val state: StateFlow&lt;WordEditUiState&gt; = _state</span>
+
+    fun load(wordId: Long?) {
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (wordId == null) {</span>
+<span class="fc" id="L44">            val prefs = getApplication&lt;Application&gt;().getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">            val lastLang = prefs.getString(MainActivity.SP_LAST_LANGUAGE, &quot;en&quot;) ?: &quot;en&quot;</span>
+<span class="fc" id="L46">            _state.value = WordEditUiState(language = lastLang, wordForms = suggestedForms(lastLang, &quot;&quot;))</span>
+<span class="fc" id="L47">            return</span>
+        }
+<span class="nc" id="L49">        viewModelScope.launch {</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            val w = repo.sqlite.getWord(wordId) ?: return@launch</span>
+<span class="nc" id="L51">            _state.value = WordEditUiState(</span>
+<span class="nc" id="L52">                wordId = wordId,</span>
+<span class="nc" id="L53">                language = w.language,</span>
+<span class="nc" id="L54">                word = w.word,</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                reading = w.reading ?: &quot;&quot;,</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">                pos = w.partOfSpeech ?: &quot;&quot;,</span>
+<span class="nc" id="L57">                primaryMeaning = w.meaning,</span>
+<span class="nc" id="L58">                additionalMeanings = w.wordMeanings.map { it.meaning },</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">                note = w.note ?: &quot;&quot;,</span>
+<span class="nc" id="L60">                wordForms = w.wordForms.map { FormField(it.label, it.value) },</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">                sentences = w.sentences.map { SentenceField(it.sentence, it.translation ?: &quot;&quot;) },</span>
+            )
+<span class="nc" id="L63">        }</span>
+<span class="nc" id="L64">    }</span>
+
+    fun setLanguage(lang: String) {
+<span class="nc" id="L67">        val prefs = getApplication&lt;Application&gt;().getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)</span>
+<span class="nc" id="L68">        prefs.edit().putString(MainActivity.SP_LAST_LANGUAGE, lang).apply()</span>
+<span class="nc" id="L69">        _state.value = _state.value.copy(language = lang, wordForms = suggestedForms(lang, _state.value.pos))</span>
+<span class="nc" id="L70">    }</span>
+
+<span class="fc" id="L72">    fun setWord(v: String) { _state.value = _state.value.copy(word = v, errorWord = false) }</span>
+<span class="nc" id="L73">    fun setReading(v: String) { _state.value = _state.value.copy(reading = v) }</span>
+    fun setPOS(v: String) {
+<span class="nc" id="L75">        _state.value = _state.value.copy(pos = v,</span>
+<span class="nc" id="L76">            wordForms = mergeForms(_state.value.wordForms, suggestedForms(_state.value.language, v)))</span>
+<span class="nc" id="L77">    }</span>
+<span class="fc" id="L78">    fun setPrimaryMeaning(v: String) { _state.value = _state.value.copy(primaryMeaning = v, errorMeaning = false) }</span>
+<span class="nc" id="L79">    fun setNote(v: String) { _state.value = _state.value.copy(note = v) }</span>
+
+<span class="nc" id="L81">    fun addMeaning() { _state.value = _state.value.copy(additionalMeanings = _state.value.additionalMeanings + &quot;&quot;) }</span>
+    fun setMeaning(idx: Int, v: String) {
+<span class="nc" id="L83">        val updated = _state.value.additionalMeanings.toMutableList().apply { this[idx] = v }</span>
+<span class="nc" id="L84">        _state.value = _state.value.copy(additionalMeanings = updated)</span>
+<span class="nc" id="L85">    }</span>
+    fun removeMeaning(idx: Int) {
+<span class="nc" id="L87">        val updated = _state.value.additionalMeanings.toMutableList().apply { removeAt(idx) }</span>
+<span class="nc" id="L88">        _state.value = _state.value.copy(additionalMeanings = updated)</span>
+<span class="nc" id="L89">    }</span>
+
+<span class="nc" id="L91">    fun addWordForm() { _state.value = _state.value.copy(wordForms = _state.value.wordForms + FormField(&quot;&quot;, &quot;&quot;)) }</span>
+    fun setFormLabel(idx: Int, v: String) {
+<span class="nc" id="L93">        val updated = _state.value.wordForms.toMutableList().apply { this[idx] = this[idx].copy(label = v) }</span>
+<span class="nc" id="L94">        _state.value = _state.value.copy(wordForms = updated)</span>
+<span class="nc" id="L95">    }</span>
+    fun setFormValue(idx: Int, v: String) {
+<span class="nc" id="L97">        val updated = _state.value.wordForms.toMutableList().apply { this[idx] = this[idx].copy(value = v) }</span>
+<span class="nc" id="L98">        _state.value = _state.value.copy(wordForms = updated)</span>
+<span class="nc" id="L99">    }</span>
+    fun removeWordForm(idx: Int) {
+<span class="nc" id="L101">        val updated = _state.value.wordForms.toMutableList().apply { removeAt(idx) }</span>
+<span class="nc" id="L102">        _state.value = _state.value.copy(wordForms = updated)</span>
+<span class="nc" id="L103">    }</span>
+
+<span class="nc" id="L105">    fun addSentence() { _state.value = _state.value.copy(sentences = _state.value.sentences + SentenceField(&quot;&quot;, &quot;&quot;)) }</span>
+    fun setSentenceText(idx: Int, v: String) {
+<span class="nc" id="L107">        val updated = _state.value.sentences.toMutableList().apply { this[idx] = this[idx].copy(text = v) }</span>
+<span class="nc" id="L108">        _state.value = _state.value.copy(sentences = updated)</span>
+<span class="nc" id="L109">    }</span>
+    fun setSentenceTranslation(idx: Int, v: String) {
+<span class="nc" id="L111">        val updated = _state.value.sentences.toMutableList().apply { this[idx] = this[idx].copy(translation = v) }</span>
+<span class="nc" id="L112">        _state.value = _state.value.copy(sentences = updated)</span>
+<span class="nc" id="L113">    }</span>
+    fun removeSentence(idx: Int) {
+<span class="nc" id="L115">        val updated = _state.value.sentences.toMutableList().apply { removeAt(idx) }</span>
+<span class="nc" id="L116">        _state.value = _state.value.copy(sentences = updated)</span>
+<span class="nc" id="L117">    }</span>
+
+    fun save(onSuccess: () -&gt; Unit) {
+<span class="nc" id="L120">        val s = _state.value</span>
+<span class="nc" id="L121">        var hasError = false</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (s.word.isBlank()) { _state.value = s.copy(errorWord = true); hasError = true }</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (s.primaryMeaning.isBlank()) { _state.value = _state.value.copy(errorMeaning = true); hasError = true }</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (hasError) return</span>
+
+<span class="nc" id="L126">        viewModelScope.launch {</span>
+<span class="nc" id="L127">            _state.value = _state.value.copy(isSaving = true)</span>
+<span class="nc" id="L128">            val now = System.currentTimeMillis() / 1000</span>
+<span class="nc" id="L129">            val data = WordEntry(</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">                id = s.wordId ?: 0L,</span>
+<span class="nc" id="L131">                word = s.word.trim(),</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">                reading = s.reading.trim().takeIf { it.isNotBlank() },</span>
+<span class="nc" id="L133">                meaning = s.primaryMeaning.trim(),</span>
+<span class="nc bnc" id="L134" title="All 4 branches missed.">                partOfSpeech = s.pos.trim().takeIf { it.isNotBlank() },</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">                note = s.note.trim().takeIf { it.isNotBlank() },</span>
+<span class="nc" id="L136">                language = s.language,</span>
+<span class="nc" id="L137">                practiceCount = 0, correctCount = 0, createdAt = now, practicedAt = null,</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">                wordMeanings = s.additionalMeanings.filter { it.isNotBlank() }.map { WordMeaning(0, it.trim()) },</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">                wordForms = s.wordForms.filter { it.label.isNotBlank() }.map { WordForm(0, it.label, it.value) },</span>
+<span class="nc bnc" id="L140" title="All 6 branches missed.">                sentences = s.sentences.filter { it.text.isNotBlank() }.map { Sentence(0, it.text, it.translation.takeIf { t -&gt; t.isNotBlank() }) },</span>
+            )
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (s.wordId == null) repo.createWord(data)</span>
+<span class="nc" id="L143">            else repo.updateWord(s.wordId, data)</span>
+<span class="nc" id="L144">            _state.value = _state.value.copy(isSaving = false)</span>
+<span class="nc" id="L145">            onSuccess()</span>
+<span class="nc" id="L146">        }</span>
+<span class="nc" id="L147">    }</span>
+
+    private fun suggestedForms(language: String, pos: String): List&lt;FormField&gt; =
+<span class="pc" id="L150">        WordFormLabels.forWord(language, pos).map { FormField(it, &quot;&quot;) }</span>
+
+    private fun mergeForms(existing: List&lt;FormField&gt;, suggested: List&lt;FormField&gt;): List&lt;FormField&gt; {
+<span class="nc" id="L153">        val existingMap = existing.associate { it.label to it.value }</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        return suggested.map { FormField(it.label, existingMap[it.label] ?: &quot;&quot;) }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

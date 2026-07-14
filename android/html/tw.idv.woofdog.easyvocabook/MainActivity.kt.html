@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MainActivity.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook</a> &gt; <span class="el_source">MainActivity.kt</span></div><h1>MainActivity.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook
+
+import android.content.Context
+import android.content.res.Configuration
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import java.util.Locale
+
+<span class="nc" id="L11">class MainActivity : ComponentActivity() {</span>
+
+    override fun attachBaseContext(newBase: Context) {
+<span class="nc bnc" id="L14" title="All 2 branches missed.">        val lang = newBase.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)</span>
+<span class="nc" id="L15">            .getString(SP_UI_LANGUAGE, &quot;en&quot;) ?: &quot;en&quot;</span>
+<span class="nc" id="L16">        val locale = Locale.forLanguageTag(lang)</span>
+<span class="nc" id="L17">        val config = Configuration(newBase.resources.configuration)</span>
+<span class="nc" id="L18">        config.setLocale(locale)</span>
+<span class="nc" id="L19">        super.attachBaseContext(newBase.createConfigurationContext(config))</span>
+<span class="nc" id="L20">    }</span>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+<span class="nc" id="L23">        super.onCreate(savedInstanceState)</span>
+<span class="nc" id="L24">        enableEdgeToEdge()</span>
+<span class="nc" id="L25">        setContent {</span>
+<span class="nc bnc" id="L26" title="All 2 branches missed.">            EasyVocaBookApp()</span>
+<span class="nc" id="L27">        }</span>
+<span class="nc" id="L28">    }</span>
+
+    companion object {
+        const val PREFS_NAME = &quot;easyvocabook&quot;
+        const val SP_UI_LANGUAGE = &quot;ui_language&quot;
+        const val SP_THEME = &quot;theme&quot;
+        const val SP_SYNC_METHOD = &quot;sync_method&quot;
+        const val SP_FTP_HOST = &quot;ftp_host&quot;
+        const val SP_FTP_PORT = &quot;ftp_port&quot;
+        const val SP_FTP_USER = &quot;ftp_user&quot;
+        const val SP_FTP_DIR = &quot;ftp_dir&quot;
+        const val SP_FTP_TLS = &quot;ftp_tls&quot;
+        const val SP_SFTP_HOST = &quot;sftp_host&quot;
+        const val SP_SFTP_PORT = &quot;sftp_port&quot;
+        const val SP_SFTP_USER = &quot;sftp_user&quot;
+        const val SP_SFTP_DIR = &quot;sftp_dir&quot;
+        const val SP_DRIVE_FOLDER = &quot;drive_folder&quot;
+        const val SP_DRIVE_LOGGED_IN = &quot;drive_logged_in&quot;
+        const val SP_LAST_LANGUAGE = &quot;last_language&quot;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

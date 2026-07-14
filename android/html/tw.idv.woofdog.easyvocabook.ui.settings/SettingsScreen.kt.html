@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SettingsScreen.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui.settings</a> &gt; <span class="el_source">SettingsScreen.kt</span></div><h1>SettingsScreen.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui.settings
+
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import tw.idv.woofdog.easyvocabook.BuildConfig
+import tw.idv.woofdog.easyvocabook.R
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+<span class="pc bpc" id="L25" title="15 of 22 branches missed.">fun SettingsScreen(vm: SettingsViewModel = viewModel()) {</span>
+<span class="fc" id="L26">    val state by vm.state.collectAsStateWithLifecycle()</span>
+<span class="fc" id="L27">    val context = LocalContext.current</span>
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">    val activity = context as? Activity</span>
+
+<span class="pc bpc" id="L30" title="3 of 6 branches missed.">    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.tab_settings)) }) }) { padding -&gt;</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        LazyColumn(Modifier.fillMaxSize().padding(padding).imePadding().padding(horizontal = 16.dp)) {</span>
+
+            // ── App section ───────────────────────────────────────────────────
+<span class="pc" id="L34">            item {</span>
+<span class="fc" id="L35">                SectionHeader(stringResource(R.string.settings_section_app))</span>
+<span class="pc" id="L36">                SettingsRow(stringResource(R.string.settings_language)) {</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">                    SegmentedSelect(</span>
+<span class="fc" id="L38">                        options = listOf(&quot;en&quot; to stringResource(R.string.settings_lang_en),</span>
+<span class="fc" id="L39">                            &quot;zh-TW&quot; to stringResource(R.string.settings_lang_zh_tw),</span>
+<span class="fc" id="L40">                            &quot;zh-CN&quot; to stringResource(R.string.settings_lang_zh_cn)),</span>
+<span class="fc" id="L41">                        selected = state.uiLanguage,</span>
+<span class="pc bnc" id="L42" title="All 2 branches missed.">                        onSelect = { activity?.let { a -&gt; vm.setLanguage(it, a) } }</span>
+                    )
+<span class="fc" id="L44">                }</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">                SettingsRow(stringResource(R.string.settings_theme)) {</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">                    SegmentedSelect(</span>
+<span class="fc" id="L47">                        options = listOf(&quot;light&quot; to stringResource(R.string.settings_theme_light),</span>
+<span class="fc" id="L48">                            &quot;dark&quot; to stringResource(R.string.settings_theme_dark),</span>
+<span class="fc" id="L49">                            &quot;auto&quot; to stringResource(R.string.settings_theme_auto)),</span>
+<span class="fc" id="L50">                        selected = state.theme,</span>
+<span class="pc bnc" id="L51" title="All 2 branches missed.">                        onSelect = { activity?.let { a -&gt; vm.setTheme(it, a) } }</span>
+                    )
+<span class="fc" id="L53">                }</span>
+<span class="fc" id="L54">            }</span>
+
+            // ── Sync section ──────────────────────────────────────────────────
+<span class="pc" id="L57">            item {</span>
+<span class="fc" id="L58">                SectionHeader(stringResource(R.string.settings_section_sync))</span>
+<span class="fc" id="L59">                SegmentedSelect(</span>
+<span class="fc" id="L60">                    options = listOf(</span>
+<span class="fc" id="L61">                        SyncMethod.DISABLED to stringResource(R.string.settings_sync_disabled),</span>
+<span class="fc" id="L62">                        SyncMethod.FTP to stringResource(R.string.settings_sync_ftp),</span>
+<span class="fc" id="L63">                        SyncMethod.SFTP to stringResource(R.string.settings_sync_sftp),</span>
+<span class="fc" id="L64">                        SyncMethod.DRIVE to stringResource(R.string.settings_sync_drive),</span>
+                    ),
+<span class="fc" id="L66">                    selected = state.syncMethod,</span>
+<span class="pc" id="L67">                    onSelect = { vm.setSyncMethod(it) }</span>
+                )
+<span class="fc" id="L69">                Spacer(Modifier.height(8.dp))</span>
+<span class="pc bpc" id="L70" title="3 of 4 branches missed.">                when (state.syncMethod) {</span>
+<span class="nc" id="L71">                    SyncMethod.FTP -&gt; FtpFields(state, vm)</span>
+<span class="nc" id="L72">                    SyncMethod.SFTP -&gt; SftpFields(state, vm)</span>
+<span class="nc" id="L73">                    SyncMethod.DRIVE -&gt; DriveFields(state, vm)</span>
+<span class="fc" id="L74">                    else -&gt; {}</span>
+                }
+<span class="fc" id="L76">                Spacer(Modifier.height(8.dp))</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">                if (state.syncInProgress) {</span>
+<span class="nc" id="L78">                    Row { CircularProgressIndicator(Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.settings_syncing)) }</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">                } else {</span>
+<span class="fc" id="L80">                    Button(</span>
+<span class="pc" id="L81">                        onClick = { vm.syncNow(context) },</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">                        enabled = state.syncMethod != SyncMethod.DISABLED,</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">                    ) { Text(stringResource(R.string.settings_sync_now)) }</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">                    state.syncMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }</span>
+                }
+<span class="fc" id="L86">            }</span>
+
+            // ── Practice section ──────────────────────────────────────────────
+<span class="pc" id="L89">            item {</span>
+<span class="fc" id="L90">                SectionHeader(stringResource(R.string.settings_section_practice))</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                if (state.showClearConfirm) {</span>
+<span class="fc" id="L92">                    Text(stringResource(R.string.settings_clear_stats_confirm))</span>
+<span class="fc" id="L93">                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {</span>
+<span class="pc" id="L94">                        Button(onClick = { vm.confirmClearStats() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">                            Text(stringResource(R.string.settings_clear_yes))</span>
+<span class="fc" id="L96">                        }</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">                        OutlinedButton(onClick = { vm.cancelClearStats() }) { Text(stringResource(R.string.cancel)) }</span>
+<span class="fc" id="L98">                    }</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">                } else {</span>
+<span class="pc" id="L100">                    OutlinedButton(onClick = { vm.askClearStats() }, colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">                        Text(stringResource(R.string.settings_clear_stats))</span>
+<span class="fc" id="L102">                    }</span>
+                }
+<span class="fc" id="L104">            }</span>
+
+            // ── About section ─────────────────────────────────────────────────
+<span class="pc" id="L107">            item {</span>
+<span class="fc" id="L108">                SectionHeader(stringResource(R.string.settings_section_about))</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">                SettingsRow(stringResource(R.string.settings_about_version)) { Text(BuildConfig.VERSION_NAME) }</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">                SettingsRow(stringResource(R.string.settings_about_author)) { Text(stringResource(R.string.settings_about_author_value)) }</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                Spacer(Modifier.height(16.dp))</span>
+<span class="fc" id="L112">            }</span>
+<span class="fc" id="L113">        }</span>
+<span class="fc" id="L114">    }</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">}</span>
+
+@Composable
+<span class="nc bnc" id="L118" title="All 18 branches missed.">private fun FtpFields(state: SettingsUiState, vm: SettingsViewModel) {</span>
+<span class="nc" id="L119">    val context = LocalContext.current</span>
+<span class="nc" id="L120">    var password by remember { mutableStateOf(&quot;&quot;) }</span>
+<span class="nc" id="L121">    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {</span>
+<span class="pc bnc" id="L122" title="All 8 branches missed.">        OutlinedTextField(state.ftpHost, { vm.setFtpHost(it) }, label = { Text(stringResource(R.string.settings_ftp_host)) }, modifier = Modifier.fillMaxWidth())</span>
+<span class="pc bnc" id="L123" title="All 8 branches missed.">        OutlinedTextField(state.ftpPort, { vm.setFtpPort(it) }, label = { Text(stringResource(R.string.settings_ftp_port)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.width(120.dp))</span>
+<span class="pc bnc" id="L124" title="All 8 branches missed.">        OutlinedTextField(state.ftpUser, { vm.setFtpUser(it) }, label = { Text(stringResource(R.string.settings_ftp_user)) }, modifier = Modifier.fillMaxWidth())</span>
+<span class="pc bnc" id="L125" title="All 2 branches missed.">        OutlinedTextField(password, { password = it }, label = { Text(stringResource(R.string.settings_ftp_pass)) }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())</span>
+<span class="pc bnc" id="L126" title="All 8 branches missed.">        OutlinedTextField(state.ftpDir, { vm.setFtpDir(it) }, label = { Text(stringResource(R.string.settings_ftp_dir)) }, modifier = Modifier.fillMaxWidth())</span>
+<span class="nc" id="L127">        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {</span>
+<span class="nc bnc" id="L128" title="All 6 branches missed.">            Checkbox(state.ftpTls, { vm.setFtpTls(it) })</span>
+<span class="nc" id="L129">            Text(stringResource(R.string.settings_ftp_tls))</span>
+<span class="nc" id="L130">        }</span>
+<span class="pc bnc" id="L131" title="All 8 branches missed.">        Button(onClick = { vm.saveFtpPassword(password, context) }) { Text(stringResource(R.string.settings_save_creds)) }</span>
+<span class="nc" id="L132">    }</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">}</span>
+
+@Composable
+<span class="nc bnc" id="L136" title="All 18 branches missed.">private fun SftpFields(state: SettingsUiState, vm: SettingsViewModel) {</span>
+<span class="nc" id="L137">    val context = LocalContext.current</span>
+<span class="nc" id="L138">    var password by remember { mutableStateOf(&quot;&quot;) }</span>
+<span class="nc" id="L139">    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {</span>
+<span class="pc bnc" id="L140" title="All 8 branches missed.">        OutlinedTextField(state.sftpHost, { vm.setSftpHost(it) }, label = { Text(stringResource(R.string.settings_sftp_host)) }, modifier = Modifier.fillMaxWidth())</span>
+<span class="pc bnc" id="L141" title="All 8 branches missed.">        OutlinedTextField(state.sftpPort, { vm.setSftpPort(it) }, label = { Text(stringResource(R.string.settings_sftp_port)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.width(120.dp))</span>
+<span class="pc bnc" id="L142" title="All 8 branches missed.">        OutlinedTextField(state.sftpUser, { vm.setSftpUser(it) }, label = { Text(stringResource(R.string.settings_sftp_user)) }, modifier = Modifier.fillMaxWidth())</span>
+<span class="pc bnc" id="L143" title="All 2 branches missed.">        OutlinedTextField(password, { password = it }, label = { Text(stringResource(R.string.settings_sftp_pass)) }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())</span>
+<span class="pc bnc" id="L144" title="All 8 branches missed.">        OutlinedTextField(state.sftpDir, { vm.setSftpDir(it) }, label = { Text(stringResource(R.string.settings_sftp_dir)) }, modifier = Modifier.fillMaxWidth())</span>
+<span class="pc bnc" id="L145" title="All 8 branches missed.">        Button(onClick = { vm.saveSftpPassword(password, context) }) { Text(stringResource(R.string.settings_save_creds)) }</span>
+<span class="nc" id="L146">    }</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">}</span>
+
+@Composable
+<span class="nc bnc" id="L150" title="All 18 branches missed.">private fun DriveFields(state: SettingsUiState, vm: SettingsViewModel) {</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    val activity = LocalContext.current as? Activity</span>
+<span class="nc" id="L152">    val consentLauncher = rememberLauncherForActivityResult(</span>
+<span class="nc" id="L153">        contract = ActivityResultContracts.StartIntentSenderForResult()</span>
+<span class="nc bnc" id="L154" title="All 6 branches missed.">    ) { result -&gt;</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (result.resultCode == Activity.RESULT_OK) {</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            activity?.let { vm.driveLoginAfterConsent(it) }</span>
+        } else {
+<span class="nc" id="L158">            vm.setDriveMessage(&quot;Drive consent result: code=${result.resultCode}&quot;)</span>
+        }
+<span class="nc" id="L160">    }</span>
+    // Google Identity API may require multiple PendingIntent steps (e.g. account picker
+    // then scope consent). Collect all of them and launch each one in turn.
+<span class="nc bnc" id="L163" title="All 6 branches missed.">    LaunchedEffect(vm) {</span>
+<span class="nc" id="L164">        vm.driveAuthResolution.collect { pendingIntent -&gt;</span>
+<span class="nc" id="L165">            consentLauncher.launch(IntentSenderRequest.Builder(pendingIntent.intentSender).build())</span>
+<span class="nc" id="L166">        }</span>
+    }
+<span class="nc" id="L168">    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {</span>
+<span class="pc bnc" id="L169" title="All 8 branches missed.">        OutlinedTextField(state.driveFolder, { vm.setDriveFolder(it) }, label = { Text(stringResource(R.string.settings_drive_folder)) }, modifier = Modifier.fillMaxWidth())</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (state.driveLoggedIn) {</span>
+<span class="nc" id="L171">            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {</span>
+<span class="nc" id="L172">                Text(stringResource(R.string.settings_logged_in))</span>
+<span class="pc bnc" id="L173" title="All 10 branches missed.">                OutlinedButton(onClick = { activity?.let { vm.driveLogout(it) } }) { Text(stringResource(R.string.settings_logout)) }</span>
+<span class="nc" id="L174">            }</span>
+<span class="nc" id="L175">        } else {</span>
+<span class="pc bnc" id="L176" title="All 8 branches missed.">            Button(onClick = { activity?.let { vm.driveLogin(it) } }) {</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                Text(stringResource(R.string.settings_login_google))</span>
+<span class="nc" id="L178">            }</span>
+        }
+<span class="nc" id="L180">    }</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">}</span>
+
+@Composable
+<span class="pc bpc" id="L184" title="2 of 10 branches missed.">private fun SectionHeader(title: String) {</span>
+<span class="fc" id="L185">    Spacer(Modifier.height(16.dp))</span>
+<span class="fc" id="L186">    Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">    HorizontalDivider(Modifier.padding(vertical = 4.dp))</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">}</span>
+
+@Composable
+<span class="pc bpc" id="L191" title="8 of 14 branches missed.">private fun SettingsRow(label: String, content: @Composable () -&gt; Unit) {</span>
+<span class="fc" id="L192">    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {</span>
+<span class="fc" id="L193">        Text(label, modifier = Modifier.weight(1f))</span>
+<span class="fc" id="L194">        content()</span>
+<span class="fc" id="L195">    }</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">}</span>
+
+@Composable
+<span class="pc bpc" id="L199" title="6 of 22 branches missed.">private fun &lt;T&gt; SegmentedSelect(options: List&lt;Pair&lt;T, String&gt;&gt;, selected: T, onSelect: (T) -&gt; Unit) {</span>
+<span class="fc" id="L200">    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {</span>
+<span class="fc" id="L201">        options.forEach { (value, label) -&gt;</span>
+<span class="fc" id="L202">            FilterChip(</span>
+<span class="fc" id="L203">                selected = selected == value,</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">                onClick = { onSelect(value) },</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">                label = { Text(label) },</span>
+            )
+<span class="fc" id="L207">        }</span>
+<span class="fc" id="L208">    }</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

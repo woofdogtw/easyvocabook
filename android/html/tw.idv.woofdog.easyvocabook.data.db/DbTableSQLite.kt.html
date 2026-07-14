@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DbTableSQLite.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.data.db</a> &gt; <span class="el_source">DbTableSQLite.kt</span></div><h1>DbTableSQLite.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.data.db
+
+import android.content.ContentValues
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import tw.idv.woofdog.easyvocabook.data.model.*
+import java.io.File
+
+<span class="fc" id="L12">class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(</span>
+<span class="fc" id="L13">    context, dbFile.absolutePath, null, CURRENT_VERSION</span>
+), DbTableBase {
+
+<span class="fc" id="L16">    init {</span>
+        // Disable WAL so no sidecar files (.wal/.shm) are created — required for atomic file swap
+<span class="fc" id="L18">        setWriteAheadLoggingEnabled(false)</span>
+<span class="fc" id="L19">    }</span>
+
+    override fun onCreate(db: SQLiteDatabase) {
+<span class="fc" id="L22">        db.execSQL(</span>
+<span class="fc" id="L23">            &quot;&quot;&quot;CREATE TABLE IF NOT EXISTS db_info (</span>
+                id               INTEGER PRIMARY KEY CHECK (id = 1),
+                name             TEXT    NOT NULL,
+                description      TEXT,
+                default_language TEXT    NOT NULL DEFAULT 'en',
+                version          INTEGER NOT NULL,
+                last_modified    INTEGER NOT NULL
+            )&quot;&quot;&quot;
+        )
+<span class="fc" id="L32">        db.execSQL(</span>
+<span class="fc" id="L33">            &quot;&quot;&quot;CREATE TABLE IF NOT EXISTS words (</span>
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                word           TEXT    NOT NULL,
+                reading        TEXT,
+                meaning        TEXT    NOT NULL,
+                part_of_speech TEXT,
+                note           TEXT,
+                language       TEXT    NOT NULL,
+                practice_count INTEGER NOT NULL DEFAULT 0,
+                correct_count  INTEGER NOT NULL DEFAULT 0,
+                created_at     INTEGER NOT NULL,
+                practiced_at   INTEGER
+            )&quot;&quot;&quot;
+        )
+<span class="fc" id="L47">        db.execSQL(</span>
+<span class="fc" id="L48">            &quot;&quot;&quot;CREATE TABLE IF NOT EXISTS word_meanings (</span>
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                meaning TEXT    NOT NULL,
+                UNIQUE(word_id, meaning)
+            )&quot;&quot;&quot;
+        )
+<span class="fc" id="L55">        db.execSQL(</span>
+<span class="fc" id="L56">            &quot;&quot;&quot;CREATE TABLE IF NOT EXISTS word_forms (</span>
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                label   TEXT    NOT NULL,
+                value   TEXT    NOT NULL
+            )&quot;&quot;&quot;
+        )
+<span class="fc" id="L63">        db.execSQL(</span>
+<span class="fc" id="L64">            &quot;&quot;&quot;CREATE TABLE IF NOT EXISTS sentences (</span>
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id     INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                sentence    TEXT    NOT NULL,
+                translation TEXT
+            )&quot;&quot;&quot;
+        )
+<span class="fc" id="L71">        db.execSQL(&quot;CREATE INDEX IF NOT EXISTS idx_words_language_reading ON words(language, reading)&quot;)</span>
+<span class="fc" id="L72">        db.execSQL(&quot;CREATE INDEX IF NOT EXISTS idx_word_meanings_word_id  ON word_meanings(word_id)&quot;)</span>
+<span class="fc" id="L73">        db.execSQL(&quot;CREATE INDEX IF NOT EXISTS idx_word_forms_word_id     ON word_forms(word_id)&quot;)</span>
+<span class="fc" id="L74">        db.execSQL(&quot;CREATE INDEX IF NOT EXISTS idx_sentences_word_id      ON sentences(word_id)&quot;)</span>
+
+<span class="fc" id="L76">        db.execSQL(</span>
+<span class="fc" id="L77">            &quot;&quot;&quot;INSERT OR IGNORE INTO db_info (id, name, description, default_language, version, last_modified)</span>
+               VALUES (1, 'My Vocabulary Book', NULL, 'en', $CURRENT_VERSION, 0)&quot;&quot;&quot;
+        )
+<span class="fc" id="L80">    }</span>
+
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (oldVersion &gt; CURRENT_VERSION) {</span>
+<span class="fc" id="L84">            throw IllegalStateException(&quot;Database version $oldVersion is too new (app supports $CURRENT_VERSION). Please update the app.&quot;)</span>
+        }
+        // Sequential migrations: run v(oldVersion+1) through v(newVersion)
+        // No migrations needed yet (only version 1 exists)
+<span class="nc" id="L88">    }</span>
+
+    override fun onOpen(db: SQLiteDatabase) {
+<span class="fc" id="L91">        super.onOpen(db)</span>
+<span class="fc" id="L92">        db.execSQL(&quot;PRAGMA foreign_keys = ON&quot;)</span>
+        // journal_mode returns a row, so rawQuery is required (execSQL would throw under Robolectric)
+<span class="fc" id="L94">        db.rawQuery(&quot;PRAGMA journal_mode = DELETE&quot;, null).close()</span>
+<span class="fc" id="L95">    }</span>
+
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">    override suspend fun getBookInfo(): BookInfo = withContext(Dispatchers.IO) {</span>
+<span class="pc" id="L98">        readableDatabase.use { db -&gt;</span>
+<span class="fc" id="L99">            db.rawQuery(&quot;SELECT name, description, default_language, version, last_modified FROM db_info WHERE id = 1&quot;, null)</span>
+<span class="pc" id="L100">                .use { c -&gt;</span>
+<span class="fc" id="L101">                    c.moveToFirst()</span>
+<span class="fc" id="L102">                    BookInfo(</span>
+<span class="fc" id="L103">                        name = c.getString(0),</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">                        description = if (c.isNull(1)) null else c.getString(1),</span>
+<span class="fc" id="L105">                        defaultLanguage = c.getString(2),</span>
+<span class="fc" id="L106">                        version = c.getInt(3),</span>
+<span class="fc" id="L107">                        lastModified = c.getLong(4),</span>
+<span class="fc" id="L108">                    )</span>
+<span class="fc" id="L109">                }</span>
+<span class="fc" id="L110">        }</span>
+<span class="fc" id="L111">    }</span>
+
+<span class="nc bnc" id="L113" title="All 2 branches missed.">    override suspend fun updateBookInfo(data: BookInfo) = withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L114">        writableDatabase.use { db -&gt;</span>
+<span class="nc" id="L115">            db.update(&quot;db_info&quot;, ContentValues().apply {</span>
+<span class="nc" id="L116">                put(&quot;name&quot;, data.name)</span>
+<span class="nc" id="L117">                put(&quot;description&quot;, data.description)</span>
+<span class="nc" id="L118">                put(&quot;default_language&quot;, data.defaultLanguage)</span>
+<span class="nc" id="L119">                put(&quot;last_modified&quot;, System.currentTimeMillis() / 1000)</span>
+<span class="nc" id="L120">            }, &quot;id = 1&quot;, null)</span>
+        }
+        Unit
+<span class="nc" id="L123">    }</span>
+
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">    override suspend fun listWords(filter: WordFilter): List&lt;WordEntry&gt; = withContext(Dispatchers.IO) {</span>
+<span class="fc" id="L126">        val db = readableDatabase</span>
+
+<span class="fc" id="L128">        val whereClause = buildString {</span>
+<span class="fc" id="L129">            val parts = mutableListOf&lt;String&gt;()</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            if (filter.language != null) parts.add(&quot;w.language = ?&quot;)</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            if (filter.query != null) parts.add(</span>
+<span class="fc" id="L132">                &quot;(w.word LIKE ? OR w.reading LIKE ? OR w.meaning LIKE ? OR EXISTS (SELECT 1 FROM word_meanings wm WHERE wm.word_id = w.id AND wm.meaning LIKE ?))&quot;</span>
+            )
+<span class="fc bfc" id="L134" title="All 4 branches covered.">            if (parts.isNotEmpty()) append(&quot;WHERE &quot;).append(parts.joinToString(&quot; AND &quot;))</span>
+<span class="fc" id="L135">        }</span>
+<span class="fc" id="L136">        val args = buildList {</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (filter.language != null) add(filter.language)</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            if (filter.query != null) {</span>
+<span class="fc" id="L139">                val q = &quot;%${filter.query}%&quot;</span>
+<span class="fc" id="L140">                add(q); add(q); add(q); add(q)</span>
+            }
+<span class="fc" id="L142">        }.toTypedArray()</span>
+
+<span class="fc" id="L144">        val words = mutableMapOf&lt;Long, WordEntry&gt;()</span>
+<span class="fc" id="L145">        val wordIds = mutableListOf&lt;Long&gt;()</span>
+<span class="fc" id="L146">        db.rawQuery(&quot;SELECT id, word, reading, meaning, part_of_speech, note, language, practice_count, correct_count, created_at, practiced_at FROM words w $whereClause ORDER BY w.word ASC&quot;, args)</span>
+<span class="pc" id="L147">            .use { c -&gt;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">                while (c.moveToNext()) {</span>
+<span class="fc" id="L149">                    val id = c.getLong(0)</span>
+<span class="fc" id="L150">                    wordIds.add(id)</span>
+<span class="fc" id="L151">                    words[id] = WordEntry(</span>
+<span class="fc" id="L152">                        id = id,</span>
+<span class="fc" id="L153">                        word = c.getString(1),</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">                        reading = if (c.isNull(2)) null else c.getString(2),</span>
+<span class="fc" id="L155">                        meaning = c.getString(3),</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                        partOfSpeech = if (c.isNull(4)) null else c.getString(4),</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">                        note = if (c.isNull(5)) null else c.getString(5),</span>
+<span class="fc" id="L158">                        language = c.getString(6),</span>
+<span class="fc" id="L159">                        practiceCount = c.getInt(7),</span>
+<span class="fc" id="L160">                        correctCount = c.getInt(8),</span>
+<span class="fc" id="L161">                        createdAt = c.getLong(9),</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">                        practicedAt = if (c.isNull(10)) null else c.getLong(10),</span>
+<span class="fc" id="L163">                        wordMeanings = emptyList(),</span>
+<span class="fc" id="L164">                        wordForms = emptyList(),</span>
+<span class="fc" id="L165">                        sentences = emptyList(),</span>
+                    )
+                }
+<span class="fc" id="L168">            }</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        if (wordIds.isEmpty()) return@withContext emptyList()</span>
+
+<span class="fc" id="L171">        val idIn = wordIds.joinToString(&quot;,&quot;)</span>
+<span class="fc" id="L172">        val meaningsMap = mutableMapOf&lt;Long, MutableList&lt;WordMeaning&gt;&gt;()</span>
+<span class="fc" id="L173">        db.rawQuery(&quot;SELECT id, word_id, meaning FROM word_meanings WHERE word_id IN ($idIn)&quot;, null)</span>
+<span class="pc" id="L174">            .use { c -&gt;</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                while (c.moveToNext()) {</span>
+<span class="fc" id="L176">                    val wid = c.getLong(1)</span>
+<span class="fc" id="L177">                    meaningsMap.getOrPut(wid) { mutableListOf() }.add(WordMeaning(c.getLong(0), c.getString(2)))</span>
+                }
+<span class="fc" id="L179">            }</span>
+<span class="fc" id="L180">        val formsMap = mutableMapOf&lt;Long, MutableList&lt;WordForm&gt;&gt;()</span>
+<span class="fc" id="L181">        db.rawQuery(&quot;SELECT id, word_id, label, value FROM word_forms WHERE word_id IN ($idIn)&quot;, null)</span>
+<span class="pc" id="L182">            .use { c -&gt;</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">                while (c.moveToNext()) {</span>
+<span class="fc" id="L184">                    val wid = c.getLong(1)</span>
+<span class="fc" id="L185">                    formsMap.getOrPut(wid) { mutableListOf() }.add(WordForm(c.getLong(0), c.getString(2), c.getString(3)))</span>
+                }
+<span class="fc" id="L187">            }</span>
+<span class="fc" id="L188">        val sentencesMap = mutableMapOf&lt;Long, MutableList&lt;Sentence&gt;&gt;()</span>
+<span class="fc" id="L189">        db.rawQuery(&quot;SELECT id, word_id, sentence, translation FROM sentences WHERE word_id IN ($idIn)&quot;, null)</span>
+<span class="pc" id="L190">            .use { c -&gt;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">                while (c.moveToNext()) {</span>
+<span class="fc" id="L192">                    val wid = c.getLong(1)</span>
+<span class="fc" id="L193">                    sentencesMap.getOrPut(wid) { mutableListOf() }.add(</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">                        Sentence(c.getLong(0), c.getString(2), if (c.isNull(3)) null else c.getString(3))</span>
+                    )
+                }
+<span class="fc" id="L197">            }</span>
+
+<span class="fc" id="L199">        wordIds.mapNotNull { id -&gt;</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">            words[id]?.copy(</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">                wordMeanings = meaningsMap[id] ?: emptyList(),</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">                wordForms = formsMap[id] ?: emptyList(),</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">                sentences = sentencesMap[id] ?: emptyList(),</span>
+<span class="fc" id="L204">            )</span>
+<span class="fc" id="L205">        }</span>
+<span class="fc" id="L206">    }</span>
+
+<span class="fc" id="L208">    override suspend fun getWord(id: Long): WordEntry? = withContext(Dispatchers.IO) {</span>
+<span class="pc bpc" id="L209" title="2 of 6 branches missed.">        listWords().find { it.id == id }</span>
+<span class="fc" id="L210">    }</span>
+
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">    override suspend fun createWord(data: WordEntry): Long = withContext(Dispatchers.IO) {</span>
+<span class="pc" id="L213">        writableDatabase.use { db -&gt;</span>
+<span class="fc" id="L214">            db.beginTransaction()</span>
+<span class="fc" id="L215">            try {</span>
+<span class="fc" id="L216">                val id = db.insert(&quot;words&quot;, null, wordContentValues(data))</span>
+<span class="fc" id="L217">                insertSubRecords(db, id, data)</span>
+<span class="fc" id="L218">                bumpLastModified(db)</span>
+<span class="fc" id="L219">                db.setTransactionSuccessful()</span>
+<span class="fc" id="L220">                id</span>
+            } finally {
+<span class="fc" id="L222">                db.endTransaction()</span>
+<span class="fc" id="L223">            }</span>
+<span class="fc" id="L224">        }</span>
+<span class="fc" id="L225">    }</span>
+
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">    override suspend fun updateWord(id: Long, data: WordEntry) = withContext(Dispatchers.IO) {</span>
+<span class="pc" id="L228">        writableDatabase.use { db -&gt;</span>
+<span class="fc" id="L229">            db.beginTransaction()</span>
+<span class="fc" id="L230">            try {</span>
+<span class="fc" id="L231">                db.update(&quot;words&quot;, editContentValues(data), &quot;id = ?&quot;, arrayOf(id.toString()))</span>
+<span class="fc" id="L232">                db.delete(&quot;word_meanings&quot;, &quot;word_id = ?&quot;, arrayOf(id.toString()))</span>
+<span class="fc" id="L233">                db.delete(&quot;word_forms&quot;, &quot;word_id = ?&quot;, arrayOf(id.toString()))</span>
+<span class="fc" id="L234">                db.delete(&quot;sentences&quot;, &quot;word_id = ?&quot;, arrayOf(id.toString()))</span>
+<span class="fc" id="L235">                insertSubRecords(db, id, data)</span>
+<span class="fc" id="L236">                bumpLastModified(db)</span>
+<span class="fc" id="L237">                db.setTransactionSuccessful()</span>
+            } finally {
+<span class="fc" id="L239">                db.endTransaction()</span>
+            }
+<span class="fc" id="L241">        }</span>
+        Unit
+<span class="pc" id="L243">    }</span>
+
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">    override suspend fun deleteWord(id: Long) = withContext(Dispatchers.IO) {</span>
+<span class="pc" id="L246">        writableDatabase.use { db -&gt;</span>
+<span class="fc" id="L247">            db.beginTransaction()</span>
+<span class="fc" id="L248">            try {</span>
+<span class="fc" id="L249">                db.delete(&quot;words&quot;, &quot;id = ?&quot;, arrayOf(id.toString()))</span>
+<span class="fc" id="L250">                bumpLastModified(db)</span>
+<span class="fc" id="L251">                db.setTransactionSuccessful()</span>
+            } finally {
+<span class="fc" id="L253">                db.endTransaction()</span>
+            }
+<span class="fc" id="L255">        }</span>
+        Unit
+<span class="pc" id="L257">    }</span>
+
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">    override suspend fun clearPracticeStats() = withContext(Dispatchers.IO) {</span>
+<span class="pc" id="L260">        writableDatabase.use { db -&gt;</span>
+<span class="fc" id="L261">            db.beginTransaction()</span>
+<span class="fc" id="L262">            try {</span>
+<span class="fc" id="L263">                db.execSQL(&quot;UPDATE words SET practice_count = 0, correct_count = 0, practiced_at = NULL&quot;)</span>
+<span class="fc" id="L264">                bumpLastModified(db)</span>
+<span class="fc" id="L265">                db.setTransactionSuccessful()</span>
+            } finally {
+<span class="fc" id="L267">                db.endTransaction()</span>
+            }
+<span class="fc" id="L269">        }</span>
+        Unit
+<span class="pc" id="L271">    }</span>
+
+    override suspend fun updatePracticeStats(wordId: Long, correct: Boolean, practicedAt: Long) =
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">        withContext(Dispatchers.IO) {</span>
+<span class="pc" id="L275">            writableDatabase.use { db -&gt;</span>
+<span class="fc" id="L276">                db.beginTransaction()</span>
+<span class="fc" id="L277">                try {</span>
+<span class="fc" id="L278">                    db.execSQL(</span>
+<span class="fc" id="L279">                        &quot;UPDATE words SET practice_count = practice_count + 1, &quot; +</span>
+                        &quot;correct_count = correct_count + ?, practiced_at = ? WHERE id = ?&quot;,
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                        arrayOf(if (correct) 1 else 0, practicedAt, wordId)</span>
+                    )
+<span class="fc" id="L283">                    bumpLastModified(db)</span>
+<span class="fc" id="L284">                    db.setTransactionSuccessful()</span>
+                } finally {
+<span class="fc" id="L286">                    db.endTransaction()</span>
+                }
+<span class="fc" id="L288">            }</span>
+            Unit
+<span class="pc" id="L290">        }</span>
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+<span class="fc" id="L294">    private fun wordContentValues(data: WordEntry) = ContentValues().apply {</span>
+<span class="fc" id="L295">        put(&quot;word&quot;, data.word)</span>
+<span class="fc" id="L296">        put(&quot;reading&quot;, data.reading)</span>
+<span class="fc" id="L297">        put(&quot;meaning&quot;, data.meaning)</span>
+<span class="fc" id="L298">        put(&quot;part_of_speech&quot;, data.partOfSpeech)</span>
+<span class="fc" id="L299">        put(&quot;note&quot;, data.note)</span>
+<span class="fc" id="L300">        put(&quot;language&quot;, data.language)</span>
+<span class="fc" id="L301">        put(&quot;practice_count&quot;, data.practiceCount)</span>
+<span class="fc" id="L302">        put(&quot;correct_count&quot;, data.correctCount)</span>
+<span class="fc" id="L303">        put(&quot;created_at&quot;, data.createdAt)</span>
+<span class="fc" id="L304">        put(&quot;practiced_at&quot;, data.practicedAt)</span>
+<span class="fc" id="L305">    }</span>
+
+    // Only the user-editable fields; never touches practice_count/correct_count/created_at/practiced_at
+<span class="fc" id="L308">    private fun editContentValues(data: WordEntry) = ContentValues().apply {</span>
+<span class="fc" id="L309">        put(&quot;word&quot;, data.word)</span>
+<span class="fc" id="L310">        put(&quot;reading&quot;, data.reading)</span>
+<span class="fc" id="L311">        put(&quot;meaning&quot;, data.meaning)</span>
+<span class="fc" id="L312">        put(&quot;part_of_speech&quot;, data.partOfSpeech)</span>
+<span class="fc" id="L313">        put(&quot;note&quot;, data.note)</span>
+<span class="fc" id="L314">        put(&quot;language&quot;, data.language)</span>
+<span class="fc" id="L315">    }</span>
+
+    private fun insertSubRecords(db: SQLiteDatabase, wordId: Long, data: WordEntry) {
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        for (m in data.wordMeanings) {</span>
+<span class="fc" id="L319">            db.insertWithOnConflict(&quot;word_meanings&quot;, null, ContentValues().apply {</span>
+<span class="fc" id="L320">                put(&quot;word_id&quot;, wordId)</span>
+<span class="fc" id="L321">                put(&quot;meaning&quot;, m.meaning)</span>
+<span class="fc" id="L322">            }, SQLiteDatabase.CONFLICT_IGNORE)</span>
+        }
+<span class="fc bfc" id="L324" title="All 2 branches covered.">        for (f in data.wordForms) {</span>
+<span class="fc" id="L325">            db.insert(&quot;word_forms&quot;, null, ContentValues().apply {</span>
+<span class="fc" id="L326">                put(&quot;word_id&quot;, wordId)</span>
+<span class="fc" id="L327">                put(&quot;label&quot;, f.label)</span>
+<span class="fc" id="L328">                put(&quot;value&quot;, f.value)</span>
+<span class="fc" id="L329">            })</span>
+        }
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        for (s in data.sentences) {</span>
+<span class="fc" id="L332">            db.insert(&quot;sentences&quot;, null, ContentValues().apply {</span>
+<span class="fc" id="L333">                put(&quot;word_id&quot;, wordId)</span>
+<span class="fc" id="L334">                put(&quot;sentence&quot;, s.sentence)</span>
+<span class="fc" id="L335">                put(&quot;translation&quot;, s.translation)</span>
+<span class="fc" id="L336">            })</span>
+        }
+<span class="fc" id="L338">    }</span>
+
+    private fun bumpLastModified(db: SQLiteDatabase) {
+<span class="fc" id="L341">        db.execSQL(&quot;UPDATE db_info SET last_modified = ? WHERE id = 1&quot;,</span>
+<span class="fc" id="L342">            arrayOf(System.currentTimeMillis() / 1000))</span>
+<span class="fc" id="L343">    }</span>
+
+    companion object {
+        const val CURRENT_VERSION = 1
+
+<span class="fc" id="L348">        fun dbFile(context: Context): File = File(context.filesDir, &quot;easyvocabook.db&quot;)</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

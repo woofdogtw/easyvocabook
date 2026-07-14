@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WordListScreen.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui.wordlist</a> &gt; <span class="el_source">WordListScreen.kt</span></div><h1>WordListScreen.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui.wordlist
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
+import tw.idv.woofdog.easyvocabook.R
+import tw.idv.woofdog.easyvocabook.data.model.WordEntry
+import tw.idv.woofdog.easyvocabook.ui.wordedit.WordEditSheet
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+<span class="pc bpc" id="L40" title="9 of 22 branches missed.">fun WordListScreen(vm: WordListViewModel = viewModel()) {</span>
+<span class="fc" id="L41">    val state by vm.state.collectAsStateWithLifecycle()</span>
+<span class="fc" id="L42">    val lifecycleOwner = LocalLifecycleOwner.current</span>
+<span class="pc bpc" id="L43" title="2 of 6 branches missed.">    LaunchedEffect(lifecycleOwner) {</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {</span>
+<span class="fc" id="L45">            vm.reload()</span>
+<span class="fc" id="L46">        }</span>
+<span class="nc" id="L47">    }</span>
+<span class="pc" id="L48">    var searchActive by remember { mutableStateOf(false) }</span>
+<span class="pc" id="L49">    var showMenu by remember { mutableStateOf(false) }</span>
+<span class="pc" id="L50">    var editWord by remember { mutableStateOf&lt;WordEntry?&gt;(null) }</span>
+<span class="fc" id="L51">    var showAddSheet by remember { mutableStateOf(false) }</span>
+<span class="pc" id="L52">    var homophoneWord by remember { mutableStateOf&lt;WordEntry?&gt;(null) }</span>
+<span class="pc" id="L53">    var deleteConfirmWord by remember { mutableStateOf&lt;WordEntry?&gt;(null) }</span>
+
+<span class="fc" id="L55">    Scaffold(</span>
+<span class="pc" id="L56">        topBar = {</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">            if (searchActive) {</span>
+<span class="nc" id="L58">                SearchBar(</span>
+<span class="nc" id="L59">                    query = state.searchQuery,</span>
+<span class="nc" id="L60">                    onQueryChange = { vm.setSearchQuery(it) },</span>
+<span class="nc" id="L61">                    onSearch = { searchActive = false },</span>
+<span class="nc" id="L62">                    active = false,</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                    onActiveChange = { if (!it) searchActive = false },</span>
+<span class="pc bnc" id="L64" title="All 2 branches missed.">                    placeholder = { Text(stringResource(R.string.word_list_search)) },</span>
+<span class="nc" id="L65">                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),</span>
+<span class="pc bnc" id="L66" title="All 2 branches missed.">                    content = {},</span>
+                )
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">            } else {</span>
+<span class="fc" id="L69">                TopAppBar(</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                    title = { Text(stringResource(R.string.tab_word_list)) },</span>
+<span class="pc" id="L71">                    actions = {</span>
+<span class="pc" id="L72">                        IconButton(onClick = { searchActive = true }) {</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.word_list_search))</span>
+<span class="fc" id="L74">                        }</span>
+<span class="fc" id="L75">                        Box {</span>
+<span class="pc" id="L76">                            IconButton(onClick = { showMenu = true }) {</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">                                Icon(Icons.Default.MoreVert, contentDescription = null)</span>
+<span class="fc" id="L78">                            }</span>
+<span class="pc" id="L79">                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {</span>
+<span class="pc bnc" id="L80" title="All 2 branches missed.">                                DropdownMenuItem(text = { Text(stringResource(R.string.word_list_menu_sort)) },</span>
+<span class="nc" id="L81">                                    onClick = {</span>
+<span class="nc" id="L82">                                        showMenu = false</span>
+<span class="nc bnc" id="L83" title="All 4 branches missed.">                                        val next = when (state.sortOrder) {</span>
+<span class="nc" id="L84">                                            SortOrder.WORD_ASC  -&gt; SortOrder.WORD_DESC</span>
+<span class="nc" id="L85">                                            SortOrder.WORD_DESC -&gt; SortOrder.RATE_ASC</span>
+<span class="nc" id="L86">                                            SortOrder.RATE_ASC  -&gt; SortOrder.RATE_DESC</span>
+<span class="nc" id="L87">                                            SortOrder.RATE_DESC -&gt; SortOrder.WORD_ASC</span>
+                                        }
+<span class="nc" id="L89">                                        vm.setSortOrder(next)</span>
+<span class="nc" id="L90">                                    })</span>
+<span class="pc bnc" id="L91" title="All 2 branches missed.">                                DropdownMenuItem(text = { Text(stringResource(R.string.word_list_menu_import)) },</span>
+<span class="nc" id="L92">                                    onClick = { showMenu = false })</span>
+<span class="pc bnc" id="L93" title="All 2 branches missed.">                                DropdownMenuItem(text = { Text(stringResource(R.string.word_list_menu_export)) },</span>
+<span class="nc" id="L94">                                    onClick = { showMenu = false })</span>
+<span class="pc bnc" id="L95" title="All 2 branches missed.">                                DropdownMenuItem(text = { Text(stringResource(R.string.word_list_menu_stats)) },</span>
+<span class="nc" id="L96">                                    onClick = { showMenu = false; vm.clearStats() })</span>
+<span class="pc bnc" id="L97" title="All 4 branches missed.">                                DropdownMenuItem(text = { Text(stringResource(R.string.word_list_menu_sync)) },</span>
+<span class="nc" id="L98">                                    onClick = { showMenu = false })</span>
+<span class="nc" id="L99">                            }</span>
+<span class="fc" id="L100">                        }</span>
+<span class="fc" id="L101">                    }</span>
+                )
+            }
+<span class="fc" id="L104">        },</span>
+<span class="pc" id="L105">        floatingActionButton = {</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">            if (!state.syncInProgress) {</span>
+<span class="pc" id="L107">                FloatingActionButton(onClick = { showAddSheet = true }) {</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add))</span>
+<span class="fc" id="L109">                }</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            }</span>
+<span class="fc" id="L111">        }</span>
+<span class="pc" id="L112">    ) { padding -&gt;</span>
+<span class="pc bpc" id="L113" title="3 of 6 branches missed.">        if (state.words.isEmpty() &amp;&amp; state.searchQuery.isBlank() &amp;&amp; state.languageFilter == null) {</span>
+<span class="pc" id="L114">            EmptyWordList(Modifier.padding(padding)) { showAddSheet = true }</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        } else {</span>
+<span class="nc" id="L116">            val listState = rememberLazyListState()</span>
+<span class="nc" id="L117">            Box(Modifier.fillMaxSize().padding(padding)) {</span>
+<span class="nc" id="L118">                LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {</span>
+<span class="nc" id="L119">                    items(state.words, key = { it.id }) { word -&gt;</span>
+                        WordRow(
+                            word = word,
+<span class="nc" id="L122">                            onEdit = { editWord = word },</span>
+<span class="nc" id="L123">                            onDelete = { deleteConfirmWord = word },</span>
+<span class="nc" id="L124">                            onHomophones = { homophoneWord = word },</span>
+                        )
+                        HorizontalDivider()
+                    }
+<span class="nc" id="L128">                }</span>
+<span class="nc" id="L129">                ListScrollbar(listState, Modifier.align(Alignment.CenterEnd))</span>
+<span class="nc" id="L130">            }</span>
+        }
+<span class="fc" id="L132">    }</span>
+
+<span class="fc bfc" id="L134" title="All 2 branches covered.">    if (showAddSheet) {</span>
+<span class="fc" id="L135">        WordEditSheet(</span>
+<span class="fc" id="L136">            wordId = null,</span>
+<span class="pc" id="L137">            onDismiss = { showAddSheet = false },</span>
+<span class="pc bpc" id="L138" title="4 of 6 branches missed.">            onSaved = { showAddSheet = false; vm.reload() },</span>
+        )
+<span class="fc" id="L140">    }</span>
+
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">    editWord?.let { w -&gt;</span>
+<span class="nc" id="L143">        WordEditSheet(</span>
+<span class="nc" id="L144">            wordId = w.id,</span>
+<span class="nc" id="L145">            onDismiss = { editWord = null },</span>
+<span class="nc bnc" id="L146" title="All 6 branches missed.">            onSaved = { editWord = null; vm.reload() },</span>
+        )
+<span class="pc" id="L148">    }</span>
+
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">    deleteConfirmWord?.let { w -&gt;</span>
+<span class="nc" id="L151">        AlertDialog(</span>
+<span class="nc" id="L152">            onDismissRequest = { deleteConfirmWord = null },</span>
+<span class="pc bnc" id="L153" title="All 2 branches missed.">            title = { Text(stringResource(R.string.word_list_delete_title)) },</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            text = { Text(stringResource(R.string.word_list_delete_message, w.word)) },</span>
+<span class="nc" id="L155">            confirmButton = {</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">                Button(</span>
+<span class="nc" id="L157">                    onClick = { vm.deleteWord(w.id); deleteConfirmWord = null },</span>
+<span class="nc" id="L158">                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),</span>
+<span class="pc bnc" id="L159" title="All 2 branches missed.">                ) { Text(stringResource(R.string.word_list_action_delete)) }</span>
+<span class="nc" id="L160">            },</span>
+<span class="nc" id="L161">            dismissButton = {</span>
+<span class="pc bnc" id="L162" title="All 2 branches missed.">                OutlinedButton(onClick = { deleteConfirmWord = null }) {</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                    Text(stringResource(R.string.cancel))</span>
+<span class="nc" id="L164">                }</span>
+<span class="nc" id="L165">            },</span>
+        )
+<span class="pc" id="L167">    }</span>
+
+<span class="pc bpc" id="L169" title="2 of 4 branches missed.">    homophoneWord?.let { w -&gt;</span>
+<span class="nc" id="L170">        HomophoneDialog(word = w, allWords = state.words, onDismiss = { homophoneWord = null })</span>
+<span class="pc" id="L171">    }</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">}</span>
+
+@Composable
+<span class="nc bnc" id="L175" title="All 18 branches missed.">private fun ListScrollbar(listState: LazyListState, modifier: Modifier = Modifier) {</span>
+<span class="nc" id="L176">    val coroutineScope = rememberCoroutineScope()</span>
+<span class="nc" id="L177">    val firstIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }</span>
+<span class="nc" id="L178">    val totalItems by remember { derivedStateOf { listState.layoutInfo.totalItemsCount } }</span>
+<span class="nc" id="L179">    val visibleCount by remember { derivedStateOf { listState.layoutInfo.visibleItemsInfo.size } }</span>
+<span class="nc bnc" id="L180" title="All 4 branches missed.">    if (totalItems &lt;= visibleCount) return</span>
+
+<span class="nc" id="L182">    var dragging by remember { mutableStateOf(false) }</span>
+<span class="nc" id="L183">    var thumbY by remember { mutableFloatStateOf(0f) }</span>
+<span class="nc" id="L184">    val density = LocalDensity.current</span>
+
+<span class="nc bnc" id="L186" title="All 2 branches missed.">    BoxWithConstraints(</span>
+<span class="nc" id="L187">        modifier</span>
+<span class="nc" id="L188">            .width(20.dp)</span>
+<span class="nc" id="L189">            .fillMaxHeight()</span>
+<span class="nc" id="L190">            .padding(vertical = 4.dp),</span>
+<span class="nc" id="L191">    ) {</span>
+<span class="nc" id="L192">        val totalPx = constraints.maxHeight.toFloat()</span>
+<span class="nc" id="L193">        val minThumbPx = with(density) { 32.dp.toPx() }</span>
+<span class="nc" id="L194">        val thumbFraction = visibleCount.toFloat() / totalItems</span>
+<span class="nc" id="L195">        val thumbPx = (totalPx * thumbFraction).coerceAtLeast(minThumbPx)</span>
+<span class="nc" id="L196">        val maxScrollOffset = (totalPx - thumbPx).coerceAtLeast(0f)</span>
+<span class="nc bnc" id="L197" title="All 4 branches missed.">        val thumbOffsetPx = if (totalItems &gt; visibleCount &amp;&amp; maxScrollOffset &gt; 0f)</span>
+<span class="nc" id="L198">            firstIndex.toFloat() / (totalItems - visibleCount) * maxScrollOffset</span>
+<span class="nc" id="L199">        else 0f</span>
+
+        // Visual thumb on the right edge
+<span class="nc" id="L202">        Box(</span>
+<span class="nc" id="L203">            Modifier</span>
+<span class="nc" id="L204">                .align(Alignment.TopEnd)</span>
+<span class="nc" id="L205">                .width(6.dp)</span>
+<span class="nc" id="L206">                .height(with(density) { thumbPx.toDp() })</span>
+<span class="nc" id="L207">                .offset(y = with(density) { thumbOffsetPx.toDp() })</span>
+<span class="nc" id="L208">                .clip(RoundedCornerShape(3.dp))</span>
+<span class="nc" id="L209">                .background(</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">                    MaterialTheme.colorScheme.onSurface.copy(alpha = if (dragging) 0.6f else 0.3f)</span>
+                )
+        )
+
+        // Full-width drag target (wider touch area)
+<span class="nc" id="L215">        val updatedTotal by rememberUpdatedState(totalItems)</span>
+<span class="nc" id="L216">        val updatedVisible by rememberUpdatedState(visibleCount)</span>
+<span class="nc" id="L217">        val updatedMax by rememberUpdatedState(maxScrollOffset)</span>
+<span class="nc" id="L218">        val updatedThumbPx by rememberUpdatedState(thumbPx)</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        Box(</span>
+<span class="nc" id="L220">            Modifier</span>
+<span class="nc" id="L221">                .fillMaxSize()</span>
+<span class="nc" id="L222">                .pointerInput(Unit) {</span>
+<span class="nc" id="L223">                    detectVerticalDragGestures(</span>
+                        onDragStart = { pos -&gt;
+<span class="nc" id="L225">                            dragging = true</span>
+                            // Initialise accumulated thumb position at tap point
+<span class="nc" id="L227">                            thumbY = pos.y</span>
+<span class="nc" id="L228">                            val fraction = ((thumbY - updatedThumbPx / 2) / updatedMax)</span>
+<span class="nc" id="L229">                                .coerceIn(0f, 1f)</span>
+<span class="nc" id="L230">                            val idx = (fraction * (updatedTotal - updatedVisible))</span>
+<span class="nc" id="L231">                                .roundToInt().coerceIn(0, (updatedTotal - 1).coerceAtLeast(0))</span>
+<span class="nc" id="L232">                            coroutineScope.launch { listState.scrollToItem(idx) }</span>
+<span class="nc" id="L233">                        },</span>
+<span class="nc" id="L234">                        onDragEnd = { dragging = false },</span>
+<span class="nc" id="L235">                        onDragCancel = { dragging = false },</span>
+                        onVerticalDrag = { change, dragAmount -&gt;
+<span class="nc" id="L237">                            change.consume()</span>
+<span class="nc" id="L238">                            val movable = updatedTotal - updatedVisible</span>
+<span class="nc bnc" id="L239" title="All 4 branches missed.">                            if (updatedMax &gt; 0f &amp;&amp; movable &gt; 0) {</span>
+                                // Accumulate in float — avoids per-frame toInt() truncation
+<span class="nc" id="L241">                                thumbY = (thumbY + dragAmount).coerceIn(0f, updatedMax + updatedThumbPx)</span>
+<span class="nc" id="L242">                                val fraction = ((thumbY - updatedThumbPx / 2) / updatedMax)</span>
+<span class="nc" id="L243">                                    .coerceIn(0f, 1f)</span>
+<span class="nc" id="L244">                                val idx = (fraction * movable).roundToInt().coerceIn(0, movable)</span>
+<span class="nc" id="L245">                                coroutineScope.launch { listState.scrollToItem(idx) }</span>
+                            }
+<span class="nc" id="L247">                        },</span>
+                    )
+<span class="nc" id="L249">                }</span>
+        )
+<span class="nc" id="L251">    }</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">}</span>
+
+@Composable
+<span class="pc bpc" id="L255" title="7 of 18 branches missed.">private fun EmptyWordList(modifier: Modifier = Modifier, onAdd: () -&gt; Unit) {</span>
+<span class="fc" id="L256">    Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {</span>
+<span class="fc" id="L257">        Text(stringResource(R.string.word_list_empty_title), style = MaterialTheme.typography.headlineSmall)</span>
+<span class="fc" id="L258">        Spacer(Modifier.height(8.dp))</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        TextButton(onClick = onAdd) { Text(stringResource(R.string.word_list_empty_action)) }</span>
+<span class="fc" id="L260">    }</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">}</span>
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+<span class="nc" id="L265">private fun WordRow(</span>
+    word: WordEntry,
+    onEdit: () -&gt; Unit,
+    onDelete: () -&gt; Unit,
+    onHomophones: () -&gt; Unit,
+<span class="nc bnc" id="L270" title="All 24 branches missed.">) {</span>
+<span class="nc" id="L271">    var expanded by remember { mutableStateOf(false) }</span>
+<span class="nc" id="L272">    Box {</span>
+<span class="nc" id="L273">        Row(</span>
+<span class="nc" id="L274">            Modifier</span>
+<span class="nc" id="L275">                .fillMaxWidth()</span>
+<span class="nc" id="L276">                .combinedClickable(onClick = {}, onLongClick = { expanded = true })</span>
+<span class="nc" id="L277">                .padding(horizontal = 16.dp, vertical = 10.dp),</span>
+<span class="nc" id="L278">            verticalAlignment = Alignment.CenterVertically,</span>
+        ) {
+<span class="nc" id="L280">            Column(Modifier.weight(1f)) {</span>
+<span class="nc" id="L281">                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {</span>
+<span class="nc" id="L282">                    Text(word.word, fontWeight = FontWeight.SemiBold)</span>
+<span class="nc bnc" id="L283" title="All 6 branches missed.">                    if (!word.reading.isNullOrBlank()) Text(&quot;(${word.reading})&quot;, style = MaterialTheme.typography.bodySmall)</span>
+<span class="nc" id="L284">                }</span>
+<span class="nc" id="L285">                Text(word.meaning, style = MaterialTheme.typography.bodySmall, maxLines = 1)</span>
+<span class="nc" id="L286">            }</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">            val rate = if (word.practiceCount &gt; 0) &quot;${word.correctCount * 100 / word.practiceCount}%&quot; else &quot;—&quot;</span>
+<span class="nc" id="L288">            Text(rate, style = MaterialTheme.typography.bodySmall)</span>
+<span class="nc" id="L289">        }</span>
+<span class="nc" id="L290">        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {</span>
+<span class="pc bnc" id="L291" title="All 2 branches missed.">            DropdownMenuItem(text = { Text(stringResource(R.string.word_list_action_edit)) },</span>
+<span class="nc" id="L292">                onClick = { expanded = false; onEdit() })</span>
+<span class="pc bnc" id="L293" title="All 2 branches missed.">            DropdownMenuItem(text = { Text(stringResource(R.string.word_list_action_delete)) },</span>
+<span class="nc" id="L294">                onClick = { expanded = false; onDelete() })</span>
+<span class="pc bnc" id="L295" title="All 4 branches missed.">            DropdownMenuItem(text = { Text(stringResource(R.string.word_list_action_homophones)) },</span>
+<span class="nc" id="L296">                onClick = { expanded = false; onHomophones() })</span>
+<span class="nc" id="L297">        }</span>
+<span class="nc" id="L298">    }</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">}</span>
+
+@Composable
+<span class="nc bnc" id="L302" title="All 22 branches missed.">private fun HomophoneDialog(word: WordEntry, allWords: List&lt;WordEntry&gt;, onDismiss: () -&gt; Unit) {</span>
+<span class="nc" id="L303">    val homophones = allWords.filter { other -&gt;</span>
+<span class="nc bnc" id="L304" title="All 4 branches missed.">        other.id != word.id &amp;&amp; other.language == word.language &amp;&amp;</span>
+<span class="nc bnc" id="L305" title="All 4 branches missed.">            (if (word.reading != null) other.reading == word.reading</span>
+<span class="nc" id="L306">            else other.word.equals(word.word, ignoreCase = true))</span>
+    }
+<span class="nc bnc" id="L308" title="All 2 branches missed.">    AlertDialog(</span>
+<span class="nc" id="L309">        onDismissRequest = onDismiss,</span>
+<span class="pc bnc" id="L310" title="All 2 branches missed.">        title = { Text(stringResource(R.string.word_list_action_homophones)) },</span>
+<span class="nc" id="L311">        text = {</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">            if (homophones.isEmpty()) Text(&quot;—&quot;)</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">            else Column { homophones.forEach { Text(&quot;${it.word}: ${it.meaning}&quot;) } }</span>
+<span class="nc" id="L314">        },</span>
+<span class="pc bnc" id="L315" title="All 4 branches missed.">        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } }</span>
+    )
+<span class="nc bnc" id="L317" title="All 2 branches missed.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

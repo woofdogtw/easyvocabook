@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EasyVocaBookApp.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook</a> &gt; <span class="el_source">EasyVocaBookApp.kt</span></div><h1>EasyVocaBookApp.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook
+
+import android.content.Context
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import tw.idv.woofdog.easyvocabook.ui.quiz.QuizScreen
+import tw.idv.woofdog.easyvocabook.ui.settings.SettingsScreen
+import tw.idv.woofdog.easyvocabook.ui.theme.EasyVocaBookTheme
+import tw.idv.woofdog.easyvocabook.ui.wordlist.WordListScreen
+
+private const val ROUTE_QUIZ = &quot;quiz&quot;
+private const val ROUTE_WORDS = &quot;wordlist&quot;
+private const val ROUTE_SETTINGS = &quot;settings&quot;
+
+@Composable
+<span class="nc bnc" id="L29" title="All 6 branches missed.">fun EasyVocaBookApp() {</span>
+<span class="nc" id="L30">    val context = LocalContext.current</span>
+<span class="nc" id="L31">    val prefs = context.getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)</span>
+<span class="nc bnc" id="L32" title="All 2 branches missed.">    val theme = prefs.getString(MainActivity.SP_THEME, &quot;auto&quot;) ?: &quot;auto&quot;</span>
+<span class="nc" id="L33">    val darkTheme = when (theme) {</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        &quot;light&quot; -&gt; false</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        &quot;dark&quot; -&gt; true</span>
+<span class="nc" id="L36">        else -&gt; isSystemInDarkTheme()</span>
+    }
+
+<span class="nc bnc" id="L39" title="All 2 branches missed.">    EasyVocaBookTheme(darkTheme = darkTheme) {</span>
+<span class="nc" id="L40">        val navController = rememberNavController()</span>
+<span class="nc" id="L41">        val currentEntry by navController.currentBackStackEntryAsState()</span>
+<span class="nc bnc" id="L42" title="All 6 branches missed.">        val currentRoute = currentEntry?.destination?.route ?: ROUTE_QUIZ</span>
+
+<span class="nc" id="L44">        val items = listOf(</span>
+<span class="nc" id="L45">            Triple(ROUTE_QUIZ, R.string.tab_quiz, Icons.Default.Star),</span>
+<span class="nc" id="L46">            Triple(ROUTE_WORDS, R.string.tab_word_list, Icons.Default.List),</span>
+<span class="nc" id="L47">            Triple(ROUTE_SETTINGS, R.string.tab_settings, Icons.Default.Settings),</span>
+        )
+
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        Scaffold(</span>
+<span class="nc" id="L51">            bottomBar = {</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">                NavigationBar {</span>
+<span class="nc" id="L53">                    items.forEach { (route, labelRes, icon) -&gt;</span>
+<span class="nc" id="L54">                        NavigationBarItem(</span>
+<span class="nc" id="L55">                            selected = currentRoute == route,</span>
+<span class="nc" id="L56">                            onClick = {</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">                                if (currentRoute != route) {</span>
+<span class="nc" id="L58">                                    navController.navigate(route) {</span>
+<span class="nc" id="L59">                                        launchSingleTop = true</span>
+<span class="nc" id="L60">                                        restoreState = true</span>
+<span class="nc" id="L61">                                        popUpTo(ROUTE_QUIZ) { saveState = true }</span>
+<span class="nc" id="L62">                                    }</span>
+                                }
+<span class="nc" id="L64">                            },</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">                            icon = { Icon(icon, contentDescription = stringResource(labelRes)) },</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                            label = { Text(stringResource(labelRes)) },</span>
+                        )
+<span class="nc" id="L68">                    }</span>
+<span class="nc" id="L69">                }</span>
+<span class="nc" id="L70">            }</span>
+<span class="nc" id="L71">        ) { innerPadding -&gt;</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">            NavHost(</span>
+<span class="nc" id="L73">                navController = navController,</span>
+<span class="nc" id="L74">                startDestination = ROUTE_QUIZ,</span>
+<span class="nc" id="L75">                modifier = Modifier.padding(innerPadding),</span>
+<span class="nc" id="L76">            ) {</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                composable(ROUTE_QUIZ) { QuizScreen() }</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                composable(ROUTE_WORDS) { WordListScreen() }</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                composable(ROUTE_SETTINGS) { SettingsScreen() }</span>
+<span class="nc" id="L80">            }</span>
+<span class="nc" id="L81">        }</span>
+<span class="nc" id="L82">    }</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

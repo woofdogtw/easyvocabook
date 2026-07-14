@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WordListViewModel.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui.wordlist</a> &gt; <span class="el_source">WordListViewModel.kt</span></div><h1>WordListViewModel.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui.wordlist
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import tw.idv.woofdog.easyvocabook.AppRepository
+import tw.idv.woofdog.easyvocabook.data.model.WordEntry
+import tw.idv.woofdog.easyvocabook.data.model.WordFilter
+
+<span class="fc" id="L13">enum class SortOrder { WORD_ASC, WORD_DESC, RATE_ASC, RATE_DESC }</span>
+
+<span class="fc" id="L15">data class WordListUiState(</span>
+<span class="fc" id="L16">    val words: List&lt;WordEntry&gt; = emptyList(),</span>
+<span class="fc" id="L17">    val languageFilter: String? = null,</span>
+<span class="fc" id="L18">    val searchQuery: String = &quot;&quot;,</span>
+<span class="fc" id="L19">    val sortOrder: SortOrder = SortOrder.WORD_ASC,</span>
+<span class="fc" id="L20">    val syncInProgress: Boolean = false,</span>
+<span class="pc" id="L21">    val syncMessage: String? = null,</span>
+<span class="fc" id="L22">)</span>
+
+<span class="fc" id="L24">class WordListViewModel(application: Application) : AndroidViewModel(application) {</span>
+
+<span class="fc" id="L26">    private val repo = AppRepository.get(application)</span>
+
+<span class="fc" id="L28">    private val _state = MutableStateFlow(WordListUiState())</span>
+<span class="fc" id="L29">    val state: StateFlow&lt;WordListUiState&gt; = _state</span>
+
+<span class="fc" id="L31">    init {</span>
+<span class="fc" id="L32">        viewModelScope.launch {</span>
+<span class="fc" id="L33">            repo.initialize()</span>
+<span class="fc" id="L34">            refresh()</span>
+<span class="fc" id="L35">        }</span>
+<span class="fc" id="L36">    }</span>
+
+    fun setLanguageFilter(lang: String?) {
+<span class="nc" id="L39">        _state.value = _state.value.copy(languageFilter = lang)</span>
+<span class="nc" id="L40">        refresh()</span>
+<span class="nc" id="L41">    }</span>
+
+    fun setSearchQuery(q: String) {
+<span class="nc" id="L44">        _state.value = _state.value.copy(searchQuery = q)</span>
+<span class="nc" id="L45">        refresh()</span>
+<span class="nc" id="L46">    }</span>
+
+    fun setSortOrder(order: SortOrder) {
+<span class="nc" id="L49">        _state.value = _state.value.copy(sortOrder = order)</span>
+<span class="nc" id="L50">        refresh()</span>
+<span class="nc" id="L51">    }</span>
+
+    fun deleteWord(id: Long) {
+<span class="nc" id="L54">        viewModelScope.launch {</span>
+<span class="nc" id="L55">            repo.deleteWord(id)</span>
+<span class="nc" id="L56">            refresh()</span>
+<span class="nc" id="L57">        }</span>
+<span class="nc" id="L58">    }</span>
+
+    fun clearStats() {
+<span class="nc" id="L61">        viewModelScope.launch {</span>
+<span class="nc" id="L62">            repo.clearPracticeStats()</span>
+<span class="nc" id="L63">            refresh()</span>
+<span class="nc" id="L64">        }</span>
+<span class="nc" id="L65">    }</span>
+
+<span class="nc" id="L67">    fun setSyncInProgress(inProgress: Boolean, message: String? = null) {</span>
+<span class="nc" id="L68">        _state.value = _state.value.copy(syncInProgress = inProgress, syncMessage = message)</span>
+<span class="nc" id="L69">    }</span>
+
+    private fun refresh() {
+<span class="fc" id="L72">        viewModelScope.launch {</span>
+<span class="fc" id="L73">            val s = _state.value</span>
+<span class="fc" id="L74">            val filter = WordFilter(</span>
+<span class="fc" id="L75">                language = s.languageFilter,</span>
+<span class="pc bpc" id="L76" title="2 of 4 branches missed.">                query = s.searchQuery.takeIf { it.isNotBlank() },</span>
+            )
+<span class="fc" id="L78">            val raw = repo.memory.listWords(filter)</span>
+<span class="pc bpc" id="L79" title="3 of 4 branches missed.">            val sorted = when (s.sortOrder) {</span>
+<span class="fc" id="L80">                SortOrder.WORD_ASC -&gt; raw.sortedBy { it.word.lowercase() }</span>
+<span class="nc" id="L81">                SortOrder.WORD_DESC -&gt; raw.sortedByDescending { it.word.lowercase() }</span>
+                // Unpracticed words (practice_count == 0) sort first in ASC, last in DESC,
+                // mirroring the desktop behaviour so users can spot unstudied words easily.
+<span class="nc" id="L84">                SortOrder.RATE_ASC -&gt; raw.sortedWith(</span>
+<span class="nc" id="L85">                    compareBy(nullsFirst()) { w -&gt;</span>
+                        if (w.practiceCount == 0) null else w.correctCount.toDouble() / w.practiceCount
+                    }
+                )
+<span class="nc" id="L89">                SortOrder.RATE_DESC -&gt; raw.sortedWith(</span>
+<span class="nc" id="L90">                    compareByDescending(nullsLast()) { w -&gt;</span>
+                        if (w.practiceCount == 0) null else w.correctCount.toDouble() / w.practiceCount
+                    }
+                )
+            }
+<span class="fc" id="L95">            _state.value = s.copy(words = sorted)</span>
+<span class="fc" id="L96">        }</span>
+<span class="fc" id="L97">    }</span>
+
+<span class="fc" id="L99">    fun reload() = refresh()</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

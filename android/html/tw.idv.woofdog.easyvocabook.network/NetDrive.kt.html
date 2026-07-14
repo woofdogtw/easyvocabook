@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NetDrive.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.network</a> &gt; <span class="el_source">NetDrive.kt</span></div><h1>NetDrive.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.network
+
+import android.content.Context
+import android.net.Uri
+import com.google.android.gms.auth.api.identity.AuthorizationRequest
+import com.google.android.gms.auth.api.identity.AuthorizationResult
+import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.common.api.Scope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+private const val DRIVE_SCOPE = &quot;https://www.googleapis.com/auth/drive.file&quot;
+private const val DRIVE_API = &quot;https://www.googleapis.com/drive/v3&quot;
+private const val DRIVE_UPLOAD_API = &quot;https://www.googleapis.com/upload/drive/v3&quot;
+
+<span class="nc" id="L27">class NetDrive(</span>
+<span class="nc" id="L28">    private val context: Context,</span>
+<span class="nc" id="L29">    private val folderName: String,</span>
+) : SyncClient {
+
+<span class="nc" id="L32">    private val http = OkHttpClient()</span>
+
+<span class="nc" id="L34">    private suspend fun accessToken(): String = suspendCancellableCoroutine { cont -&gt;</span>
+<span class="nc" id="L35">        val request = AuthorizationRequest.builder()</span>
+<span class="nc" id="L36">            .setRequestedScopes(listOf(Scope(DRIVE_SCOPE)))</span>
+<span class="nc" id="L37">            .build()</span>
+<span class="nc" id="L38">        Identity.getAuthorizationClient(context)</span>
+<span class="nc" id="L39">            .authorize(request)</span>
+<span class="nc" id="L40">            .addOnSuccessListener { result -&gt;</span>
+<span class="nc" id="L41">                val token = result.accessToken</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">                if (token != null) {</span>
+<span class="nc" id="L43">                    cont.resume(token)</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">                } else if (result.hasResolution()) {</span>
+                    // Cannot launch Activity from coroutine context here; caller must handle pendingIntent
+<span class="nc" id="L46">                    cont.resumeWithException(DriveAuthPendingIntentException(result))</span>
+                } else {
+<span class="nc" id="L48">                    cont.resumeWithException(IllegalStateException(&quot;Drive authorization failed: no token and no resolution&quot;))</span>
+                }
+<span class="nc" id="L50">            }</span>
+<span class="nc" id="L51">            .addOnFailureListener { cont.resumeWithException(it) }</span>
+<span class="nc" id="L52">    }</span>
+
+    private fun findOrCreateFolder(token: String): String {
+<span class="nc" id="L55">        val escaped = folderName.replace(&quot;'&quot;, &quot;\\'&quot;)</span>
+<span class="nc" id="L56">        val q = &quot;name='$escaped' and mimeType='application/vnd.google-apps.folder' and trashed=false&quot;</span>
+<span class="nc" id="L57">        val searchReq = Request.Builder()</span>
+<span class="nc" id="L58">            .url(&quot;$DRIVE_API/files?q=${Uri.encode(q)}&amp;fields=files(id)&quot;)</span>
+<span class="nc" id="L59">            .header(&quot;Authorization&quot;, &quot;Bearer $token&quot;)</span>
+<span class="nc" id="L60">            .build()</span>
+<span class="nc" id="L61">        val searchResp = http.newCall(searchReq).execute()</span>
+<span class="nc" id="L62">        val searchBody = searchResp.body!!.string()</span>
+<span class="nc" id="L63">        val files = JSONObject(searchBody).getJSONArray(&quot;files&quot;)</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (files.length() &gt; 0) return files.getJSONObject(0).getString(&quot;id&quot;)</span>
+
+<span class="nc" id="L66">        val createBody = JSONObject().apply {</span>
+<span class="nc" id="L67">            put(&quot;name&quot;, folderName)</span>
+<span class="nc" id="L68">            put(&quot;mimeType&quot;, &quot;application/vnd.google-apps.folder&quot;)</span>
+<span class="nc" id="L69">        }.toString()</span>
+<span class="nc" id="L70">        val createReq = Request.Builder()</span>
+<span class="nc" id="L71">            .url(&quot;$DRIVE_API/files&quot;)</span>
+<span class="nc" id="L72">            .header(&quot;Authorization&quot;, &quot;Bearer $token&quot;)</span>
+<span class="nc" id="L73">            .post(createBody.toRequestBody(&quot;application/json&quot;.toMediaType()))</span>
+<span class="nc" id="L74">            .build()</span>
+<span class="nc" id="L75">        val createResp = http.newCall(createReq).execute()</span>
+<span class="nc" id="L76">        return JSONObject(createResp.body!!.string()).getString(&quot;id&quot;)</span>
+    }
+
+    private fun findFile(token: String, folderId: String): String? {
+<span class="nc" id="L80">        val q = &quot;name='easyvocabook.db' and '$folderId' in parents and trashed=false&quot;</span>
+<span class="nc" id="L81">        val req = Request.Builder()</span>
+<span class="nc" id="L82">            .url(&quot;$DRIVE_API/files?q=${Uri.encode(q)}&amp;fields=files(id)&quot;)</span>
+<span class="nc" id="L83">            .header(&quot;Authorization&quot;, &quot;Bearer $token&quot;)</span>
+<span class="nc" id="L84">            .build()</span>
+<span class="nc" id="L85">        val resp = http.newCall(req).execute()</span>
+<span class="nc" id="L86">        val files = JSONObject(resp.body!!.string()).getJSONArray(&quot;files&quot;)</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        return if (files.length() &gt; 0) files.getJSONObject(0).getString(&quot;id&quot;) else null</span>
+    }
+
+<span class="nc" id="L90">    override suspend fun remoteLastModified(cacheDir: File): Long? = withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L91">        val token = accessToken()</span>
+<span class="nc" id="L92">        val folderId = findOrCreateFolder(token)</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        val fileId = findFile(token, folderId) ?: return@withContext null</span>
+<span class="nc" id="L94">        val tmp = File(cacheDir, &quot;evb_drive_lm_${System.nanoTime()}.db&quot;)</span>
+<span class="nc" id="L95">        try {</span>
+<span class="nc" id="L96">            downloadById(token, fileId, tmp)</span>
+<span class="nc" id="L97">            readLastModified(tmp)</span>
+        } finally {
+<span class="nc" id="L99">            tmp.delete()</span>
+<span class="nc" id="L100">        }</span>
+<span class="nc" id="L101">    }</span>
+
+<span class="nc" id="L103">    override suspend fun upload(file: File) = withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L104">        val token = accessToken()</span>
+<span class="nc" id="L105">        val folderId = findOrCreateFolder(token)</span>
+<span class="nc" id="L106">        val existingId = findFile(token, folderId)</span>
+
+<span class="nc" id="L108">        val meta = JSONObject().apply {</span>
+<span class="nc" id="L109">            put(&quot;name&quot;, &quot;easyvocabook.db&quot;)</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (existingId == null) put(&quot;parents&quot;, JSONArray().put(folderId))</span>
+<span class="nc" id="L111">        }.toString()</span>
+
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        val url = if (existingId != null)</span>
+<span class="nc" id="L114">            &quot;$DRIVE_UPLOAD_API/files/$existingId?uploadType=multipart&quot;</span>
+        else
+<span class="nc" id="L116">            &quot;$DRIVE_UPLOAD_API/files?uploadType=multipart&quot;</span>
+
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        val method = if (existingId != null) &quot;PATCH&quot; else &quot;POST&quot;</span>
+<span class="nc" id="L119">        val requestBody = okhttp3.MultipartBody.Builder(&quot;evb_boundary&quot;)</span>
+<span class="nc" id="L120">            .setType(&quot;multipart/related&quot;.toMediaType())</span>
+<span class="nc" id="L121">            .addPart(meta.toRequestBody(&quot;application/json&quot;.toMediaType()))</span>
+<span class="nc" id="L122">            .addPart(file.asRequestBody(&quot;application/x-sqlite3&quot;.toMediaType()))</span>
+<span class="nc" id="L123">            .build()</span>
+
+<span class="nc" id="L125">        val req = Request.Builder()</span>
+<span class="nc" id="L126">            .url(url)</span>
+<span class="nc" id="L127">            .header(&quot;Authorization&quot;, &quot;Bearer $token&quot;)</span>
+<span class="nc" id="L128">            .method(method, requestBody)</span>
+<span class="nc" id="L129">            .build()</span>
+<span class="nc" id="L130">        http.newCall(req).execute().use { resp -&gt;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            if (!resp.isSuccessful) throw RuntimeException(&quot;Drive upload failed: ${resp.code}&quot;)</span>
+<span class="nc" id="L132">        }</span>
+        Unit
+<span class="nc" id="L134">    }</span>
+
+<span class="nc" id="L136">    override suspend fun download(dest: File) = withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L137">        val token = accessToken()</span>
+<span class="nc" id="L138">        val folderId = findOrCreateFolder(token)</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        val fileId = findFile(token, folderId) ?: throw RuntimeException(&quot;Remote file not found&quot;)</span>
+<span class="nc" id="L140">        downloadById(token, fileId, dest)</span>
+        Unit
+<span class="nc" id="L142">    }</span>
+
+    private fun downloadById(token: String, fileId: String, dest: File) {
+<span class="nc" id="L145">        val req = Request.Builder()</span>
+<span class="nc" id="L146">            .url(&quot;$DRIVE_API/files/$fileId?alt=media&quot;)</span>
+<span class="nc" id="L147">            .header(&quot;Authorization&quot;, &quot;Bearer $token&quot;)</span>
+<span class="nc" id="L148">            .build()</span>
+<span class="nc" id="L149">        http.newCall(req).execute().use { resp -&gt;</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">            if (!resp.isSuccessful) throw RuntimeException(&quot;Drive download failed: ${resp.code}&quot;)</span>
+<span class="nc" id="L151">            dest.outputStream().use { out -&gt; resp.body!!.byteStream().copyTo(out) }</span>
+        }
+<span class="nc" id="L153">    }</span>
+
+<span class="nc" id="L155">    override fun close() { http.dispatcher.executorService.shutdown() }</span>
+}
+
+<span class="nc" id="L158">class DriveAuthPendingIntentException(val result: AuthorizationResult) : Exception(&quot;Drive auth requires user consent&quot;)</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Theme.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui.theme</a> &gt; <span class="el_source">Theme.kt</span></div><h1>Theme.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+
+<span class="fc" id="L10">private val Purple = Color(0xFF7B4EAB)</span>
+<span class="fc" id="L11">private val PurpleLight = Color(0xFFD0BCFF)</span>
+<span class="fc" id="L12">private val Teal = Color(0xFF00897B)</span>
+<span class="fc" id="L13">private val TealLight = Color(0xFF80CBC4)</span>
+
+<span class="fc" id="L15">private val LightColorScheme = lightColorScheme(</span>
+<span class="fc" id="L16">    primary = Purple,</span>
+<span class="fc" id="L17">    onPrimary = Color.White,</span>
+<span class="fc" id="L18">    primaryContainer = Color(0xFFEADDFF),</span>
+<span class="fc" id="L19">    secondary = Teal,</span>
+<span class="fc" id="L20">    onSecondary = Color.White,</span>
+<span class="fc" id="L21">    secondaryContainer = Color(0xFFB2DFDB),</span>
+<span class="fc" id="L22">    background = Color(0xFFFFFBFE),</span>
+<span class="fc" id="L23">    surface = Color(0xFFFFFBFE),</span>
+)
+
+<span class="fc" id="L26">private val DarkColorScheme = darkColorScheme(</span>
+<span class="fc" id="L27">    primary = PurpleLight,</span>
+<span class="fc" id="L28">    onPrimary = Color(0xFF381E72),</span>
+<span class="fc" id="L29">    primaryContainer = Color(0xFF4F378B),</span>
+<span class="fc" id="L30">    secondary = TealLight,</span>
+<span class="fc" id="L31">    onSecondary = Color(0xFF003731),</span>
+<span class="fc" id="L32">    secondaryContainer = Color(0xFF00504A),</span>
+<span class="fc" id="L33">    background = Color(0xFF1C1B1F),</span>
+<span class="fc" id="L34">    surface = Color(0xFF1C1B1F),</span>
+)
+
+@Composable
+<span class="pc bpc" id="L38" title="3 of 4 branches missed.">fun EasyVocaBookTheme(</span>
+<span class="fc" id="L39">    darkTheme: Boolean = isSystemInDarkTheme(),</span>
+    content: @Composable () -&gt; Unit
+<span class="pc bpc" id="L41" title="13 of 20 branches missed.">) {</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">    MaterialTheme(</span>
+<span class="fc" id="L44">        colorScheme = colorScheme,</span>
+<span class="fc" id="L45">        content = content</span>
+    )
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

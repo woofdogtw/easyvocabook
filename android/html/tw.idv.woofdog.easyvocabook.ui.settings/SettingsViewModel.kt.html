@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SettingsViewModel.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui.settings</a> &gt; <span class="el_source">SettingsViewModel.kt</span></div><h1>SettingsViewModel.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui.settings
+
+import android.app.Activity
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import tw.idv.woofdog.easyvocabook.AppRepository
+import tw.idv.woofdog.easyvocabook.MainActivity
+import tw.idv.woofdog.easyvocabook.network.SyncOrchestrator
+
+<span class="fc" id="L17">enum class SyncMethod { DISABLED, FTP, SFTP, DRIVE }</span>
+
+<span class="fc" id="L19">data class SettingsUiState(</span>
+<span class="pc" id="L20">    val uiLanguage: String = &quot;en&quot;,</span>
+<span class="pc" id="L21">    val theme: String = &quot;auto&quot;,</span>
+<span class="pc" id="L22">    val syncMethod: SyncMethod = SyncMethod.DISABLED,</span>
+<span class="pc" id="L23">    val ftpHost: String = &quot;&quot;,</span>
+<span class="pc" id="L24">    val ftpPort: String = &quot;21&quot;,</span>
+<span class="pc" id="L25">    val ftpUser: String = &quot;&quot;,</span>
+<span class="pc" id="L26">    val ftpDir: String = &quot;&quot;,</span>
+<span class="pc" id="L27">    val ftpTls: Boolean = false,</span>
+<span class="pc" id="L28">    val sftpHost: String = &quot;&quot;,</span>
+<span class="pc" id="L29">    val sftpPort: String = &quot;22&quot;,</span>
+<span class="pc" id="L30">    val sftpUser: String = &quot;&quot;,</span>
+<span class="pc" id="L31">    val sftpDir: String = &quot;&quot;,</span>
+<span class="pc" id="L32">    val driveFolder: String = &quot;EasyVocaBook&quot;,</span>
+<span class="pc" id="L33">    val driveLoggedIn: Boolean = false,</span>
+<span class="fc" id="L34">    val syncInProgress: Boolean = false,</span>
+<span class="fc" id="L35">    val syncMessage: String? = null,</span>
+<span class="fc" id="L36">    val showClearConfirm: Boolean = false,</span>
+<span class="fc" id="L37">)</span>
+
+<span class="fc" id="L39">class SettingsViewModel(application: Application) : AndroidViewModel(application) {</span>
+
+<span class="fc" id="L41">    private val prefs = application.getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)</span>
+<span class="fc" id="L42">    private val repo = AppRepository.get(application)</span>
+
+<span class="fc" id="L44">    private val _state = MutableStateFlow(loadFromPrefs())</span>
+<span class="fc" id="L45">    val state: StateFlow&lt;SettingsUiState&gt; = _state</span>
+
+    // Google Identity API may split account-selection and scope-consent into two separate
+    // PendingIntent steps. Both driveLogin and driveLoginAfterConsent emit here so the
+    // Screen can launch whichever resolution step is needed next.
+<span class="fc" id="L50">    private val _driveAuthResolution = MutableSharedFlow&lt;android.app.PendingIntent&gt;(extraBufferCapacity = 1)</span>
+<span class="pc" id="L51">    val driveAuthResolution: SharedFlow&lt;android.app.PendingIntent&gt; = _driveAuthResolution</span>
+
+    private fun loadFromPrefs(): SettingsUiState {
+<span class="pc bpc" id="L54" title="4 of 6 branches missed.">        val method = when (prefs.getString(MainActivity.SP_SYNC_METHOD, &quot;disabled&quot;)) {</span>
+<span class="nc" id="L55">            &quot;ftp&quot; -&gt; SyncMethod.FTP</span>
+<span class="nc" id="L56">            &quot;sftp&quot; -&gt; SyncMethod.SFTP</span>
+<span class="nc" id="L57">            &quot;drive&quot; -&gt; SyncMethod.DRIVE</span>
+<span class="fc" id="L58">            else -&gt; SyncMethod.DISABLED</span>
+        }
+<span class="fc" id="L60">        return SettingsUiState(</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">            uiLanguage = prefs.getString(MainActivity.SP_UI_LANGUAGE, &quot;en&quot;) ?: &quot;en&quot;,</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">            theme = prefs.getString(MainActivity.SP_THEME, &quot;auto&quot;) ?: &quot;auto&quot;,</span>
+<span class="fc" id="L63">            syncMethod = method,</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">            ftpHost = prefs.getString(MainActivity.SP_FTP_HOST, &quot;&quot;) ?: &quot;&quot;,</span>
+<span class="fc" id="L65">            ftpPort = prefs.getInt(MainActivity.SP_FTP_PORT, 21).toString(),</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            ftpUser = prefs.getString(MainActivity.SP_FTP_USER, &quot;&quot;) ?: &quot;&quot;,</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">            ftpDir = prefs.getString(MainActivity.SP_FTP_DIR, &quot;&quot;) ?: &quot;&quot;,</span>
+<span class="fc" id="L68">            ftpTls = prefs.getBoolean(MainActivity.SP_FTP_TLS, false),</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">            sftpHost = prefs.getString(MainActivity.SP_SFTP_HOST, &quot;&quot;) ?: &quot;&quot;,</span>
+<span class="fc" id="L70">            sftpPort = prefs.getInt(MainActivity.SP_SFTP_PORT, 22).toString(),</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">            sftpUser = prefs.getString(MainActivity.SP_SFTP_USER, &quot;&quot;) ?: &quot;&quot;,</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">            sftpDir = prefs.getString(MainActivity.SP_SFTP_DIR, &quot;&quot;) ?: &quot;&quot;,</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            driveFolder = prefs.getString(MainActivity.SP_DRIVE_FOLDER, &quot;EasyVocaBook&quot;) ?: &quot;EasyVocaBook&quot;,</span>
+<span class="fc" id="L74">            driveLoggedIn = prefs.getBoolean(MainActivity.SP_DRIVE_LOGGED_IN, false),</span>
+        )
+    }
+
+    fun setLanguage(lang: String, activity: Activity) {
+<span class="nc" id="L79">        prefs.edit().putString(MainActivity.SP_UI_LANGUAGE, lang).apply()</span>
+<span class="nc" id="L80">        _state.value = _state.value.copy(uiLanguage = lang)</span>
+<span class="nc" id="L81">        activity.recreate()</span>
+<span class="nc" id="L82">    }</span>
+
+    fun setTheme(theme: String, activity: Activity) {
+<span class="nc" id="L85">        prefs.edit().putString(MainActivity.SP_THEME, theme).apply()</span>
+<span class="nc" id="L86">        _state.value = _state.value.copy(theme = theme)</span>
+<span class="nc" id="L87">        activity.recreate()</span>
+<span class="nc" id="L88">    }</span>
+
+    fun setSyncMethod(method: SyncMethod) {
+<span class="nc bnc" id="L91" title="All 4 branches missed.">        val key = when (method) {</span>
+<span class="nc" id="L92">            SyncMethod.FTP -&gt; &quot;ftp&quot;; SyncMethod.SFTP -&gt; &quot;sftp&quot;</span>
+<span class="nc" id="L93">            SyncMethod.DRIVE -&gt; &quot;drive&quot;; SyncMethod.DISABLED -&gt; &quot;disabled&quot;</span>
+        }
+<span class="nc" id="L95">        prefs.edit().putString(MainActivity.SP_SYNC_METHOD, key).apply()</span>
+<span class="nc" id="L96">        _state.value = _state.value.copy(syncMethod = method)</span>
+<span class="nc" id="L97">    }</span>
+
+<span class="nc" id="L99">    fun setFtpHost(v: String) { prefs.edit().putString(MainActivity.SP_FTP_HOST, v).apply(); _state.value = _state.value.copy(ftpHost = v) }</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">    fun setFtpPort(v: String) { prefs.edit().putInt(MainActivity.SP_FTP_PORT, v.toIntOrNull() ?: 21).apply(); _state.value = _state.value.copy(ftpPort = v) }</span>
+<span class="nc" id="L101">    fun setFtpUser(v: String) { prefs.edit().putString(MainActivity.SP_FTP_USER, v).apply(); _state.value = _state.value.copy(ftpUser = v) }</span>
+<span class="nc" id="L102">    fun setFtpDir(v: String) { prefs.edit().putString(MainActivity.SP_FTP_DIR, v).apply(); _state.value = _state.value.copy(ftpDir = v) }</span>
+<span class="nc" id="L103">    fun setFtpTls(v: Boolean) { prefs.edit().putBoolean(MainActivity.SP_FTP_TLS, v).apply(); _state.value = _state.value.copy(ftpTls = v) }</span>
+<span class="nc" id="L104">    fun setSftpHost(v: String) { prefs.edit().putString(MainActivity.SP_SFTP_HOST, v).apply(); _state.value = _state.value.copy(sftpHost = v) }</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">    fun setSftpPort(v: String) { prefs.edit().putInt(MainActivity.SP_SFTP_PORT, v.toIntOrNull() ?: 22).apply(); _state.value = _state.value.copy(sftpPort = v) }</span>
+<span class="nc" id="L106">    fun setSftpUser(v: String) { prefs.edit().putString(MainActivity.SP_SFTP_USER, v).apply(); _state.value = _state.value.copy(sftpUser = v) }</span>
+<span class="nc" id="L107">    fun setSftpDir(v: String) { prefs.edit().putString(MainActivity.SP_SFTP_DIR, v).apply(); _state.value = _state.value.copy(sftpDir = v) }</span>
+<span class="nc" id="L108">    fun setDriveFolder(v: String) { prefs.edit().putString(MainActivity.SP_DRIVE_FOLDER, v).apply(); _state.value = _state.value.copy(driveFolder = v) }</span>
+
+    fun saveFtpPassword(password: String, context: Context) {
+<span class="nc" id="L111">        SyncOrchestrator.saveFtpPassword(context, password)</span>
+<span class="nc" id="L112">    }</span>
+
+    fun saveSftpPassword(password: String, context: Context) {
+<span class="nc" id="L115">        SyncOrchestrator.saveSftpPassword(context, password)</span>
+<span class="nc" id="L116">    }</span>
+
+    fun driveLogin(activity: Activity) {
+<span class="nc" id="L119">        SyncOrchestrator.driveAuthorize(</span>
+<span class="nc" id="L120">            activity,</span>
+            onSuccess = {
+<span class="nc" id="L122">                prefs.edit().putBoolean(MainActivity.SP_DRIVE_LOGGED_IN, true).apply()</span>
+<span class="nc" id="L123">                _state.value = _state.value.copy(driveLoggedIn = true, syncMessage = null)</span>
+<span class="nc" id="L124">            },</span>
+<span class="nc" id="L125">            onNeedsResolution = { pi -&gt; viewModelScope.launch { _driveAuthResolution.emit(pi) } },</span>
+<span class="nc" id="L126">            onFailure = { msg -&gt; _state.value = _state.value.copy(driveLoggedIn = false, syncMessage = &quot;Drive auth failed: $msg&quot;) },</span>
+        )
+<span class="nc" id="L128">    }</span>
+
+    fun driveLoginAfterConsent(activity: Activity) {
+<span class="nc" id="L131">        SyncOrchestrator.driveAuthorize(</span>
+<span class="nc" id="L132">            activity,</span>
+            onSuccess = {
+<span class="nc" id="L134">                prefs.edit().putBoolean(MainActivity.SP_DRIVE_LOGGED_IN, true).apply()</span>
+<span class="nc" id="L135">                _state.value = _state.value.copy(driveLoggedIn = true, syncMessage = null)</span>
+<span class="nc" id="L136">            },</span>
+<span class="nc" id="L137">            onNeedsResolution = { pi -&gt; viewModelScope.launch { _driveAuthResolution.emit(pi) } },</span>
+<span class="nc" id="L138">            onFailure = { msg -&gt; _state.value = _state.value.copy(driveLoggedIn = false, syncMessage = &quot;Drive auth failed (post-consent): $msg&quot;) },</span>
+        )
+<span class="nc" id="L140">    }</span>
+
+    fun setDriveMessage(msg: String) {
+<span class="nc" id="L143">        _state.value = _state.value.copy(syncMessage = msg)</span>
+<span class="nc" id="L144">    }</span>
+
+    fun driveLogout(context: Context) {
+<span class="nc" id="L147">        SyncOrchestrator.driveSignOut(context)</span>
+<span class="nc" id="L148">        prefs.edit().putBoolean(MainActivity.SP_DRIVE_LOGGED_IN, false).apply()</span>
+<span class="nc" id="L149">        _state.value = _state.value.copy(driveLoggedIn = false)</span>
+<span class="nc" id="L150">    }</span>
+
+<span class="fc" id="L152">    fun askClearStats() { _state.value = _state.value.copy(showClearConfirm = true) }</span>
+<span class="fc" id="L153">    fun cancelClearStats() { _state.value = _state.value.copy(showClearConfirm = false) }</span>
+    fun confirmClearStats() {
+<span class="nc" id="L155">        _state.value = _state.value.copy(showClearConfirm = false)</span>
+<span class="nc" id="L156">        viewModelScope.launch { repo.clearPracticeStats() }</span>
+<span class="nc" id="L157">    }</span>
+
+    fun syncNow(context: Context) {
+<span class="nc" id="L160">        _state.value = _state.value.copy(syncInProgress = true, syncMessage = null)</span>
+<span class="nc" id="L161">        viewModelScope.launch {</span>
+<span class="nc" id="L162">            try {</span>
+<span class="nc" id="L163">                SyncOrchestrator.sync(context, repo, prefs, _state.value)</span>
+<span class="nc" id="L164">                _state.value = _state.value.copy(syncInProgress = false,</span>
+<span class="nc" id="L165">                    syncMessage = context.getString(tw.idv.woofdog.easyvocabook.R.string.settings_sync_ok))</span>
+<span class="nc" id="L166">            } catch (e: Exception) {</span>
+<span class="nc" id="L167">                _state.value = _state.value.copy(syncInProgress = false,</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">                    syncMessage = context.getString(tw.idv.woofdog.easyvocabook.R.string.error_sync_failed, e.message ?: &quot;unknown&quot;))</span>
+            }
+<span class="nc" id="L170">        }</span>
+<span class="nc" id="L171">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

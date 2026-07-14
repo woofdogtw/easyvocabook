@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WordEditSheet.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui.wordedit</a> &gt; <span class="el_source">WordEditSheet.kt</span></div><h1>WordEditSheet.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui.wordedit
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import tw.idv.woofdog.easyvocabook.R
+import tw.idv.woofdog.easyvocabook.ui.Labels
+
+<span class="fc" id="L20">private val LANGUAGES = Labels.SUPPORTED_LANGUAGES</span>
+<span class="fc" id="L21">private val POS_EN = listOf(&quot;&quot;, &quot;noun&quot;, &quot;verb&quot;, &quot;adjective&quot;, &quot;adverb&quot;, &quot;phrase&quot;)</span>
+<span class="fc" id="L22">private val POS_JA = listOf(&quot;&quot;, &quot;名詞&quot;, &quot;動詞&quot;, &quot;い形容詞&quot;, &quot;な形容詞&quot;, &quot;副詞&quot;, &quot;助詞&quot;, &quot;句&quot;)</span>
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">private fun posOptions(lang: String) = if (lang == &quot;ja&quot;) POS_JA else POS_EN</span>
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+<span class="pc bpc" id="L27" title="3 of 4 branches missed.">fun WordEditSheet(</span>
+    wordId: Long?,
+    onDismiss: () -&gt; Unit,
+    onSaved: () -&gt; Unit,
+<span class="fc" id="L31">    vm: WordEditViewModel = viewModel(),</span>
+<span class="pc bpc" id="L32" title="20 of 30 branches missed.">) {</span>
+<span class="pc bpc" id="L33" title="6 of 10 branches missed.">    LaunchedEffect(wordId) { vm.load(wordId) }</span>
+<span class="fc" id="L34">    val state by vm.state.collectAsStateWithLifecycle()</span>
+<span class="fc" id="L35">    val context = LocalContext.current</span>
+<span class="fc" id="L36">    val langDisplayFor: (String) -&gt; String = { code -&gt; context.getString(Labels.langResId(code)) }</span>
+<span class="fc" id="L37">    val formDisplayFor: (String) -&gt; String = { key -&gt;</span>
+<span class="nc bnc" id="L38" title="All 4 branches missed.">        Labels.formLabelResId(key)?.let { context.getString(it) } ?: key</span>
+    }
+
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {</span>
+<span class="fc" id="L42">        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).imePadding().padding(bottom = 32.dp)) {</span>
+            // Title + close
+<span class="fc" id="L44">            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">                Text(stringResource(if (wordId == null) R.string.word_edit_title_add else R.string.word_edit_title_edit),</span>
+<span class="fc" id="L46">                    style = MaterialTheme.typography.titleLarge)</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">                IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null) }</span>
+<span class="fc" id="L48">            }</span>
+<span class="fc" id="L49">            Spacer(Modifier.height(12.dp))</span>
+
+            // Language dropdown
+<span class="fc" id="L52">            DropdownField(</span>
+<span class="fc" id="L53">                label = stringResource(R.string.word_edit_language),</span>
+<span class="fc" id="L54">                options = LANGUAGES,</span>
+<span class="fc" id="L55">                selected = state.language,</span>
+<span class="pc" id="L56">                onSelect = { vm.setLanguage(it) },</span>
+<span class="fc" id="L57">                displayFor = langDisplayFor,</span>
+            )
+<span class="fc" id="L59">            Spacer(Modifier.height(8.dp))</span>
+
+            // Word
+<span class="fc" id="L62">            OutlinedTextField(</span>
+<span class="fc" id="L63">                value = state.word,</span>
+<span class="fc" id="L64">                onValueChange = { vm.setWord(it) },</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">                label = { Text(stringResource(R.string.word_edit_word)) },</span>
+<span class="fc" id="L66">                isError = state.errorWord,</span>
+<span class="pc bpc" id="L67" title="3 of 4 branches missed.">                supportingText = if (state.errorWord) ({ Text(stringResource(R.string.word_edit_required_word)) }) else null,</span>
+<span class="fc" id="L68">                modifier = Modifier.fillMaxWidth()</span>
+            )
+<span class="fc" id="L70">            Spacer(Modifier.height(8.dp))</span>
+
+<span class="fc" id="L72">            OutlinedTextField(</span>
+<span class="fc" id="L73">                value = state.reading,</span>
+<span class="pc" id="L74">                onValueChange = { vm.setReading(it) },</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">                label = { Text(stringResource(R.string.word_edit_reading)) },</span>
+<span class="fc" id="L76">                modifier = Modifier.fillMaxWidth()</span>
+            )
+<span class="fc" id="L78">            Spacer(Modifier.height(8.dp))</span>
+
+            // POS
+<span class="fc" id="L81">            DropdownField(</span>
+<span class="fc" id="L82">                label = stringResource(R.string.word_edit_pos),</span>
+<span class="fc" id="L83">                options = posOptions(state.language),</span>
+<span class="fc" id="L84">                selected = state.pos,</span>
+<span class="pc" id="L85">                onSelect = { vm.setPOS(it) },</span>
+<span class="fc" id="L86">                displayFor = { Labels.posDisplay(it) }</span>
+            )
+<span class="fc" id="L88">            Spacer(Modifier.height(8.dp))</span>
+
+            // Primary meaning
+<span class="fc" id="L91">            OutlinedTextField(</span>
+<span class="fc" id="L92">                value = state.primaryMeaning,</span>
+<span class="fc" id="L93">                onValueChange = { vm.setPrimaryMeaning(it) },</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">                label = { Text(stringResource(R.string.word_edit_meaning_primary)) },</span>
+<span class="fc" id="L95">                isError = state.errorMeaning,</span>
+<span class="pc bpc" id="L96" title="3 of 4 branches missed.">                supportingText = if (state.errorMeaning) ({ Text(stringResource(R.string.word_edit_required_meaning)) }) else null,</span>
+<span class="fc" id="L97">                modifier = Modifier.fillMaxWidth()</span>
+            )
+<span class="fc" id="L99">            Spacer(Modifier.height(8.dp))</span>
+
+            // Additional meanings
+<span class="fc" id="L102">            Text(stringResource(R.string.word_edit_additional_meanings), style = MaterialTheme.typography.labelMedium)</span>
+<span class="fc" id="L103">            state.additionalMeanings.forEachIndexed { idx, meaning -&gt;</span>
+<span class="nc" id="L104">                Row(verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="nc" id="L105">                    OutlinedTextField(</span>
+<span class="nc" id="L106">                        value = meaning,</span>
+<span class="nc" id="L107">                        onValueChange = { vm.setMeaning(idx, it) },</span>
+<span class="nc" id="L108">                        modifier = Modifier.weight(1f)</span>
+                    )
+<span class="pc bnc" id="L110" title="All 2 branches missed.">                    IconButton(onClick = { vm.removeMeaning(idx) }) { Icon(Icons.Default.Close, null) }</span>
+<span class="nc" id="L111">                }</span>
+<span class="pc" id="L112">            }</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            TextButton(onClick = { vm.addMeaning() }) { Text(stringResource(R.string.word_edit_add_meaning)) }</span>
+<span class="fc" id="L114">            Spacer(Modifier.height(8.dp))</span>
+
+            // Note
+<span class="fc" id="L117">            OutlinedTextField(</span>
+<span class="fc" id="L118">                value = state.note,</span>
+<span class="pc" id="L119">                onValueChange = { vm.setNote(it) },</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">                label = { Text(stringResource(R.string.word_edit_note)) },</span>
+<span class="fc" id="L121">                modifier = Modifier.fillMaxWidth(),</span>
+<span class="fc" id="L122">                maxLines = 3,</span>
+            )
+<span class="fc" id="L124">            Spacer(Modifier.height(8.dp))</span>
+
+            // Word forms
+<span class="fc" id="L127">            Text(stringResource(R.string.word_edit_word_forms), style = MaterialTheme.typography.labelMedium)</span>
+<span class="fc" id="L128">            state.wordForms.forEachIndexed { idx, form -&gt;</span>
+<span class="nc" id="L129">                val canonicalLabels = Labels.formLabelsForLanguage(state.language)</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">                val labelOptions = if (form.label in canonicalLabels || form.label.isBlank())</span>
+<span class="nc" id="L131">                    canonicalLabels else listOf(form.label) + canonicalLabels</span>
+<span class="nc" id="L132">                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {</span>
+<span class="nc" id="L133">                    DropdownField(</span>
+<span class="nc" id="L134">                        label = stringResource(R.string.word_edit_form_label),</span>
+<span class="nc" id="L135">                        options = labelOptions,</span>
+<span class="nc" id="L136">                        selected = form.label,</span>
+<span class="nc" id="L137">                        onSelect = { vm.setFormLabel(idx, it) },</span>
+<span class="nc" id="L138">                        displayFor = formDisplayFor,</span>
+<span class="nc" id="L139">                        modifier = Modifier.weight(1f),</span>
+                    )
+<span class="nc" id="L141">                    OutlinedTextField(</span>
+<span class="nc" id="L142">                        value = form.value,</span>
+<span class="nc" id="L143">                        onValueChange = { vm.setFormValue(idx, it) },</span>
+<span class="pc bnc" id="L144" title="All 2 branches missed.">                        label = { Text(stringResource(R.string.word_edit_form_value)) },</span>
+<span class="nc" id="L145">                        modifier = Modifier.weight(1f)</span>
+                    )
+<span class="pc bnc" id="L147" title="All 2 branches missed.">                    IconButton(onClick = { vm.removeWordForm(idx) }) { Icon(Icons.Default.Close, null) }</span>
+<span class="nc" id="L148">                }</span>
+<span class="pc" id="L149">            }</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">            TextButton(onClick = { vm.addWordForm() }) { Text(stringResource(R.string.word_edit_add_form)) }</span>
+<span class="fc" id="L151">            Spacer(Modifier.height(8.dp))</span>
+
+            // Sentences
+<span class="fc" id="L154">            Text(stringResource(R.string.word_edit_sentences), style = MaterialTheme.typography.labelMedium)</span>
+<span class="fc" id="L155">            state.sentences.forEachIndexed { idx, s -&gt;</span>
+<span class="nc" id="L156">                Column {</span>
+<span class="nc" id="L157">                    Row(verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="nc" id="L158">                        OutlinedTextField(</span>
+<span class="nc" id="L159">                            value = s.text,</span>
+<span class="nc" id="L160">                            onValueChange = { vm.setSentenceText(idx, it) },</span>
+<span class="pc bnc" id="L161" title="All 2 branches missed.">                            label = { Text(stringResource(R.string.word_edit_sentence_text)) },</span>
+<span class="nc" id="L162">                            modifier = Modifier.weight(1f)</span>
+                        )
+<span class="pc bnc" id="L164" title="All 2 branches missed.">                        IconButton(onClick = { vm.removeSentence(idx) }) { Icon(Icons.Default.Close, null) }</span>
+<span class="nc" id="L165">                    }</span>
+<span class="nc" id="L166">                    OutlinedTextField(</span>
+<span class="nc" id="L167">                        value = s.translation,</span>
+<span class="nc" id="L168">                        onValueChange = { vm.setSentenceTranslation(idx, it) },</span>
+<span class="pc bnc" id="L169" title="All 2 branches missed.">                        label = { Text(stringResource(R.string.word_edit_sentence_translation)) },</span>
+<span class="nc" id="L170">                        modifier = Modifier.fillMaxWidth()</span>
+                    )
+<span class="nc" id="L172">                }</span>
+<span class="pc" id="L173">            }</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            TextButton(onClick = { vm.addSentence() }) { Text(stringResource(R.string.word_edit_add_sentence)) }</span>
+<span class="fc" id="L175">            Spacer(Modifier.height(16.dp))</span>
+
+            // Footer buttons
+<span class="fc" id="L178">            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.cancel)) }</span>
+<span class="fc" id="L180">                Button(</span>
+<span class="pc" id="L181">                    onClick = { vm.save(onSaved) },</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">                    enabled = !state.isSaving,</span>
+<span class="fc" id="L183">                    modifier = Modifier.weight(1f),</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">                ) { Text(stringResource(R.string.save)) }</span>
+<span class="fc" id="L185">            }</span>
+<span class="fc" id="L186">        }</span>
+<span class="fc" id="L187">    }</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">}</span>
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+<span class="fc" id="L192">private fun DropdownField(</span>
+    label: String,
+    options: List&lt;String&gt;,
+    selected: String,
+    onSelect: (String) -&gt; Unit,
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">    displayFor: (String) -&gt; String = { it },</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">    modifier: Modifier = Modifier.fillMaxWidth(),</span>
+<span class="pc bpc" id="L199" title="12 of 36 branches missed.">) {</span>
+<span class="pc" id="L200">    var expanded by remember { mutableStateOf(false) }</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {</span>
+<span class="fc" id="L202">        OutlinedTextField(</span>
+<span class="fc" id="L203">            value = displayFor(selected),</span>
+<span class="pc" id="L204">            onValueChange = {},</span>
+<span class="fc" id="L205">            readOnly = true,</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">            label = { Text(label) },</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },</span>
+<span class="fc" id="L208">            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true),</span>
+        )
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {</span>
+<span class="nc" id="L211">            options.forEach { opt -&gt;</span>
+<span class="nc" id="L212">                DropdownMenuItem(</span>
+<span class="nc bnc" id="L213" title="All 4 branches missed.">                    text = { Text(displayFor(opt).ifBlank { &quot;—&quot; }) },</span>
+<span class="nc" id="L214">                    onClick = { onSelect(opt); expanded = false },</span>
+                )
+<span class="nc" id="L216">            }</span>
+<span class="nc" id="L217">        }</span>
+<span class="fc" id="L218">    }</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

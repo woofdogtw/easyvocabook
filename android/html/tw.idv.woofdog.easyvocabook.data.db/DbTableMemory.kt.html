@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DbTableMemory.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.data.db</a> &gt; <span class="el_source">DbTableMemory.kt</span></div><h1>DbTableMemory.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.data.db
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import tw.idv.woofdog.easyvocabook.data.model.BookInfo
+import tw.idv.woofdog.easyvocabook.data.model.WordEntry
+import tw.idv.woofdog.easyvocabook.data.model.WordFilter
+
+<span class="fc" id="L9">class DbTableMemory : DbTableBase {</span>
+
+<span class="fc" id="L11">    private var bookInfo: BookInfo = BookInfo(&quot;&quot;, null, &quot;en&quot;, 1, 0)</span>
+<span class="fc" id="L12">    private val words = mutableListOf&lt;WordEntry&gt;()</span>
+
+<span class="fc" id="L14">    suspend fun loadAll(sqlite: DbTableSQLite) = withContext(Dispatchers.IO) {</span>
+<span class="fc" id="L15">        bookInfo = sqlite.getBookInfo()</span>
+<span class="fc" id="L16">        words.clear()</span>
+<span class="fc" id="L17">        words.addAll(sqlite.listWords())</span>
+<span class="fc" id="L18">    }</span>
+
+<span class="nc" id="L20">    override suspend fun getBookInfo(): BookInfo = bookInfo</span>
+
+    override suspend fun updateBookInfo(data: BookInfo) {
+<span class="fc" id="L23">        bookInfo = data</span>
+<span class="fc" id="L24">    }</span>
+
+    override suspend fun listWords(filter: WordFilter): List&lt;WordEntry&gt; {
+<span class="fc" id="L27">        var result = words.toList()</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        if (filter.language != null) result = result.filter { it.language == filter.language }</span>
+<span class="pc bpc" id="L29" title="1 of 6 branches missed.">        if (!filter.query.isNullOrBlank()) {</span>
+<span class="fc" id="L30">            val q = filter.query.lowercase()</span>
+<span class="fc" id="L31">            result = result.filter { w -&gt;</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">                w.word.contains(q, ignoreCase = true) ||</span>
+<span class="pc bpc" id="L33" title="2 of 6 branches missed.">                w.reading?.contains(q, ignoreCase = true) == true ||</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">                w.meaning.contains(q, ignoreCase = true) ||</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">                w.wordMeanings.any { it.meaning.contains(q, ignoreCase = true) }</span>
+            }
+        }
+<span class="fc" id="L38">        return result</span>
+    }
+
+<span class="pc bpc" id="L41" title="3 of 6 branches missed.">    override suspend fun getWord(id: Long): WordEntry? = words.find { it.id == id }</span>
+
+    override suspend fun createWord(data: WordEntry): Long {
+<span class="nc bnc" id="L44" title="All 8 branches missed.">        val id = (words.maxOfOrNull { it.id } ?: 0L) + 1L</span>
+<span class="nc" id="L45">        words.add(data.copy(id = id))</span>
+<span class="nc" id="L46">        return id</span>
+    }
+
+    override suspend fun updateWord(id: Long, data: WordEntry) {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        val idx = words.indexOfFirst { it.id == id }</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (idx &gt;= 0) words[idx] = data.copy(id = id)</span>
+<span class="nc" id="L52">    }</span>
+
+    override suspend fun deleteWord(id: Long) {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        words.removeAll { it.id == id }</span>
+<span class="nc" id="L56">    }</span>
+
+    override suspend fun clearPracticeStats() {
+<span class="fc" id="L59">        val cleared = words.map { it.copy(practiceCount = 0, correctCount = 0, practicedAt = null) }</span>
+<span class="fc" id="L60">        words.clear()</span>
+<span class="fc" id="L61">        words.addAll(cleared)</span>
+<span class="fc" id="L62">    }</span>
+
+    override suspend fun updatePracticeStats(wordId: Long, correct: Boolean, practicedAt: Long) {
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        val idx = words.indexOfFirst { it.id == wordId }</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (idx &gt;= 0) {</span>
+<span class="fc" id="L67">            val w = words[idx]</span>
+<span class="fc" id="L68">            words[idx] = w.copy(</span>
+<span class="fc" id="L69">                practiceCount = w.practiceCount + 1,</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                correctCount = if (correct) w.correctCount + 1 else w.correctCount,</span>
+<span class="fc" id="L71">                practicedAt = practicedAt,</span>
+            )
+        }
+<span class="fc" id="L74">    }</span>
+
+    // Incremental updates (called after SQLite write succeeds)
+<span class="fc" id="L77">    fun addWord(entry: WordEntry) { words.add(entry) }</span>
+    fun replaceWord(entry: WordEntry) {
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        val idx = words.indexOfFirst { it.id == entry.id }</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (idx &gt;= 0) {</span>
+<span class="fc" id="L81">            val existing = words[idx]</span>
+            // Preserve stats that the editor must not overwrite
+<span class="fc" id="L83">            words[idx] = entry.copy(</span>
+<span class="fc" id="L84">                practiceCount = existing.practiceCount,</span>
+<span class="fc" id="L85">                correctCount = existing.correctCount,</span>
+<span class="fc" id="L86">                createdAt = existing.createdAt,</span>
+<span class="fc" id="L87">                practicedAt = existing.practicedAt,</span>
+            )
+        } else {
+<span class="nc" id="L90">            words.add(entry)</span>
+        }
+<span class="fc" id="L92">    }</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">    fun removeWord(id: Long) { words.removeAll { it.id == id } }</span>
+<span class="fc" id="L94">    fun allWords(): List&lt;WordEntry&gt; = words.toList()</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

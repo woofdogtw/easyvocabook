@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuizScreen.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui.quiz</a> &gt; <span class="el_source">QuizScreen.kt</span></div><h1>QuizScreen.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui.quiz
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import tw.idv.woofdog.easyvocabook.R
+import tw.idv.woofdog.easyvocabook.quiz.McqCard
+import tw.idv.woofdog.easyvocabook.quiz.TypingCard
+import tw.idv.woofdog.easyvocabook.quiz.TypingResult
+import tw.idv.woofdog.easyvocabook.ui.Labels
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+<span class="pc bpc" id="L34" title="10 of 22 branches missed.">fun QuizScreen(vm: QuizViewModel = viewModel()) {</span>
+<span class="fc" id="L35">    val state by vm.state.collectAsStateWithLifecycle()</span>
+<span class="fc" id="L36">    val languages = listOf(null) + Labels.SUPPORTED_LANGUAGES</span>
+<span class="pc" id="L37">    var selectedLang by remember { mutableStateOf&lt;String?&gt;(null) }</span>
+<span class="pc" id="L38">    var langMenuExpanded by remember { mutableStateOf(false) }</span>
+
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">    Scaffold(</span>
+<span class="pc" id="L41">        topBar = {</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">            TopAppBar(</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">                title = { Text(stringResource(R.string.tab_quiz)) },</span>
+<span class="pc" id="L44">                actions = {</span>
+<span class="fc" id="L45">                    ExposedDropdownMenuBox(</span>
+<span class="fc" id="L46">                        expanded = langMenuExpanded,</span>
+<span class="pc" id="L47">                        onExpandedChange = { langMenuExpanded = it },</span>
+<span class="pc" id="L48">                    ) {</span>
+<span class="fc" id="L49">                        OutlinedTextField(</span>
+<span class="pc bpc" id="L50" title="2 of 4 branches missed.">                            value = selectedLang?.let { stringResource(Labels.langResId(it)) } ?: stringResource(R.string.quiz_language_all),</span>
+<span class="pc" id="L51">                            onValueChange = {},</span>
+<span class="fc" id="L52">                            readOnly = true,</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(langMenuExpanded) },</span>
+<span class="fc" id="L54">                            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true).width(160.dp),</span>
+<span class="fc" id="L55">                            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),</span>
+                        )
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">                        ExposedDropdownMenu(expanded = langMenuExpanded, onDismissRequest = { langMenuExpanded = false }) {</span>
+<span class="nc" id="L58">                            languages.forEach { lang -&gt;</span>
+<span class="nc" id="L59">                                DropdownMenuItem(</span>
+<span class="nc bnc" id="L60" title="All 6 branches missed.">                                    text = { Text(lang?.let { stringResource(Labels.langResId(it)) } ?: stringResource(R.string.quiz_language_all)) },</span>
+<span class="nc" id="L61">                                    onClick = {</span>
+<span class="nc" id="L62">                                        selectedLang = lang</span>
+<span class="nc" id="L63">                                        langMenuExpanded = false</span>
+<span class="nc" id="L64">                                        vm.setLanguageFilter(lang)</span>
+<span class="nc" id="L65">                                    }</span>
+                                )
+<span class="nc" id="L67">                            }</span>
+<span class="nc" id="L68">                        }</span>
+<span class="fc" id="L69">                    }</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                    IconButton(onClick = { vm.skip() }) {</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">                        Icon(Icons.Default.SkipNext, contentDescription = stringResource(R.string.quiz_skip))</span>
+<span class="fc" id="L72">                    }</span>
+<span class="fc" id="L73">                }</span>
+            )
+<span class="fc" id="L75">        }</span>
+<span class="pc" id="L76">    ) { padding -&gt;</span>
+<span class="fc" id="L77">        Box(Modifier.padding(padding).fillMaxSize()) {</span>
+<span class="pc" id="L78">            when (val s = state) {</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">                is QuizUiState.Loading -&gt; CircularProgressIndicator(Modifier.align(Alignment.Center))</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">                is QuizUiState.Empty -&gt; EmptyState()</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                is QuizUiState.TypingCard -&gt; TypingCardView(s.card, s.inputs, vm)</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">                is QuizUiState.TypingResult -&gt; TypingResultView(s.result, vm)</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                is QuizUiState.McqCard -&gt; McqCardView(s.card, s.selected, vm)</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">                is QuizUiState.McqResult -&gt; McqResultView(s.result, vm)</span>
+<span class="nc" id="L85">            }</span>
+<span class="fc" id="L86">        }</span>
+<span class="fc" id="L87">    }</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">}</span>
+
+@Composable
+<span class="pc bpc" id="L91" title="3 of 6 branches missed.">private fun EmptyState() {</span>
+<span class="fc" id="L92">    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {</span>
+<span class="fc" id="L93">        Text(stringResource(R.string.quiz_empty), textAlign = androidx.compose.ui.text.style.TextAlign.Center)</span>
+<span class="fc" id="L94">    }</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">}</span>
+
+@Composable
+<span class="pc bpc" id="L98" title="10 of 24 branches missed.">private fun TypingCardView(card: TypingCard, inputs: List&lt;String&gt;, vm: QuizViewModel) {</span>
+<span class="fc" id="L99">    val fieldCount = card.fields.size</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">    val focusRequesters = remember(fieldCount) { List(fieldCount) { FocusRequester() } }</span>
+<span class="fc" id="L101">    val submitFocus = remember { FocusRequester() }</span>
+<span class="fc" id="L102">    val keyboard = LocalSoftwareKeyboardController.current</span>
+
+<span class="fc" id="L104">    Column(</span>
+<span class="fc" id="L105">        Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),</span>
+<span class="fc" id="L106">        verticalArrangement = Arrangement.spacedBy(12.dp),</span>
+    ) {
+<span class="fc" id="L108">        Text(card.meaningPrompt, fontSize = 22.sp, fontWeight = FontWeight.Bold)</span>
+<span class="fc" id="L109">        Text(stringResource(R.string.quiz_typing_label), style = MaterialTheme.typography.bodyMedium)</span>
+<span class="fc" id="L110">        card.fields.forEachIndexed { idx, field -&gt;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">            val labelText = Labels.formLabelResId(field.label)</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">                ?.let { stringResource(it) } ?: field.label</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            val isLast = idx == fieldCount - 1</span>
+<span class="fc" id="L114">            OutlinedTextField(</span>
+<span class="pc bpc" id="L115" title="3 of 6 branches missed.">                value = inputs.getOrElse(idx) { &quot;&quot; },</span>
+<span class="pc bpc" id="L116" title="2 of 6 branches missed.">                onValueChange = { vm.updateTypingInput(idx, it) },</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">                label = { Text(String.format(stringResource(R.string.quiz_enter_form), labelText)) },</span>
+<span class="fc" id="L118">                modifier = Modifier.fillMaxWidth().focusRequester(focusRequesters[idx]),</span>
+<span class="fc" id="L119">                singleLine = true,</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                keyboardOptions = KeyboardOptions(imeAction = if (isLast) ImeAction.Done else ImeAction.Next),</span>
+<span class="fc" id="L121">                keyboardActions = KeyboardActions(</span>
+<span class="pc" id="L122">                    onNext = { focusRequesters[idx + 1].requestFocus() },</span>
+<span class="pc bnc" id="L123" title="All 2 branches missed.">                    onDone = { submitFocus.requestFocus(); keyboard?.hide() },</span>
+                ),
+            )
+<span class="fc" id="L126">        }</span>
+<span class="fc" id="L127">        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {</span>
+<span class="pc bpc" id="L128" title="3 of 8 branches missed.">            TextButton(onClick = { vm.giveUpTyping() }) { Text(stringResource(R.string.quiz_give_up)) }</span>
+<span class="fc" id="L129">            Button(</span>
+<span class="pc bpc" id="L130" title="7 of 12 branches missed.">                onClick = { vm.submitTyping(inputs) },</span>
+<span class="fc" id="L131">                modifier = Modifier.focusRequester(submitFocus),</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">            ) { Text(stringResource(R.string.quiz_submit)) }</span>
+<span class="fc" id="L133">        }</span>
+<span class="fc" id="L134">    }</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">}</span>
+
+@Composable
+<span class="pc bpc" id="L138" title="9 of 18 branches missed.">private fun TypingResultView(result: TypingResult, vm: QuizViewModel) {</span>
+<span class="fc" id="L139">    val green = MaterialTheme.colorScheme.primary</span>
+<span class="fc" id="L140">    val red = MaterialTheme.colorScheme.error</span>
+<span class="fc" id="L141">    Column(</span>
+<span class="fc" id="L142">        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),</span>
+<span class="fc" id="L143">        verticalArrangement = Arrangement.spacedBy(8.dp),</span>
+    ) {
+<span class="fc" id="L145">        Text(result.card.meaningPrompt, fontSize = 20.sp, fontWeight = FontWeight.Bold)</span>
+<span class="fc" id="L146">        result.fieldResults.forEach { fr -&gt;</span>
+<span class="fc" id="L147">            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="fc bfc" id="L148" title="All 4 branches covered.">                Text(if (fr.correct) &quot;✓&quot; else &quot;✗&quot;, color = if (fr.correct) green else red, fontSize = 18.sp)</span>
+<span class="fc" id="L149">                Column {</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">                    val labelText = Labels.formLabelResId(fr.label)</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                        ?.let { stringResource(it) } ?: fr.label</span>
+<span class="fc" id="L152">                    Text(labelText, style = MaterialTheme.typography.labelSmall)</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">                    if (!fr.correct) Text(fr.correctValue, color = green)</span>
+<span class="fc" id="L154">                }</span>
+<span class="fc" id="L155">            }</span>
+<span class="fc" id="L156">        }</span>
+<span class="pc bpc" id="L157" title="2 of 4 branches missed.">        if (result.synonyms.isNotEmpty()) {</span>
+<span class="nc" id="L158">            Text(stringResource(R.string.quiz_synonyms), style = MaterialTheme.typography.labelMedium)</span>
+<span class="nc" id="L159">            Text(result.synonyms.joinToString(&quot;, &quot;))</span>
+<span class="fc" id="L160">        }</span>
+<span class="fc" id="L161">        Spacer(Modifier.height(8.dp))</span>
+<span class="pc bpc" id="L162" title="4 of 8 branches missed.">        Button(onClick = { vm.next() }) { Text(stringResource(R.string.quiz_next)) }</span>
+<span class="fc" id="L163">    }</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">}</span>
+
+@Composable
+<span class="pc bpc" id="L167" title="12 of 24 branches missed.">private fun McqCardView(card: McqCard, selected: Set&lt;String&gt;, vm: QuizViewModel) {</span>
+<span class="fc" id="L168">    val word = card.word</span>
+<span class="fc" id="L169">    Column(Modifier.fillMaxSize()) {</span>
+<span class="fc" id="L170">        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {</span>
+<span class="fc" id="L171">            Text(word.word, fontSize = 24.sp, fontWeight = FontWeight.Bold)</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">            if (word.reading != null) Text(&quot;(${word.reading})&quot;, style = MaterialTheme.typography.bodyMedium)</span>
+<span class="fc" id="L173">            Text(stringResource(R.string.quiz_mcq_label), style = MaterialTheme.typography.bodyMedium)</span>
+<span class="fc" id="L174">        }</span>
+<span class="pc bpc" id="L175" title="13 of 18 branches missed.">        LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp)) {</span>
+<span class="fc" id="L176">            itemsIndexed(card.options) { _, opt -&gt;</span>
+                Row(verticalAlignment = Alignment.CenterVertically) {
+<span class="nc" id="L178">                    Checkbox(checked = opt.meaning in selected, onCheckedChange = { vm.toggleMcqSelection(opt.meaning) })</span>
+                    Text(opt.meaning, modifier = Modifier.weight(1f))
+                }
+            }
+<span class="fc" id="L182">        }</span>
+<span class="fc" id="L183">        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {</span>
+<span class="pc bpc" id="L184" title="4 of 8 branches missed.">            TextButton(onClick = { vm.giveUpMcq() }) { Text(stringResource(R.string.quiz_give_up)) }</span>
+<span class="pc bpc" id="L185" title="9 of 14 branches missed.">            Button(onClick = { vm.submitMcq(selected) }) { Text(stringResource(R.string.quiz_submit)) }</span>
+<span class="fc" id="L186">        }</span>
+<span class="fc" id="L187">    }</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">}</span>
+
+@Composable
+<span class="pc bpc" id="L191" title="9 of 18 branches missed.">private fun McqResultView(result: tw.idv.woofdog.easyvocabook.quiz.McqResult, vm: QuizViewModel) {</span>
+<span class="fc" id="L192">    val green = MaterialTheme.colorScheme.primary</span>
+<span class="fc" id="L193">    val red = MaterialTheme.colorScheme.error</span>
+<span class="fc" id="L194">    Column(Modifier.fillMaxSize()) {</span>
+<span class="fc" id="L195">        Column(Modifier.padding(16.dp)) {</span>
+<span class="fc" id="L196">            Text(result.card.word.word, fontSize = 24.sp, fontWeight = FontWeight.Bold)</span>
+<span class="fc" id="L197">        }</span>
+<span class="pc bpc" id="L198" title="5 of 6 branches missed.">        LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp)) {</span>
+<span class="fc" id="L199">            itemsIndexed(result.card.options) { _, opt -&gt;</span>
+                val wasSelected = opt.meaning in result.selected
+                val color = when {
+                    opt.isCorrect -&gt; green
+                    wasSelected -&gt; red
+                    else -&gt; MaterialTheme.colorScheme.onSurface
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (opt.isCorrect) &quot;✓&quot; else if (wasSelected) &quot;✗&quot; else &quot;  &quot;,
+                        color = color,
+                        modifier = Modifier.width(24.dp),
+                    )
+                    Text(opt.meaning, color = color, modifier = Modifier.weight(1f))
+                }
+            }
+<span class="fc" id="L215">        }</span>
+<span class="pc bpc" id="L216" title="3 of 6 branches missed.">        Button(onClick = { vm.next() }, modifier = Modifier.padding(16.dp)) {</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">            Text(stringResource(R.string.quiz_next))</span>
+<span class="fc" id="L218">        }</span>
+<span class="fc" id="L219">    }</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

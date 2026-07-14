@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NetSftp.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.network</a> &gt; <span class="el_source">NetSftp.kt</span></div><h1>NetSftp.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.network
+
+import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import net.schmizz.sshj.SSHClient
+import net.schmizz.sshj.sftp.Response
+import net.schmizz.sshj.sftp.SFTPException
+import net.schmizz.sshj.transport.verification.HostKeyVerifier
+import java.io.File
+import java.security.MessageDigest
+import java.security.PublicKey
+import java.util.Base64
+
+<span class="nc" id="L15">class NetSftp(</span>
+<span class="nc" id="L16">    private val host: String,</span>
+<span class="nc" id="L17">    private val port: Int,</span>
+<span class="nc" id="L18">    private val username: String,</span>
+<span class="nc" id="L19">    private val password: String,</span>
+<span class="nc" id="L20">    private val directory: String,</span>
+<span class="nc" id="L21">    private val context: Context,</span>
+) : SyncClient {
+
+<span class="nc bnc" id="L24" title="All 2 branches missed.">    private val remotePath: String get() = if (directory.isBlank()) &quot;easyvocabook.db&quot; else &quot;$directory/easyvocabook.db&quot;</span>
+
+    private fun buildClient(): SSHClient {
+<span class="nc" id="L27">        val knownHostsFile = File(context.filesDir, &quot;sftp_known_hosts&quot;)</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (!knownHostsFile.exists()) knownHostsFile.createNewFile()</span>
+<span class="nc" id="L29">        val client = SSHClient()</span>
+<span class="nc" id="L30">        client.addHostKeyVerifier(TofuHostKeyVerifier(knownHostsFile))</span>
+<span class="nc" id="L31">        client.connect(host, port)</span>
+<span class="nc" id="L32">        client.authPassword(username, password)</span>
+<span class="nc" id="L33">        return client</span>
+    }
+
+<span class="nc bnc" id="L36" title="All 2 branches missed.">    override suspend fun remoteLastModified(cacheDir: File): Long? = withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L37">        val ssh = buildClient()</span>
+<span class="nc" id="L38">        try {</span>
+<span class="nc" id="L39">            val sftp = ssh.newSFTPClient()</span>
+<span class="nc" id="L40">            val tmp = File(cacheDir, &quot;evb_sftp_lm_${System.nanoTime()}.db&quot;)</span>
+<span class="nc" id="L41">            try {</span>
+<span class="nc" id="L42">                sftp.get(remotePath, tmp.absolutePath)</span>
+<span class="nc" id="L43">                readLastModified(tmp).also { tmp.delete() }</span>
+<span class="nc" id="L44">            } catch (e: SFTPException) {</span>
+<span class="nc" id="L45">                tmp.delete()</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">                if (e.statusCode == Response.StatusCode.NO_SUCH_FILE) null else throw e</span>
+            } finally {
+<span class="nc" id="L48">                sftp.close()</span>
+            }
+        } finally {
+<span class="nc" id="L51">            ssh.disconnect()</span>
+<span class="nc" id="L52">        }</span>
+<span class="nc" id="L53">    }</span>
+
+<span class="nc bnc" id="L55" title="All 2 branches missed.">    override suspend fun upload(file: File) = withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L56">        val ssh = buildClient()</span>
+<span class="nc" id="L57">        try {</span>
+<span class="nc" id="L58">            val sftp = ssh.newSFTPClient()</span>
+<span class="nc" id="L59">            try {</span>
+<span class="nc bnc" id="L60" title="All 4 branches missed.">                if (directory.isNotBlank()) {</span>
+<span class="nc" id="L61">                    runCatching { sftp.mkdirs(directory) }</span>
+                }
+<span class="nc" id="L63">                sftp.put(file.absolutePath, remotePath)</span>
+            } finally {
+<span class="nc" id="L65">                sftp.close()</span>
+            }
+        } finally {
+<span class="nc" id="L68">            ssh.disconnect()</span>
+        }
+        Unit
+<span class="nc" id="L71">    }</span>
+
+<span class="nc bnc" id="L73" title="All 2 branches missed.">    override suspend fun download(dest: File) = withContext(Dispatchers.IO) {</span>
+<span class="nc" id="L74">        val ssh = buildClient()</span>
+<span class="nc" id="L75">        try {</span>
+<span class="nc" id="L76">            val sftp = ssh.newSFTPClient()</span>
+<span class="nc" id="L77">            try { sftp.get(remotePath, dest.absolutePath) } finally { sftp.close() }</span>
+        } finally {
+<span class="nc" id="L79">            ssh.disconnect()</span>
+        }
+        Unit
+<span class="nc" id="L82">    }</span>
+
+<span class="nc" id="L84">    override fun close() {}</span>
+}
+
+// TOFU: trust unknown host on first connect (persist SHA-256 fingerprint); reject if key changes
+<span class="nc" id="L88">private class TofuHostKeyVerifier(private val knownHostsFile: File) : HostKeyVerifier {</span>
+    override fun verify(hostname: String, port: Int, key: PublicKey): Boolean {
+<span class="nc" id="L90">        val fingerprint = sha256(key)</span>
+<span class="nc" id="L91">        val lineKey = &quot;$hostname:$port&quot;</span>
+<span class="nc" id="L92">        val known = mutableMapOf&lt;String, String&gt;()</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (knownHostsFile.exists()) {</span>
+<span class="nc" id="L94">            knownHostsFile.readLines().forEach { line -&gt;</span>
+<span class="nc" id="L95">                val parts = line.split(&quot; &quot;, limit = 2)</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">                if (parts.size == 2) known[parts[0]] = parts[1]</span>
+<span class="nc" id="L97">            }</span>
+        }
+<span class="nc" id="L99">        val stored = known[lineKey]</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (stored == null) {</span>
+<span class="nc" id="L101">            knownHostsFile.appendText(&quot;$lineKey $fingerprint\n&quot;)</span>
+<span class="nc" id="L102">            return true</span>
+        }
+<span class="nc" id="L104">        return stored == fingerprint</span>
+    }
+
+<span class="nc" id="L107">    override fun findExistingAlgorithms(hostname: String, port: Int): List&lt;String&gt; = emptyList()</span>
+
+    private fun sha256(key: PublicKey): String =
+<span class="nc" id="L110">        Base64.getEncoder().encodeToString(MessageDigest.getInstance(&quot;SHA-256&quot;).digest(key.encoded))</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

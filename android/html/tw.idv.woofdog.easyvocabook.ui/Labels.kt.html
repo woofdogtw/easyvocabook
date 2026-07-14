@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Labels.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">tw.idv.woofdog.easyvocabook.ui</a> &gt; <span class="el_source">Labels.kt</span></div><h1>Labels.kt</h1><pre class="source lang-java linenums">package tw.idv.woofdog.easyvocabook.ui
+
+import java.util.Locale
+import tw.idv.woofdog.easyvocabook.R
+
+object Labels {
+
+    // ── Form label resource IDs ───────────────────────────────────────────────
+
+<span class="pc bpc" id="L10" title="21 of 26 branches missed.">    fun formLabelResId(key: String): Int? = when (key) {</span>
+<span class="fc" id="L11">        &quot;word&quot;            -&gt; R.string.form_word</span>
+<span class="fc" id="L12">        &quot;base_form&quot;       -&gt; R.string.form_base_form</span>
+<span class="fc" id="L13">        &quot;past_tense&quot;      -&gt; R.string.form_past_tense</span>
+<span class="fc" id="L14">        &quot;past_participle&quot; -&gt; R.string.form_past_participle</span>
+<span class="fc" id="L15">        &quot;gerund&quot;          -&gt; R.string.form_gerund</span>
+<span class="nc" id="L16">        &quot;singular&quot;        -&gt; R.string.form_singular</span>
+<span class="nc" id="L17">        &quot;plural&quot;          -&gt; R.string.form_plural</span>
+<span class="nc" id="L18">        &quot;comparative&quot;     -&gt; R.string.form_comparative</span>
+<span class="nc" id="L19">        &quot;superlative&quot;     -&gt; R.string.form_superlative</span>
+<span class="nc" id="L20">        &quot;dictionary_form&quot; -&gt; R.string.form_dictionary_form</span>
+<span class="nc" id="L21">        &quot;masu_form&quot;       -&gt; R.string.form_masu_form</span>
+<span class="nc" id="L22">        &quot;ta_form&quot;         -&gt; R.string.form_ta_form</span>
+<span class="nc" id="L23">        &quot;te_form&quot;         -&gt; R.string.form_te_form</span>
+<span class="nc" id="L24">        &quot;nai_form&quot;        -&gt; R.string.form_nai_form</span>
+<span class="nc" id="L25">        &quot;negative&quot;        -&gt; R.string.form_negative</span>
+<span class="nc" id="L26">        &quot;past&quot;            -&gt; R.string.form_past</span>
+<span class="nc" id="L27">        &quot;particle&quot;        -&gt; R.string.form_particle</span>
+<span class="nc" id="L28">        &quot;phonetic&quot;        -&gt; R.string.form_phonetic</span>
+<span class="nc" id="L29">        &quot;collocation&quot;     -&gt; R.string.form_collocation</span>
+<span class="nc" id="L30">        &quot;kanji&quot;           -&gt; R.string.form_kanji</span>
+<span class="nc" id="L31">        &quot;hiragana&quot;        -&gt; R.string.form_hiragana</span>
+<span class="nc" id="L32">        &quot;pitch_accent&quot;    -&gt; R.string.form_pitch_accent</span>
+<span class="nc" id="L33">        &quot;counter&quot;         -&gt; R.string.form_counter</span>
+<span class="nc" id="L34">        &quot;transitive_pair&quot; -&gt; R.string.form_transitive_pair</span>
+<span class="nc" id="L35">        &quot;origin&quot;          -&gt; R.string.form_origin</span>
+<span class="nc" id="L36">        else              -&gt; null</span>
+<span class="fc" id="L37">    }</span>
+
+    // ── Supported languages ───────────────────────────────────────────────────
+
+<span class="fc" id="L41">    val SUPPORTED_LANGUAGES = listOf(&quot;en&quot;, &quot;ja&quot;)</span>
+
+<span class="fc" id="L43">    fun langResId(code: String): Int = when (code) {</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        &quot;ja&quot; -&gt; R.string.lang_ja</span>
+<span class="fc" id="L45">        else -&gt; R.string.lang_en</span>
+<span class="fc" id="L46">    }</span>
+
+    // ── Canonical label lists per language ────────────────────────────────────
+
+<span class="pc" id="L50">    val EN_FORM_LABELS = listOf(</span>
+<span class="fc" id="L51">        &quot;base_form&quot;, &quot;past_tense&quot;, &quot;past_participle&quot;, &quot;gerund&quot;,</span>
+<span class="fc" id="L52">        &quot;singular&quot;, &quot;plural&quot;, &quot;comparative&quot;, &quot;superlative&quot;,</span>
+<span class="fc" id="L53">        &quot;phonetic&quot;, &quot;collocation&quot;,</span>
+    )
+
+<span class="pc" id="L56">    val JA_FORM_LABELS = listOf(</span>
+<span class="fc" id="L57">        &quot;dictionary_form&quot;, &quot;masu_form&quot;, &quot;ta_form&quot;, &quot;te_form&quot;, &quot;nai_form&quot;,</span>
+<span class="fc" id="L58">        &quot;negative&quot;, &quot;past&quot;, &quot;particle&quot;,</span>
+<span class="fc" id="L59">        &quot;kanji&quot;, &quot;hiragana&quot;, &quot;pitch_accent&quot;, &quot;counter&quot;, &quot;transitive_pair&quot;, &quot;origin&quot;,</span>
+    )
+
+<span class="nc" id="L62">    fun formLabelsForLanguage(lang: String): List&lt;String&gt; = when (lang) {</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        &quot;ja&quot; -&gt; JA_FORM_LABELS</span>
+<span class="nc" id="L64">        else -&gt; EN_FORM_LABELS</span>
+<span class="nc" id="L65">    }</span>
+
+    // ── POS display (locale-aware, no resource needed — already short strings) ─
+
+    fun posDisplay(pos: String): String {
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (pos.isBlank()) return pos</span>
+<span class="nc" id="L71">        val isZh = Locale.getDefault().language == &quot;zh&quot;</span>
+<span class="nc bnc" id="L72" title="All 15 branches missed.">        return when (pos) {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            &quot;noun&quot;         -&gt; if (isZh) &quot;名詞 (noun)&quot;          else &quot;Noun&quot;</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            &quot;verb&quot;         -&gt; if (isZh) &quot;動詞 (verb)&quot;          else &quot;Verb&quot;</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            &quot;adjective&quot;    -&gt; if (isZh) &quot;形容詞 (adjective)&quot;   else &quot;Adjective&quot;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            &quot;adverb&quot;       -&gt; if (isZh) &quot;副詞 (adverb)&quot;        else &quot;Adverb&quot;</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            &quot;pronoun&quot;      -&gt; if (isZh) &quot;代名詞 (pronoun)&quot;     else &quot;Pronoun&quot;</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            &quot;preposition&quot;  -&gt; if (isZh) &quot;介系詞 (preposition)&quot; else &quot;Preposition&quot;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">            &quot;conjunction&quot;  -&gt; if (isZh) &quot;連接詞 (conjunction)&quot; else &quot;Conjunction&quot;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            &quot;interjection&quot; -&gt; if (isZh) &quot;感嘆詞 (interjection)&quot; else &quot;Interjection&quot;</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            &quot;i-adj&quot;        -&gt; if (isZh) &quot;い形容詞 (i-adj)&quot;     else &quot;i-adjective&quot;</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            &quot;na-adj&quot;       -&gt; if (isZh) &quot;な形容詞 (na-adj)&quot;    else &quot;na-adjective&quot;</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            &quot;particle&quot;     -&gt; if (isZh) &quot;助詞 (particle)&quot;      else &quot;Particle&quot;</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            &quot;aux-verb&quot;     -&gt; if (isZh) &quot;助動詞 (aux-verb)&quot;    else &quot;Aux. verb&quot;</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            &quot;other&quot;        -&gt; if (isZh) &quot;其他 (other)&quot;         else &quot;Other&quot;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            &quot;phrase&quot;       -&gt; if (isZh) &quot;片語 (phrase)&quot;        else &quot;Phrase&quot;</span>
+<span class="nc" id="L87">            else           -&gt; pos</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
