@@ -41,6 +41,12 @@ android {
             all { test ->
                 test.maxParallelForks = 1
                 test.maxHeapSize = "512m"
+                // Robolectric loads classes in a sandbox classloader with no source location;
+                // without this JaCoCo drops them and Robolectric tests report 0% coverage.
+                test.extensions.configure(JacocoTaskExtension::class.java) {
+                    isIncludeNoLocationClasses = true
+                    excludes = listOf("jdk.internal.*")
+                }
             }
         }
     }
