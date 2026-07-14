@@ -129,6 +129,7 @@ fn typing_view(app: &App) -> Element<'_, Message> {
                     text(format!("{label_display}:")).width(Length::Fixed(120.0)),
                     text_input("", value)
                         .on_input(move |s| Message::QuizTypingField(i, s))
+                        .on_submit(Message::QuizSubmit)
                         .width(Length::Fill),
                 ]
                 .spacing(8),

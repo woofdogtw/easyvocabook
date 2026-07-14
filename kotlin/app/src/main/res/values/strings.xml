@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">EasyVocaBook</string>
+
+    <!-- Common -->
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="ok">OK</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="add">Add</string>
+
+    <!-- Navigation tabs -->
+    <string name="tab_quiz">Quiz</string>
+    <string name="tab_word_list">Words</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Quiz screen -->
+    <string name="quiz_language_all">All languages</string>
+    <string name="quiz_empty">No words to practice.\nAdd words from the Words tab.</string>
+    <string name="quiz_skip">Skip</string>
+    <string name="quiz_give_up">Give Up</string>
+    <string name="quiz_submit">Submit</string>
+    <string name="quiz_next">Next</string>
+    <string name="quiz_typing_label">Translate and fill in the word forms:</string>
+    <string name="quiz_mcq_label">Select all correct meanings:</string>
+    <string name="quiz_correct">Correct!</string>
+    <string name="quiz_incorrect">Incorrect</string>
+    <string name="quiz_synonyms">Synonyms:</string>
+    <string name="quiz_correct_form">Correct answer:</string>
+    <string name="quiz_enter_form">Enter %1$s</string>
+
+    <!-- Word list screen -->
+    <string name="word_list_search">Search words…</string>
+    <string name="word_list_empty_title">No words yet</string>
+    <string name="word_list_empty_action">Tap + to add your first word.</string>
+    <string name="word_list_sort">Sort</string>
+    <string name="word_list_menu_sort">Sort</string>
+    <string name="word_list_menu_import">Import</string>
+    <string name="word_list_menu_export">Export</string>
+    <string name="word_list_menu_stats">Practice Statistics</string>
+    <string name="word_list_menu_sync">Sync Now</string>
+    <string name="word_list_action_edit">Edit</string>
+    <string name="word_list_action_delete">Delete</string>
+    <string name="word_list_delete_title">Delete Word</string>
+    <string name="word_list_delete_message">Delete \"%1$s\"? This cannot be undone.</string>
+    <string name="word_list_action_info">More Info</string>
+    <string name="word_list_action_homophones">Homophones</string>
+    <string name="word_list_correct_rate">%1$d%%</string>
+    <string name="word_list_no_practice">—</string>
+
+    <!-- Language names -->
+    <string name="lang_en">English</string>
+    <string name="lang_ja">Japanese</string>
+
+    <!-- Word edit sheet -->
+    <string name="word_edit_title_add">Add Word</string>
+    <string name="word_edit_title_edit">Edit Word</string>
+    <string name="word_edit_language">Language</string>
+    <string name="word_edit_word">Word</string>
+    <string name="word_edit_reading">Reading</string>
+    <string name="word_edit_pos">Part of Speech</string>
+    <string name="word_edit_meaning_primary">Primary Meaning</string>
+    <string name="word_edit_additional_meanings">Additional Meanings</string>
+    <string name="word_edit_add_meaning">+ Add Meaning</string>
+    <string name="word_edit_note">Note</string>
+    <string name="word_edit_word_forms">Word Forms</string>
+    <string name="word_edit_add_form">+ Add Form</string>
+    <string name="word_edit_form_label">Label</string>
+    <string name="word_edit_form_value">Value</string>
+    <string name="word_edit_sentences">Example Sentences</string>
+    <string name="word_edit_add_sentence">+ Add Sentence</string>
+    <string name="word_edit_sentence_text">Sentence</string>
+    <string name="word_edit_sentence_translation">Translation (optional)</string>
+    <string name="word_edit_required_word">Word is required</string>
+    <string name="word_edit_required_meaning">Primary meaning is required</string>
+
+    <!-- Settings screen -->
+    <string name="settings_section_app">App</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_lang_en">English</string>
+    <string name="settings_lang_zh_tw">繁體中文</string>
+    <string name="settings_lang_zh_cn">简体中文</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_auto">System</string>
+    <string name="settings_section_sync">Sync</string>
+    <string name="settings_sync_disabled">Disabled</string>
+    <string name="settings_sync_ftp">FTP/FTPS</string>
+    <string name="settings_sync_sftp">SFTP</string>
+    <string name="settings_sync_drive">Google Drive</string>
+    <string name="settings_ftp_host">Host</string>
+    <string name="settings_ftp_port">Port</string>
+    <string name="settings_ftp_user">Username</string>
+    <string name="settings_ftp_pass">Password</string>
+    <string name="settings_ftp_dir">Directory</string>
+    <string name="settings_ftp_tls">Use FTPS (TLS)</string>
+    <string name="settings_sftp_host">Host</string>
+    <string name="settings_sftp_port">Port</string>
+    <string name="settings_sftp_user">Username</string>
+    <string name="settings_sftp_pass">Password</string>
+    <string name="settings_sftp_dir">Directory</string>
+    <string name="settings_drive_folder">Folder Name</string>
+    <string name="settings_login_google">Log in to Google Drive</string>
+    <string name="settings_logout">Log out</string>
+    <string name="settings_logged_in">✓ Logged in</string>
+    <string name="settings_save_creds">Save Credentials</string>
+    <string name="settings_sync_now">Sync Now</string>
+    <string name="settings_syncing">Syncing…</string>
+    <string name="settings_sync_ok">Sync complete</string>
+    <string name="settings_section_practice">Practice</string>
+    <string name="settings_clear_stats">Clear Practice Statistics</string>
+    <string name="settings_clear_stats_confirm">Clear all practice statistics? This cannot be undone.</string>
+    <string name="settings_clear_yes">Clear</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_about_name">EasyVocaBook</string>
+    <string name="settings_about_version">Version</string>
+    <string name="settings_about_author">Author</string>
+    <string name="settings_about_author_value">Chien-Hong Chan</string>
+
+    <!-- Word form labels -->
+    <string name="form_word">Word</string>
+    <string name="form_base_form">Base form</string>
+    <string name="form_past_tense">Past tense</string>
+    <string name="form_past_participle">Past participle</string>
+    <string name="form_gerund">Gerund</string>
+    <string name="form_singular">Singular</string>
+    <string name="form_plural">Plural</string>
+    <string name="form_comparative">Comparative</string>
+    <string name="form_superlative">Superlative</string>
+    <string name="form_dictionary_form">Dictionary form</string>
+    <string name="form_masu_form">ます form</string>
+    <string name="form_ta_form">た form</string>
+    <string name="form_te_form">て form</string>
+    <string name="form_nai_form">ない form</string>
+    <string name="form_negative">Negative</string>
+    <string name="form_past">Past</string>
+    <string name="form_particle">Particle</string>
+    <string name="form_phonetic">Phonetic</string>
+    <string name="form_collocation">Collocation</string>
+    <string name="form_kanji">Kanji</string>
+    <string name="form_hiragana">Hiragana</string>
+    <string name="form_pitch_accent">Pitch accent</string>
+    <string name="form_counter">Counter</string>
+    <string name="form_transitive_pair">Transitive pair</string>
+    <string name="form_origin">Origin</string>
+
+    <!-- Errors -->
+    <string name="error_db_too_new">Database version is too new. Please update the app.</string>
+    <string name="error_sync_failed">Sync failed: %1$s</string>
+</resources>

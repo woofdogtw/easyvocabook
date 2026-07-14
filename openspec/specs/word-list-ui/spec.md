@@ -43,6 +43,40 @@ all `word_meanings.meaning` entries (secondary meanings).
 - **WHEN** the search filter matches no words
 - **THEN** the table shows "No words match the current filter" with no add button
 
+### Requirement: Row hover highlight
+When the mouse cursor hovers over a word row, the row SHALL change its background to the
+theme's weak background color (`extended_palette().background.weak.color`) to give visual
+feedback of the pointed-to row. The highlight SHALL clear when the cursor leaves the list area.
+
+#### Scenario: Hover highlights the row under the cursor
+- **WHEN** the user moves the mouse pointer over a word row
+- **THEN** that row's background changes to the weak background color; all other rows remain at default
+
+#### Scenario: Highlight clears on cursor exit
+- **WHEN** the cursor leaves the word list area entirely
+- **THEN** all row backgrounds return to default
+
+### Requirement: Context menu position and edge-flip
+The context menu SHALL appear adjacent to the right-click position. If the menu would extend
+beyond the window boundary, it SHALL flip to remain within bounds:
+- **Horizontal overflow** (right edge): menu flips left of the cursor
+- **Vertical overflow** (bottom edge): menu flips upward from the cursor
+
+The overlay SHALL measure the available area at layout time (e.g., via a `responsive` wrapper)
+to determine whether flipping is needed.
+
+#### Scenario: Context menu appears at cursor position
+- **WHEN** the user right-clicks a row at a position not near any window edge
+- **THEN** the context menu top-left corner aligns with the cursor position
+
+#### Scenario: Context menu flips up near bottom edge
+- **WHEN** the user right-clicks a row near the bottom of the window and the menu would extend below the window boundary
+- **THEN** the context menu bottom edge aligns with the cursor position (menu opens upward)
+
+#### Scenario: Context menu flips left near right edge
+- **WHEN** the user right-clicks a row near the right side of the window and the menu would extend past the right boundary
+- **THEN** the context menu right edge aligns with the cursor position (menu opens leftward)
+
 ### Requirement: Row context menu
 Each row in the word list SHALL support a context menu with options:
 - Edit: opens the word-edit dialog pre-filled with the word's data
@@ -72,6 +106,24 @@ The Word List tab SHALL display a bottom action bar with:
 - **WHEN** the user taps "…" in the action bar
 - **THEN** a menu appears with "Import words", "Export words", "Practice statistics summary"
 
+### Requirement: Scrollbar for large lists
+When the word list contains more items than fit in the visible viewport, the Word List tab SHALL
+display a scrollbar on the trailing edge of the list. The scrollbar SHALL be draggable: tapping
+or dragging the thumb SHALL scroll the list to the corresponding position, enabling fast navigation
+through large vocabularies (e.g. thousands of words) without repeated swipe gestures.
+
+The scrollbar thumb height SHALL be proportional to the fraction of the list currently visible.
+Tapping anywhere on the scrollbar track SHALL jump the thumb (and list) so the thumb centre
+aligns with the tap position.
+
+#### Scenario: Scrollbar hidden for short list
+- **WHEN** all words fit within the visible viewport
+- **THEN** no scrollbar is displayed
+
+#### Scenario: Drag scrollbar thumb to jump position
+- **WHEN** the user drags the scrollbar thumb toward the bottom
+- **THEN** the list scrolls toward the end proportionally and the thumb follows the finger
+
 ### Requirement: Empty-state guidance
 When the vocabulary book contains zero words (global, not filtered), the Word List tab SHALL
 display a friendly empty state with a message and a button to add the first word.
@@ -79,4 +131,65 @@ display a friendly empty state with a message and a button to add the first word
 #### Scenario: New install shows empty state
 - **WHEN** the database has no words and no filter is active
 - **THEN** the table shows "No words yet. Tap ＋ to add your first word." with a highlighted ＋ button
+
+### Requirement: Android word list — LazyColumn
+On Android, the word list SHALL be implemented as a `LazyColumn` (not a table). Each item row
+SHALL display: word, reading (if present), primary meaning, and correct rate (`XX%` or `—`).
+
+Tapping a row SHALL open a read-only detail bottom sheet. Long-pressing a row SHALL show a
+`DropdownMenu` with options: Edit, Delete, More Info, Homophones (matching the PC context menu).
+
+Sort SHALL be controlled by a sort button in the top bar cycling through: Word ↑, Word ↓,
+Correct Rate ↑, Correct Rate ↓. Sort is performed on the in-memory `DbTableMemory` list.
+
+#### Scenario: Android long-press shows context menu
+- **WHEN** the user long-presses a word row in the Android word list
+- **THEN** a `DropdownMenu` appears with Edit, Delete, More Info, and Homophones options
+
+#### Scenario: Android unpracticed word shows dash
+- **WHEN** a word has `practice_count = 0` in the Android word list
+- **THEN** the correct rate column shows `—`
+
+### Requirement: Android word list — FAB for add
+On Android, the word list screen SHALL display a `FloatingActionButton` (FAB) in the bottom-right
+corner. Tapping it SHALL open the `WordEditSheet` (ModalBottomSheet) in "add new word" mode.
+The FAB SHALL be hidden when no words exist (the empty-state view already provides a highlighted
+add button) and SHALL be hidden during an active sync.
+
+#### Scenario: Android FAB opens word edit sheet
+- **WHEN** the user taps the FAB on the Android word list screen
+- **THEN** the `WordEditSheet` ModalBottomSheet slides up in "add" mode
+
+### Requirement: Android word list — draggable scrollbar
+The word list SHALL display an overlay scrollbar on the trailing edge when the `LazyColumn` has
+more items than the visible viewport. The scrollbar SHALL support drag-to-scroll. Implementation
+uses `rememberLazyListState()` with a custom `BoxWithConstraints` composable:
+
+- **Thumb size**: `(visibleCount / totalItems) × trackHeight`, minimum 32 dp
+- **Thumb position**: proportional to `firstVisibleItemIndex / (totalItems − visibleCount)`
+- **Drag interaction**: `Modifier.pointerInput` with `detectVerticalDragGestures`
+  - `onDragStart`: tapping anywhere on the track jumps the list so thumb centre = tap Y
+  - `onVerticalDrag`: converts pixel delta → item delta via `dragAmount / maxScrollOffset × movableItems`, calls `listState.scrollToItem()`
+- **Touch target**: 20 dp wide; visual thumb 6 dp wide on the trailing edge
+- **Visual feedback**: thumb alpha increases from 0.3 to 0.6 while dragging
+
+#### Scenario: Android scrollbar tap-to-jump
+- **WHEN** the user taps at 75% down the Android scrollbar track
+- **THEN** the list scrolls to approximately 75% of the total word list
+
+### Requirement: Android word list — action bar
+On Android, the word list screen SHALL display a top `TopAppBar` containing:
+- App name or screen title
+- Search icon button: toggles a search `TextField` in the bar
+- Overflow menu (⋮) with: Sort, Import, Export, Practice Statistics, Sync Now
+
+The Sync Now action SHALL trigger the same sync logic as the Settings screen Sync Now button.
+
+#### Scenario: Android search toggle shows text field
+- **WHEN** the user taps the search icon in the Android word list top bar
+- **THEN** a `TextField` appears for real-time filtering of the word list
+
+#### Scenario: Android overflow menu shows actions
+- **WHEN** the user taps ⋮ in the Android word list top bar
+- **THEN** a dropdown shows Sort, Import, Export, Practice Statistics, Sync Now
 

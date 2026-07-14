@@ -257,7 +257,7 @@ impl DriveClient {
     }
 
     async fn find_or_create_folder(&self) -> Result<String, String> {
-        let name = self.folder_name.clone();
+        let name = self.folder_name.replace('\'', "\\'");
         let http = self.http.clone();
         let query = format!(
             "name='{name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"

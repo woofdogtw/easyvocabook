@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">簡易單字練習本</string>
+
+    <!-- Common -->
+    <string name="cancel">取消</string>
+    <string name="save">儲存</string>
+    <string name="ok">確定</string>
+    <string name="delete">刪除</string>
+    <string name="edit">編輯</string>
+    <string name="add">新增</string>
+
+    <!-- Navigation tabs -->
+    <string name="tab_quiz">練習</string>
+    <string name="tab_word_list">單字</string>
+    <string name="tab_settings">設定</string>
+
+    <!-- Quiz screen -->
+    <string name="quiz_language_all">全部語言</string>
+    <string name="quiz_empty">沒有可練習的單字。\n請在「單字」頁面新增單字。</string>
+    <string name="quiz_skip">跳過</string>
+    <string name="quiz_give_up">放棄</string>
+    <string name="quiz_submit">送出</string>
+    <string name="quiz_next">下一題</string>
+    <string name="quiz_typing_label">翻譯並填入單字形態：</string>
+    <string name="quiz_mcq_label">選出所有正確的意思：</string>
+    <string name="quiz_correct">正確！</string>
+    <string name="quiz_incorrect">錯誤</string>
+    <string name="quiz_synonyms">同義詞：</string>
+    <string name="quiz_correct_form">正確答案：</string>
+    <string name="quiz_enter_form">輸入 %1$s</string>
+
+    <!-- Word list screen -->
+    <string name="word_list_search">搜尋單字…</string>
+    <string name="word_list_empty_title">尚無單字</string>
+    <string name="word_list_empty_action">點選 + 新增第一個單字。</string>
+    <string name="word_list_sort">排序</string>
+    <string name="word_list_menu_sort">排序</string>
+    <string name="word_list_menu_import">匯入</string>
+    <string name="word_list_menu_export">匯出</string>
+    <string name="word_list_menu_stats">練習統計</string>
+    <string name="word_list_menu_sync">立即同步</string>
+    <string name="word_list_action_edit">編輯</string>
+    <string name="word_list_action_delete">刪除</string>
+    <string name="word_list_delete_title">刪除單字</string>
+    <string name="word_list_delete_message">刪除「%1$s」？此操作無法復原。</string>
+    <string name="word_list_action_info">詳細資訊</string>
+    <string name="word_list_action_homophones">同音詞</string>
+    <string name="word_list_no_practice">—</string>
+
+    <!-- Language names -->
+    <string name="lang_en">英文</string>
+    <string name="lang_ja">日文</string>
+
+    <!-- Word edit sheet -->
+    <string name="word_edit_title_add">新增單字</string>
+    <string name="word_edit_title_edit">編輯單字</string>
+    <string name="word_edit_language">語言</string>
+    <string name="word_edit_word">單字</string>
+    <string name="word_edit_reading">讀音</string>
+    <string name="word_edit_pos">詞性</string>
+    <string name="word_edit_meaning_primary">主要意思</string>
+    <string name="word_edit_additional_meanings">其他意思</string>
+    <string name="word_edit_add_meaning">+ 新增意思</string>
+    <string name="word_edit_note">備注</string>
+    <string name="word_edit_word_forms">單字形態</string>
+    <string name="word_edit_add_form">+ 新增形態</string>
+    <string name="word_edit_form_label">標籤</string>
+    <string name="word_edit_form_value">數值</string>
+    <string name="word_edit_sentences">例句</string>
+    <string name="word_edit_add_sentence">+ 新增例句</string>
+    <string name="word_edit_sentence_text">例句</string>
+    <string name="word_edit_sentence_translation">翻譯（選填）</string>
+    <string name="word_edit_required_word">請輸入單字</string>
+    <string name="word_edit_required_meaning">請輸入主要意思</string>
+
+    <!-- Settings screen -->
+    <string name="settings_section_app">應用程式</string>
+    <string name="settings_language">語言</string>
+    <string name="settings_theme">主題</string>
+    <string name="settings_theme_light">淺色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_theme_auto">跟隨系統</string>
+    <string name="settings_section_sync">同步</string>
+    <string name="settings_sync_disabled">停用</string>
+    <string name="settings_sync_drive">Google 雲端硬碟</string>
+    <string name="settings_ftp_host">主機</string>
+    <string name="settings_ftp_port">連接埠</string>
+    <string name="settings_ftp_user">使用者名稱</string>
+    <string name="settings_ftp_pass">密碼</string>
+    <string name="settings_ftp_dir">目錄</string>
+    <string name="settings_ftp_tls">使用 FTPS（TLS）</string>
+    <string name="settings_sftp_host">主機</string>
+    <string name="settings_sftp_port">連接埠</string>
+    <string name="settings_sftp_user">使用者名稱</string>
+    <string name="settings_sftp_pass">密碼</string>
+    <string name="settings_sftp_dir">目錄</string>
+    <string name="settings_drive_folder">資料夾名稱</string>
+    <string name="settings_login_google">登入 Google 雲端硬碟</string>
+    <string name="settings_logout">登出</string>
+    <string name="settings_logged_in">✓ 已登入</string>
+    <string name="settings_save_creds">儲存帳號設定</string>
+    <string name="settings_sync_now">立即同步</string>
+    <string name="settings_syncing">同步中…</string>
+    <string name="settings_sync_ok">同步完成</string>
+    <string name="settings_section_practice">練習</string>
+    <string name="settings_clear_stats">清除練習統計</string>
+    <string name="settings_clear_stats_confirm">確定要清除所有練習統計？此操作無法復原。</string>
+    <string name="settings_clear_yes">清除</string>
+    <string name="settings_section_about">關於</string>
+    <string name="settings_about_version">版本</string>
+    <string name="settings_about_author">作者</string>
+
+    <!-- Word form labels -->
+    <string name="form_word">單字</string>
+    <string name="form_base_form">原形</string>
+    <string name="form_past_tense">過去式</string>
+    <string name="form_past_participle">過去分詞</string>
+    <string name="form_gerund">動名詞</string>
+    <string name="form_singular">單數</string>
+    <string name="form_plural">複數</string>
+    <string name="form_comparative">比較級</string>
+    <string name="form_superlative">最高級</string>
+    <string name="form_dictionary_form">辭書形</string>
+    <string name="form_masu_form">ます形</string>
+    <string name="form_ta_form">た形</string>
+    <string name="form_te_form">て形</string>
+    <string name="form_nai_form">ない形</string>
+    <string name="form_negative">否定形</string>
+    <string name="form_past">過去形</string>
+    <string name="form_particle">助詞</string>
+    <string name="form_phonetic">音標</string>
+    <string name="form_collocation">搭配用法</string>
+    <string name="form_kanji">漢字</string>
+    <string name="form_hiragana">平假名</string>
+    <string name="form_pitch_accent">音調</string>
+    <string name="form_counter">量詞</string>
+    <string name="form_transitive_pair">對應及物動詞</string>
+    <string name="form_origin">語源</string>
+
+    <!-- Errors -->
+    <string name="error_db_too_new">資料庫版本過新，請更新應用程式。</string>
+    <string name="error_sync_failed">同步失敗：%1$s</string>
+</resources>

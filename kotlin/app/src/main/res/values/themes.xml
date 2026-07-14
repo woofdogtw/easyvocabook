@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Minimal XML theme; all theming is applied in Compose via EasyVocaBookTheme -->
+    <style name="Theme.EasyVocaBook" parent="android:Theme.Light.NoTitleBar" />
+</resources>

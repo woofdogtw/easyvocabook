@@ -25,9 +25,6 @@ pub struct Settings {
 
     // Google Drive
     pub drive_folder: String,
-
-    // OneDrive
-    pub onedrive_folder: String,
 }
 
 impl Default for Settings {
@@ -47,7 +44,6 @@ impl Default for Settings {
             sftp_username: String::new(),
             sftp_directory: String::new(),
             drive_folder: "EasyVocaBook".into(),
-            onedrive_folder: "EasyVocaBook".into(),
         }
     }
 }
@@ -69,7 +65,6 @@ pub enum SyncMethod {
     Ftp,
     Sftp,
     GoogleDrive,
-    OneDrive,
 }
 
 fn config_path() -> PathBuf {

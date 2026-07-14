@@ -1,7 +1,6 @@
 pub mod drive;
 pub mod ftp;
 pub mod oauth;
-pub mod onedrive;
 pub mod sftp;
 pub mod sync;
 

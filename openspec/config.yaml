@@ -83,12 +83,13 @@ context: |
   - explore mode conversations are conducted in Traditional Chinese (繁體中文)
   - Localization: English (default), Traditional Chinese (zh-rTW), Simplified Chinese (zh-rCN)
   - UI theme: purple + teal, Day/Night mode
-  - Cloud sync: FTP/FTPS/SFTP, Google Drive, OneDrive (same as other Easy-series apps)
+  - Cloud sync: FTP/FTPS/SFTP, Google Drive
   - No external frameworks beyond platform-standard (no Firebase SDK)
   - Android UI uses Jetpack Compose (not XML layouts); use LazyColumn instead of RecyclerView
   - Single-module Android project structure
   - AI agents MAY git add but MUST NEVER git commit
   - NEVER access /mnt/* paths
+  - gh CLI: read-only commands only (view, list, checks, api GET); NEVER write operations (pr create, pr comment, issue create, run rerun, etc.)
   - Each change is developed on its own git branch and merged to main via PR
   - Each change follows a 3-commit pattern on its branch:
       1. "propose: <change-name>" — explore notes (doc/explore/) + all planning artifacts (proposal, design, specs, tasks)
