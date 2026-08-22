@@ -1,38 +1,4 @@
-# quiz-ui Specification
-
-## Purpose
-TBD - created by archiving change rust-desktop. Update Purpose after archive.
-
-## Requirements
-
-### Requirement: Quiz tab as default view
-The Quiz tab SHALL be the first tab and the default view shown when the application starts.
-When no quizzable words exist, the tab SHALL display an empty-state message.
-
-#### Scenario: App starts on Quiz tab
-- **WHEN** the application launches with words in the database
-- **THEN** the Quiz tab is active and a quiz card is displayed
-
-#### Scenario: Empty state when no words
-- **WHEN** the database contains no words or the active language filter yields no words
-- **THEN** the Quiz tab shows: "No words to quiz. Go to Word List to add some." with a link to the Word List tab
-
-### Requirement: Language filter on Quiz tab
-The Quiz tab SHALL provide a language filter dropdown (All / English / Japanese / …) that
-restricts the pool from which quiz words are drawn.
-
-#### Scenario: Filter to English only
-- **WHEN** the user selects "English" in the language filter
-- **THEN** only English words are sampled for the quiz
-
-### Requirement: Give-up action (all modes)
-Every quiz card SHALL display a **[Give Up / Show Answer]** button alongside the primary input.
-Pressing it SHALL immediately reveal the correct answer and record the attempt as incorrect
-(no self-report dialog). The button is available at any time before the user submits an answer.
-
-#### Scenario: Give-up reveals answer without self-report
-- **WHEN** the user presses [Give Up / Show Answer]
-- **THEN** the correct answer is revealed, the attempt is counted as incorrect, and [Next] is shown
+## MODIFIED Requirements
 
 ### Requirement: Typing quiz UI (中翻英 / 中翻日)
 For typing mode the system SHALL display:
@@ -106,39 +72,6 @@ giving up.
 - **WHEN** the user gives up on a JA multiple-choice card for `雨` with reading `あめ`
 - **THEN** the answer view shows `雨` together with `あめ`, not the word alone
 
-### Requirement: Skip to next card
-The Quiz tab action bar SHALL contain a **⏭ Skip** button that discards the current card and
-draws a new one from the weighted pool without recording any counter update. This is distinct
-from Give Up (which records a wrong answer).
-
-#### Scenario: Skip advances without recording
-- **WHEN** the user taps ⏭ Skip
-- **THEN** a new card is drawn; `practice_count` and `correct_count` are not changed
-
-### Requirement: Android quiz screen — Compose structure
-On Android, the quiz screen SHALL be implemented as a Composable function backed by a
-`QuizViewModel` that exposes a `StateFlow<QuizUiState>`. The Composable SHALL call
-`collectAsStateWithLifecycle()` to observe state and recompose on each state update.
-
-The quiz screen SHALL be the first tab in the `NavigationBar` (leftmost, index 0) and SHALL be
-the launch destination of the `NavHost`. When the composable enters composition it SHALL call
-`ViewModel.startQuiz()` to draw the first card.
-
-#### Scenario: Android quiz screen is launch destination
-- **WHEN** the Android app starts
-- **THEN** the quiz screen Composable is the active destination and a quiz card is rendered (or empty-state if no words)
-
-### Requirement: Android quiz language filter — Compose dropdown
-On Android, the language filter on the quiz screen SHALL be implemented as an `ExposedDropdownMenuBox`
-(Material 3) showing the localized "All languages" label plus one entry per supported language
-(`en`, `ja`), displayed with localized names (e.g. "英文" / "日文" in Chinese locales).
-Selecting a value SHALL call `ViewModel.setLanguageFilter(code)` which triggers
-re-sampling from the filtered pool.
-
-#### Scenario: Android language filter restricts pool
-- **WHEN** the user selects "Japanese" from the dropdown on the Android quiz screen
-- **THEN** `QuizViewModel` resamples only from words with `language = "ja"`
-
 ### Requirement: Android typing quiz — Compose text inputs
 On Android, the typing quiz card SHALL be implemented as a scrollable `Column` containing:
 - A large `Text` showing the randomly-chosen meaning prompt
@@ -166,23 +99,6 @@ incorrectly answered fields alike — and any valid synonyms, followed by a `[Ne
 #### Scenario: Android typing result shows form readings
 - **WHEN** the user gives up on a JA verb card on Android and its forms have readings
 - **THEN** each revealed field shows its value together with its reading
-
-### Requirement: Android typing quiz — single-line inputs with keyboard navigation
-Each `OutlinedTextField` in the typing quiz card SHALL use `singleLine = true` to prevent
-multi-line input. The soft keyboard SHALL support sequential field navigation via the IME action
-button:
-- All fields except the last SHALL use `ImeAction.Next`; pressing it moves focus to the next field
-  via `FocusRequester`.
-- The last field SHALL use `ImeAction.Done`; pressing it moves focus to the `[Submit]` button
-  (via `FocusRequester`) and hides the soft keyboard.
-
-#### Scenario: IME Next moves focus to the following field
-- **WHEN** the user presses the keyboard's Next button on a non-last typing field
-- **THEN** focus moves to the immediately following `OutlinedTextField`
-
-#### Scenario: IME Done on last field focuses submit and hides keyboard
-- **WHEN** the user presses the keyboard's Done button on the last typing field
-- **THEN** focus moves to the `[Submit]` button and the soft keyboard is dismissed
 
 ### Requirement: Android multiple-choice quiz — Compose checkboxes
 On Android, the multiple-choice quiz card SHALL be implemented as a scrollable `LazyColumn`

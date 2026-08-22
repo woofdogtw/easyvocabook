@@ -57,7 +57,8 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
                 id      INTEGER PRIMARY KEY AUTOINCREMENT,
                 word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
                 label   TEXT    NOT NULL,
-                value   TEXT    NOT NULL
+                value   TEXT    NOT NULL,
+                reading TEXT
             )"""
         )
         db.execSQL(
@@ -83,8 +84,10 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
         if (oldVersion > CURRENT_VERSION) {
             throw IllegalStateException("Database version $oldVersion is too new (app supports $CURRENT_VERSION). Please update the app.")
         }
-        // Sequential migrations: run v(oldVersion+1) through v(newVersion)
-        // No migrations needed yet (only version 1 exists)
+        // Safety net only. This runs off PRAGMA user_version, which files produced by the
+        // desktop app never set, so migrateFromDbInfo() in onOpen is the mechanism of record.
+        // Both paths call the same idempotent steps, so running twice in one open is harmless.
+        migrateFromDbInfo(db)
     }
 
     override fun onOpen(db: SQLiteDatabase) {
@@ -92,7 +95,48 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
         db.execSQL("PRAGMA foreign_keys = ON")
         // journal_mode returns a row, so rawQuery is required (execSQL would throw under Robolectric)
         db.rawQuery("PRAGMA journal_mode = DELETE", null).close()
+        if (!db.isReadOnly) migrateFromDbInfo(db)
     }
+
+    /**
+     * Migrate using `db_info.version` as the only authority.
+     *
+     * `SQLiteOpenHelper` routes onCreate/onUpgrade off `PRAGMA user_version`, which neither
+     * platform maintains: a database synced from the desktop app reports 0 and would be sent to
+     * onCreate, whose `CREATE TABLE IF NOT EXISTS` statements are all no-ops — silently skipping
+     * the migration and leaving the new column missing.
+     *
+     * Steps are guarded by the installed version and are individually idempotent, and the new
+     * version is written back so nothing re-runs on the next open.
+     */
+    private fun migrateFromDbInfo(db: SQLiteDatabase) {
+        val installed = try {
+            db.rawQuery("SELECT version FROM db_info WHERE id = 1", null).use { c ->
+                if (c.moveToFirst()) c.getInt(0) else return
+            }
+        } catch (_: Exception) {
+            return // db_info not created yet — a fresh database is already at CURRENT_VERSION
+        }
+        if (installed > CURRENT_VERSION) {
+            throw IllegalStateException("Database version $installed is too new (app supports $CURRENT_VERSION). Please update the app.")
+        }
+        if (installed >= CURRENT_VERSION) return
+
+        if (installed < 2 && !hasColumn(db, "word_forms", "reading")) {
+            db.execSQL("ALTER TABLE word_forms ADD COLUMN reading TEXT")
+        }
+
+        db.execSQL("UPDATE db_info SET version = ? WHERE id = 1", arrayOf<Any>(CURRENT_VERSION))
+    }
+
+    private fun hasColumn(db: SQLiteDatabase, table: String, column: String): Boolean =
+        db.rawQuery("PRAGMA table_info($table)", null).use { c ->
+            val nameIdx = c.getColumnIndex("name")
+            while (c.moveToNext()) {
+                if (c.getString(nameIdx) == column) return true
+            }
+            false
+        }
 
     override suspend fun getBookInfo(): BookInfo = withContext(Dispatchers.IO) {
         readableDatabase.use { db ->
@@ -178,11 +222,12 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
                 }
             }
         val formsMap = mutableMapOf<Long, MutableList<WordForm>>()
-        db.rawQuery("SELECT id, word_id, label, value FROM word_forms WHERE word_id IN ($idIn)", null)
+        db.rawQuery("SELECT id, word_id, label, value, reading FROM word_forms WHERE word_id IN ($idIn)", null)
             .use { c ->
                 while (c.moveToNext()) {
                     val wid = c.getLong(1)
-                    formsMap.getOrPut(wid) { mutableListOf() }.add(WordForm(c.getLong(0), c.getString(2), c.getString(3)))
+                    formsMap.getOrPut(wid) { mutableListOf() }
+                        .add(WordForm(c.getLong(0), c.getString(2), c.getString(3), c.getString(4)))
                 }
             }
         val sentencesMap = mutableMapOf<Long, MutableList<Sentence>>()
@@ -325,7 +370,8 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
             db.insert("word_forms", null, ContentValues().apply {
                 put("word_id", wordId)
                 put("label", f.label)
-                put("value", f.value)
+                put("value", f.value.trim())
+                put("reading", f.reading?.trim()?.takeIf { it.isNotEmpty() })
             })
         }
         for (s in data.sentences) {
@@ -343,7 +389,7 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
     }
 
     companion object {
-        const val CURRENT_VERSION = 1
+        const val CURRENT_VERSION = 2
 
         fun dbFile(context: Context): File = File(context.filesDir, "easyvocabook.db")
     }

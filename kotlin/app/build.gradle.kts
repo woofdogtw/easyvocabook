@@ -51,6 +51,23 @@ android {
         }
     }
 
+    // Sign release builds with the local debug keystore so they can be installed directly
+    // without a manual zipalign/apksigner pass. Only for local convenience — a published
+    // release needs its own keystore. Skipped when the keystore is absent (e.g. on CI),
+    // which leaves the APK unsigned exactly as before.
+    val localKeystore = File(System.getProperty("user.home"), ".android/debug.keystore")
+
+    signingConfigs {
+        if (localKeystore.exists()) {
+            create("localRelease") {
+                storeFile = localKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -59,6 +76,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (localKeystore.exists()) {
+                signingConfig = signingConfigs.getByName("localRelease")
+            }
         }
     }
 

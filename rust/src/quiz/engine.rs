@@ -15,6 +15,8 @@ pub struct ConjugationField {
     pub label: String,
     /// The expected correct value (from the word_forms of the target word).
     pub expected: String,
+    /// The expected reading for this form, when it has one.
+    pub expected_reading: Option<String>,
 }
 
 /// One fully-specified quiz question.
@@ -64,7 +66,8 @@ pub fn build_question(
                 word_id: target.id,
                 mode: QuizMode::Typing,
                 prompt_meaning,
-                word_display: target.word.clone(),
+                // Include the reading: a given-up card must teach how the answer is read.
+                word_display: format_word_display(target),
                 conjugation_fields,
                 correct_meanings,
                 options: vec![],
@@ -112,17 +115,13 @@ fn conjugation_fields_for(entry: &WordEntry) -> Vec<ConjugationField> {
 
     labels
         .iter()
-        .filter_map(|label| {
-            let expected = entry
-                .forms
-                .iter()
-                .find(|f| f.label == *label)
-                .map(|f| f.value.clone())
-                .unwrap_or_default();
-            Some(ConjugationField {
+        .map(|label| {
+            let form = entry.forms.iter().find(|f| f.label == *label);
+            ConjugationField {
                 label: label.to_string(),
-                expected,
-            })
+                expected: form.map(|f| f.value.clone()).unwrap_or_default(),
+                expected_reading: form.and_then(|f| f.reading.clone()),
+            }
         })
         .collect()
 }
@@ -184,22 +183,53 @@ fn pseudo_shuffle<T>(v: &mut Vec<T>, seed: u64) {
 
 /// Grade a typing answer.
 /// Returns `(overall_correct, per_field_results)`.
+/// The single answer-matching rule: an input matches when it equals either the value or the
+/// reading, compared trimmed and case-insensitively.
+///
+/// Both sides are guarded on emptiness. The guard on `value` matters as much as the one on
+/// `reading`: a form may carry only a reading, and an unguarded comparison would let an empty
+/// answer match an empty value and mark such a field correct.
+///
+/// Case folding is Unicode (`café` matches `CAFÉ`); kana are deliberately not folded, so
+/// katakana never satisfies a hiragana reading.
+fn matches(input: &str, value: &str, reading: Option<&str>) -> bool {
+    fn eq(a: &str, b: &str) -> bool {
+        a.trim().to_lowercase() == b.trim().to_lowercase()
+    }
+    let typed = input.trim();
+    let value_ok = !value.trim().is_empty() && eq(typed, value);
+    let reading_ok = reading
+        .map(|r| !r.trim().is_empty() && eq(typed, r))
+        .unwrap_or(false);
+    value_ok || reading_ok
+}
+
+/// Whether a field carries nothing to match against, in which case any input is accepted.
+/// This subsumes the "matched synonym has no row for this label" case rather than replacing it.
+fn is_unspecified(value: &str, reading: Option<&str>) -> bool {
+    value.trim().is_empty() && reading.map(|r| r.trim().is_empty()).unwrap_or(true)
+}
+
+/// Per-field verdict returned by [`grade_typing`], carrying enough to reveal the answer with
+/// its reading.
+#[derive(Debug, Clone)]
+pub struct FieldResult {
+    pub label: String,
+    pub correct: bool,
+    pub expected: String,
+    pub expected_reading: Option<String>,
+}
+
 pub fn grade_typing(
     question: &QuizQuestion,
     typed_word: &str,
     typed_fields: &[(String, String)], // (label, user_input)
     pool: &[WordEntry],
-) -> (bool, Vec<(String, bool, String)>) {
-    // Find which synonym the user typed (or the original target).
-    // For words with a reading (e.g. Japanese kana), either the word or the reading is accepted.
-    let matched = pool.iter().find(|e| {
-        e.is_related_to(question)
-            && (e.word.eq_ignore_ascii_case(typed_word)
-                || e.reading
-                    .as_deref()
-                    .map(|r| r == typed_word)
-                    .unwrap_or(false))
-    });
+) -> (bool, Vec<FieldResult>) {
+    // Find which synonym the user typed (or the original target): its word or its reading counts.
+    let matched = pool
+        .iter()
+        .find(|e| e.is_related_to(question) && matches(typed_word, &e.word, e.reading.as_deref()));
 
     // Grade each conjugation field.
     let mut field_results = Vec::new();
@@ -212,26 +242,33 @@ pub fn grade_typing(
             .map(|(_, v)| v.as_str())
             .unwrap_or("");
 
-        // Expected: from the matched synonym's word_forms (if synonym has no form for this
-        // label, accept any input per spec Option A).
-        let (correct, expected) = match matched {
-            Some(m) => {
-                let form = m.forms.iter().find(|f| f.label == field.label);
-                match form {
-                    Some(f) => {
-                        let ok = f.value.eq_ignore_ascii_case(user_input);
-                        (ok, f.value.clone())
-                    }
-                    None => (true, String::new()), // synonym has no form — accept anything
+        // Expected values come from the word the user actually typed, not the selected one.
+        let (correct, expected, expected_reading) = match matched {
+            Some(m) => match m.forms.iter().find(|f| f.label == field.label) {
+                Some(f) => {
+                    let reading = f.reading.as_deref();
+                    let ok = is_unspecified(&f.value, reading)
+                        || matches(user_input, &f.value, reading);
+                    (ok, f.value.clone(), f.reading.clone())
                 }
-            }
-            None => (false, field.expected.clone()), // unknown word typed
+                None => (true, String::new(), None), // synonym has no such form — accept anything
+            },
+            None => (
+                false,
+                field.expected.clone(),
+                field.expected_reading.clone(),
+            ), // unknown word typed
         };
 
         if !correct {
             all_correct = false;
         }
-        field_results.push((field.label.clone(), correct, expected));
+        field_results.push(FieldResult {
+            label: field.label.clone(),
+            correct,
+            expected,
+            expected_reading,
+        });
     }
 
     // Also require that the typed base word matches a known synonym (or the original).
@@ -303,10 +340,31 @@ mod tests {
                     id: 0,
                     label: l.to_string(),
                     value: v.to_string(),
+                    reading: None,
                 })
                 .collect(),
             sentences: vec![],
         }
+    }
+
+    /// Build a JA verb whose forms carry readings: `(label, value, reading)`.
+    fn ja_entry(word: &str, reading: &str, forms: &[(&str, &str, &str)]) -> WordEntry {
+        let mut e = entry(1, word, "ja", &["吃"], &[]);
+        e.reading = Some(reading.into());
+        e.forms = forms
+            .iter()
+            .map(|(l, v, r)| WordForm {
+                id: 0,
+                label: l.to_string(),
+                value: v.to_string(),
+                reading: (!r.is_empty()).then(|| r.to_string()),
+            })
+            .collect();
+        e
+    }
+
+    fn field_of<'a>(res: &'a [FieldResult], label: &str) -> &'a FieldResult {
+        res.iter().find(|f| f.label == label).expect("field present")
     }
 
     #[test]
@@ -403,6 +461,112 @@ mod tests {
         // Typing the kanji should also be accepted
         let (ok2, _) = grade_typing(&q, "雨", &[], &pool);
         assert!(ok2, "kanji word should still be accepted");
+    }
+
+    #[test]
+    fn form_answered_with_its_reading_is_correct() {
+        let e = ja_entry("食べる", "たべる", &[("masu_form", "食べます", "たべます")]);
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        let (_, fields) = grade_typing(
+            &q,
+            "食べる",
+            &[("masu_form".into(), "たべます".into())],
+            &pool,
+        );
+        assert!(field_of(&fields, "masu_form").correct);
+    }
+
+    #[test]
+    fn form_answered_with_its_value_is_correct() {
+        let e = ja_entry("食べる", "たべる", &[("masu_form", "食べます", "たべます")]);
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        let (_, fields) = grade_typing(
+            &q,
+            "食べる",
+            &[("masu_form".into(), "食べます".into())],
+            &pool,
+        );
+        assert!(field_of(&fields, "masu_form").correct);
+    }
+
+    #[test]
+    fn form_without_reading_matches_value_only() {
+        let e = ja_entry("食べる", "たべる", &[("masu_form", "食べます", "")]);
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        let (_, fields) = grade_typing(&q, "食べる", &[("masu_form".into(), "たべます".into())], &pool);
+        assert!(!field_of(&fields, "masu_form").correct);
+    }
+
+    #[test]
+    fn reading_only_form_rejects_empty_answer() {
+        // A form may carry only a reading; an empty answer must not satisfy its empty value.
+        let e = ja_entry("食べる", "たべる", &[("masu_form", "", "たべます")]);
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+
+        let (_, empty) = grade_typing(&q, "食べる", &[("masu_form".into(), "".into())], &pool);
+        assert!(!field_of(&empty, "masu_form").correct);
+
+        let (_, typed) = grade_typing(&q, "食べる", &[("masu_form".into(), "たべます".into())], &pool);
+        assert!(field_of(&typed, "masu_form").correct);
+    }
+
+    #[test]
+    fn surrounding_whitespace_is_ignored() {
+        let e = ja_entry("食べる", "たべる", &[("masu_form", "食べます", "たべます")]);
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        // ASCII and full-width (U+3000) spaces are both trimmed.
+        let (ok, fields) = grade_typing(
+            &q,
+            "  食べる  ",
+            &[("masu_form".into(), "\u{3000}たべます\u{3000}".into())],
+            &pool,
+        );
+        assert!(ok);
+        assert!(field_of(&fields, "masu_form").correct);
+    }
+
+    #[test]
+    fn case_folding_covers_non_ascii() {
+        let mut e = entry(1, "café", "en", &["咖啡"], &[]);
+        e.part_of_speech = None;
+        let pool = vec![e.clone()];
+        let q = build_question(&e, &pool, QuizMode::Typing, 0);
+        let (ok, _) = grade_typing(&q, "CAFÉ", &[], &pool);
+        assert!(ok, "Unicode case folding should accept CAFÉ for café");
+    }
+
+    #[test]
+    fn kana_scripts_are_not_folded() {
+        let e = ja_entry("食べる", "たべる", &[("masu_form", "食べます", "たべます")]);
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        let (_, fields) = grade_typing(&q, "食べる", &[("masu_form".into(), "タベマス".into())], &pool);
+        assert!(!field_of(&fields, "masu_form").correct);
+    }
+
+    #[test]
+    fn reveal_exposes_form_reading_and_base_reading() {
+        let e = ja_entry("食べる", "たべる", &[("masu_form", "食べます", "たべます")]);
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        // Typing mode must show the base word with its reading, like multiple choice does.
+        assert_eq!(q.word_display, "食べる（たべる）");
+        let (_, fields) = grade_typing(&q, "食べる", &[], &pool);
+        let f = field_of(&fields, "masu_form");
+        assert_eq!(f.expected, "食べます");
+        assert_eq!(f.expected_reading.as_deref(), Some("たべます"));
     }
 
     #[test]

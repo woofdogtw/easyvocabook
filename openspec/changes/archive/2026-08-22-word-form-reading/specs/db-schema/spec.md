@@ -1,9 +1,9 @@
-# db-schema Specification
+## RENAMED Requirements
 
-## Purpose
-TBD - created by archiving change rust-desktop. Update Purpose after archive.
+- FROM: `### Requirement: Schema v1 tables`
+- TO: `### Requirement: Schema tables`
 
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Schema tables
 The system SHALL define the SQLite schema documented in `doc/schema.md` as the single source of
@@ -71,23 +71,6 @@ rather than overwriting it. See `specs/cloud-sync/spec.md` § Latest-wins confli
 - **WHEN** the app opens an existing database whose `db_info.version` equals the current schema version
 - **THEN** the database is opened normally without any migration
 
-### Requirement: Foreign key enforcement
-The system SHALL enable `PRAGMA foreign_keys = ON` on every database connection before any other
-statement is executed. Neither `rusqlite` (Rust) nor Android's `SQLiteDatabase` (Kotlin) enables
-foreign keys by default, so this PRAGMA must be applied explicitly on every connection open.
-
-#### Scenario: Deleting a word cascades to sub-tables
-- **WHEN** a word row is deleted
-- **THEN** all associated `word_meanings`, `word_forms`, and `sentences` rows are deleted automatically
-
-### Requirement: db_info single-row constraint
-The `db_info` table SHALL enforce a single row via `CHECK (id = 1)`. Any attempt to insert a
-second row SHALL be rejected by SQLite.
-
-#### Scenario: Attempting a second db_info row
-- **WHEN** an INSERT into `db_info` with any id other than 1 is attempted
-- **THEN** SQLite returns a constraint error
-
 ### Requirement: Indexes for common queries
 The system SHALL create indexes to support efficient filtering and join operations:
 
@@ -112,7 +95,7 @@ whether a migration is required, because files produced by the other platform do
 - **WHEN** the app opens a database whose `db_info.version` is greater than the version the app supports
 - **THEN** the app refuses to open it and shows an error: "Please update the app to open this file"
 
-#### Scenario: DB version is older than current
+#### Scenario: DB version is older than current (future)
 - **WHEN** the app opens a database whose `db_info.version` is less than the current schema version
 - **THEN** the app runs sequential migration SQL from the installed version to the current version
 
@@ -120,22 +103,6 @@ whether a migration is required, because files produced by the other platform do
 - **WHEN** the app opens a database whose `db_info.version` is 1 but whose engine-level version
   counter reports a different value (as happens for a file created by the other platform)
 - **THEN** the v1→v2 migration is still applied, based on `db_info.version`
-
-### Requirement: Timestamps as Unix epoch i64
-All date/time columns (`last_modified`, `created_at`, `practiced_at`) SHALL store values as
-Unix epoch seconds (i64). No timezone information is stored.
-
-#### Scenario: Creating a word sets created_at
-- **WHEN** a new word is inserted
-- **THEN** `created_at` is set to the current Unix epoch second; `practiced_at` is NULL
-
-### Requirement: part_of_speech stored as language-neutral key
-`words.part_of_speech` SHALL store a language-neutral ASCII key (e.g., `noun`, `verb`, `i-adj`),
-not a localized display string.
-
-#### Scenario: Japanese word with i-adj part of speech
-- **WHEN** a Japanese word with type 「い形容詞」is saved
-- **THEN** `part_of_speech` contains the string `i-adj`, not 「い形容詞」
 
 ### Requirement: Android DB file path
 On Android, the database file SHALL be located at `filesDir/easyvocabook.db`
@@ -147,6 +114,8 @@ On Android, the database file SHALL be located at `filesDir/easyvocabook.db`
 - **WHEN** the Android app opens for the first time
 - **THEN** the database is created at `context.filesDir/easyvocabook.db` with all tables of the
   current schema version and `db_info.last_modified = 0`
+
+## ADDED Requirements
 
 ### Requirement: Schema v2 migration — word_forms.reading
 The system SHALL migrate a version 1 database to version 2 by adding a nullable `reading`

@@ -26,6 +26,8 @@ fn en(key: &'static str) -> &'static str {
         "form.masu_form" => "ます form",
         "form.ta_form" => "た form",
         "form.te_form" => "て form",
+        "form.negative" => "Negative",
+        "form.past" => "Past",
         "form.nai_form" => "ない form",
         "form.singular" => "Singular",
         "form.plural" => "Plural",
@@ -195,6 +197,8 @@ fn zh_tw_str(key: &'static str) -> Option<&'static str> {
         "form.masu_form" => "ます形",
         "form.ta_form" => "た形",
         "form.te_form" => "て形",
+        "form.negative" => "否定形",
+        "form.past" => "過去形",
         "form.nai_form" => "ない形",
         "form.singular" => "單數",
         "form.plural" => "複數",
@@ -343,6 +347,8 @@ fn zh_cn(key: &'static str) -> Option<&'static str> {
         "form.masu_form" => "ます形",
         "form.ta_form" => "た形",
         "form.te_form" => "て形",
+        "form.negative" => "否定形",
+        "form.past" => "过去形",
         "form.nai_form" => "ない形",
         "form.singular" => "单数",
         "form.plural" => "复数",
@@ -435,6 +441,98 @@ fn zh_cn(key: &'static str) -> Option<&'static str> {
         "settings.about_name" => "应用程序：",
         "settings.about_version" => "版本：",
         "settings.about_author" => "作者：",
+        "edit.add_form" => "＋ 添加词形",
+        "edit.add_meaning" => "＋ 添加意思",
+        "edit.add_sentence" => "＋ 添加例句",
+        "edit.error_meaning" => "必须填入主要意思。",
+        "edit.error_word" => "必须填入单词。",
+        "edit.hint_optional" => "选填",
+        "edit.language" => "语言：",
+        "edit.pos" => "词性：",
+        "edit.pos_none" => "（无）",
+        "edit.reading" => "读音：",
+        "edit.word" => "单词：",
+        "quiz.result" => "结果：",
+        "quiz.submit" => "提交",
+        "quiz.word_label" => "单词：",
+        "quiz.word_prompt" => "单词：",
+        "settings.drive_auth_copy" => "复制网址",
+        "settings.drive_folder" => "文件夹名称：",
+        "settings.ftp_dir" => "目录：",
+        "settings.ftp_host" => "主机：",
+        "settings.ftp_pass" => "密码：",
+        "settings.ftp_port" => "端口：",
+        "settings.ftp_user" => "用户名：",
+        "settings.language" => "语言：",
+        "settings.logged_in" => "已登录",
+        "settings.login_google" => "使用 Google 账号登录",
+        "settings.login_ms" => "使用 Microsoft 账号登录",
+        "settings.logout" => "退出登录",
+        "settings.save_creds" => "保存凭证",
+        "settings.theme" => "主题：",
+        "startup_error" => "启动错误：",
+        "words.search_hint" => "搜索…",
+        "settings.drive_auth_hint" => {
+            "请将以下网址粘贴到浏览器（建议用无痕窗口）以授权 Google Drive："
+        }
         _ => return None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every key the English table defines, so the other locales can be checked against it.
+    fn all_keys() -> Vec<&'static str> {
+        let src = include_str!("mod.rs");
+        let en_start = src.find("fn en(").unwrap();
+        let en_end = src.find("fn zh_tw_str(").unwrap();
+        src[en_start..en_end]
+            .lines()
+            .filter_map(|l| {
+                let l = l.trim();
+                l.strip_prefix('"')
+                    .and_then(|r| r.split_once("\" =>"))
+                    .map(|(k, _)| k)
+            })
+            .filter(|k| !k.is_empty())
+            .collect()
+    }
+
+    /// Simplified Chinese falls back to Traditional, which is readable but wrong. Characters that
+    /// exist only in the traditional set must never reach a zh-CN user.
+    #[test]
+    fn zh_cn_never_shows_traditional_characters() {
+        // Traditional forms of characters this UI actually uses.
+        const TRADITIONAL_ONLY: &[char] = &[
+            '單', '詞', '語', '讀', '設', '記', '訊', '編', '刪', '確', '導', '關', '簡',
+            '這', '個', '們', '來', '後', '進', '過', '開', '間', '雲', '網', '連', '選',
+            '應', '該', '將', '許', '樣', '無', '實', '現', '態', '檔', '檢', '練', '習',
+            '題', '產', '線', '結', '統', '總', '義', '術', '證', '權', '轉', '輸', '軟',
+            '體', '點', '擊', '顯', '據', '庫', '錯', '誤', '啟', '動', '復', '製', '碼',
+            '機', '埠', '戶', '帳', '號', '儲', '憑', '夾', '稱', '錄', '尋', '須',
+        ];
+        for key in all_keys() {
+            let s = t("zh-CN", key);
+            for c in s.chars() {
+                assert!(
+                    !TRADITIONAL_ONLY.contains(&c),
+                    "zh-CN key {key:?} renders {s:?}, which contains traditional character {c:?}"
+                );
+            }
+        }
+    }
+
+    /// A key missing from Traditional Chinese silently shows English, which is worse than a
+    /// fallback between the two Chinese variants.
+    #[test]
+    fn zh_tw_covers_every_key() {
+        for key in all_keys() {
+            assert!(
+                zh_tw_str(key).is_some(),
+                "key {key:?} has no Traditional Chinese translation"
+            );
+        }
+    }
 }

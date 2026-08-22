@@ -2,7 +2,8 @@
 # Provision a fresh Ubuntu/WSL2 machine to build & test EasyVocaBook:
 #   - Android (Kotlin) toolchain: JDK 25 + Android SDK (cmdline-tools, platform,
 #     build-tools, platform-tools/adb)
-#   - Rust (iced) toolchain: rustup stable + iced system libraries
+#   - Rust (iced) toolchain: rustup stable + iced system libraries, plus the
+#     mingw-w64 cross-compiler used to produce the Windows desktop binary
 #   - Helper tools: p7zip (backup.sh), gh, python3
 #
 # Idempotent: safe to re-run. Bootstrap after a WSL2 reinstall with:
@@ -26,6 +27,7 @@ CMDLINE_TOOLS_ZIP="commandlinetools-linux-${CMDLINE_TOOLS_VER}_latest.zip"
 # ---- optional features (0 = skip, 1 = install) ----
 INSTALL_EMULATOR="${INSTALL_EMULATOR:-0}"       # WSL2 has no KVM; emulator cannot run there
 INSTALL_RUST_COVERAGE="${INSTALL_RUST_COVERAGE:-1}"  # nightly + llvm-tools + cargo-llvm-cov
+INSTALL_WINDOWS_TARGET="${INSTALL_WINDOWS_TARGET:-1}"  # cross-compile the desktop app for Windows
 INSTALL_NODE="${INSTALL_NODE:-0}"               # only needed by the other ~/ai projects
 
 log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
@@ -77,6 +79,16 @@ if [ "$INSTALL_RUST_COVERAGE" = "1" ]; then
 fi
 
 # --------------------------------------------------------------------------
+if [ "$INSTALL_WINDOWS_TARGET" = "1" ]; then
+  # The desktop app is built on Linux but exercised manually on Windows, so the
+  # release .exe is cross-compiled. rust/.cargo/config.toml already points the
+  # x86_64-pc-windows-gnu target at this linker.
+  log "Windows cross-compilation target (x86_64-pc-windows-gnu)"
+  sudo apt-get install -y mingw-w64
+  rustup target add x86_64-pc-windows-gnu
+fi
+
+# --------------------------------------------------------------------------
 if [ "$INSTALL_NODE" = "1" ]; then
   log "Node.js 24 (NodeSource)"
   if ! command -v node >/dev/null 2>&1; then
@@ -104,5 +116,10 @@ cat <<EOF
   * Gradle itself needs no install — the project ships ./gradlew.
   * Emulator was ${INSTALL_EMULATOR/1/installed}${INSTALL_EMULATOR/0/skipped}; WSL2 lacks KVM
     so instrumented tests still run only in CI, not locally.
+  * Desktop builds: run tests on Linux with RUSTFLAGS="-C instrument-coverage" so they share a
+    fingerprint with rust-analyzer and do not trigger full rebuilds on every save. Build the
+    Windows binary for manual testing WITHOUT that flag:
+        cargo build --release --target x86_64-pc-windows-gnu
   * Verify:  java -version ; adb --version ; sdkmanager --list_installed ; rustc --version
+             rustup target list --installed ; x86_64-w64-mingw32-gcc --version
 EOF

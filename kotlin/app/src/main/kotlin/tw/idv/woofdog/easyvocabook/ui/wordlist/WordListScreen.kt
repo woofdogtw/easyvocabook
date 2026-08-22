@@ -300,10 +300,15 @@ private fun WordRow(
 
 @Composable
 private fun HomophoneDialog(word: WordEntry, allWords: List<WordEntry>, onDismiss: () -> Unit) {
+    // Same comparison as quiz answer matching — trimmed, Unicode case folding, no kana folding —
+    // so the two features cannot drift apart. No word form label is consulted.
+    fun same(a: String?, b: String?) = a?.trim().orEmpty().let { x ->
+        x.isNotEmpty() && x.equals(b?.trim().orEmpty(), ignoreCase = true)
+    }
     val homophones = allWords.filter { other ->
         other.id != word.id && other.language == word.language &&
-            (if (word.reading != null) other.reading == word.reading
-            else other.word.equals(word.word, ignoreCase = true))
+            (if (word.reading != null) same(other.reading, word.reading)
+            else same(other.word, word.word))
     }
     AlertDialog(
         onDismissRequest = onDismiss,

@@ -3,6 +3,16 @@ use rusqlite::{Connection, Result, params};
 use crate::db::schema::now_epoch;
 use crate::db::types::*;
 
+/// Trim a form reading and treat an all-whitespace one as absent, so "no reading" is a single
+/// representation (`NULL`) rather than a mix of empty strings and nulls.
+pub(crate) fn normalize_reading(reading: &Option<String>) -> Option<String> {
+    reading
+        .as_deref()
+        .map(str::trim)
+        .filter(|r| !r.is_empty())
+        .map(str::to_owned)
+}
+
 pub trait DbTableBase {
     fn get_book_info(&self) -> Result<BookInfo>;
     #[allow(dead_code)]
@@ -39,13 +49,14 @@ impl DbTableSQLite {
 
         let mut stmt = self
             .conn
-            .prepare("SELECT id, label, value FROM word_forms WHERE word_id = ?1 ORDER BY id")?;
+            .prepare("SELECT id, label, value, reading FROM word_forms WHERE word_id = ?1 ORDER BY id")?;
         let forms: Vec<WordForm> = stmt
             .query_map(params![word_id], |row| {
                 Ok(WordForm {
                     id: row.get(0)?,
                     label: row.get(1)?,
                     value: row.get(2)?,
+                    reading: row.get(3)?,
                 })
             })?
             .collect::<Result<Vec<_>>>()?;
@@ -188,10 +199,10 @@ impl DbTableBase for DbTableSQLite {
                 params![word_id, meaning],
             )?;
         }
-        for (label, value) in &word.forms {
+        for (label, value, reading) in &word.forms {
             tx.execute(
-                "INSERT INTO word_forms (word_id, label, value) VALUES (?1, ?2, ?3)",
-                params![word_id, label, value],
+                "INSERT INTO word_forms (word_id, label, value, reading) VALUES (?1, ?2, ?3, ?4)",
+                params![word_id, label, value.trim(), normalize_reading(reading)],
             )?;
         }
         for (sentence, translation) in &word.sentences {
@@ -236,10 +247,10 @@ impl DbTableBase for DbTableSQLite {
         }
 
         tx.execute("DELETE FROM word_forms WHERE word_id = ?1", params![id])?;
-        for (label, value) in &word.forms {
+        for (label, value, reading) in &word.forms {
             tx.execute(
-                "INSERT INTO word_forms (word_id, label, value) VALUES (?1, ?2, ?3)",
-                params![id, label, value],
+                "INSERT INTO word_forms (word_id, label, value, reading) VALUES (?1, ?2, ?3, ?4)",
+                params![id, label, value.trim(), normalize_reading(reading)],
             )?;
         }
 
@@ -360,11 +371,123 @@ mod tests {
             language: "en".into(),
             meanings: vec!["拋棄".into()],
             forms: vec![
-                ("base_form".into(), "abandon".into()),
-                ("past_tense".into(), "abandoned".into()),
+                ("base_form".into(), "abandon".into(), None),
+                ("past_tense".into(), "abandoned".into(), None),
             ],
             sentences: vec![("He abandoned the ship.".into(), Some("他放棄了船。".into()))],
         }
+    }
+
+    // ── v1 → v2 migration ─────────────────────────────────────────────────────
+
+    /// Write a version-1 database by hand: `word_forms` without the `reading` column.
+    fn write_v1_db(path: &std::path::Path) {
+        let conn = rusqlite::Connection::open(path).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE db_info (
+                id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT NOT NULL, description TEXT,
+                default_language TEXT NOT NULL DEFAULT 'en', version INTEGER NOT NULL,
+                last_modified INTEGER NOT NULL);
+             CREATE TABLE words (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, word TEXT NOT NULL, reading TEXT,
+                meaning TEXT NOT NULL, part_of_speech TEXT, note TEXT, language TEXT NOT NULL,
+                practice_count INTEGER NOT NULL DEFAULT 0, correct_count INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL, practiced_at INTEGER);
+             CREATE TABLE word_meanings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                meaning TEXT NOT NULL, UNIQUE(word_id, meaning));
+             CREATE TABLE word_forms (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                label TEXT NOT NULL, value TEXT NOT NULL);
+             CREATE TABLE sentences (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                sentence TEXT NOT NULL, translation TEXT);
+             INSERT INTO db_info (id, name, default_language, version, last_modified)
+                VALUES (1, 'Book', 'ja', 1, 0);
+             INSERT INTO words (id, word, meaning, language, created_at)
+                VALUES (1, '食べる', '吃', 'ja', 0);
+             INSERT INTO word_forms (word_id, label, value) VALUES (1, 'hiragana', 'たべる');
+             INSERT INTO word_forms (word_id, label, value) VALUES (1, 'masu_form', '食べます');",
+        )
+        .unwrap();
+    }
+
+    fn db_version(path: &std::path::Path) -> i64 {
+        let conn = rusqlite::Connection::open(path).unwrap();
+        conn.query_row("SELECT version FROM db_info WHERE id = 1", [], |r| r.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn v1_db_migrates_to_v2_with_rows_intact() {
+        let file = NamedTempFile::new().unwrap();
+        write_v1_db(file.path());
+
+        let db = DbTableSQLite::open(file.path()).unwrap();
+        let entry = db.get_word(1).unwrap();
+        drop(db);
+
+        assert_eq!(db_version(file.path()), 2);
+        // Existing rows keep label and value, and gain a null reading.
+        assert_eq!(entry.forms.len(), 2);
+        let legacy = entry.forms.iter().find(|f| f.label == "hiragana").unwrap();
+        assert_eq!(legacy.value, "たべる");
+        assert!(legacy.reading.is_none());
+    }
+
+    #[test]
+    fn migrated_db_reopens_without_duplicate_column_error() {
+        let file = NamedTempFile::new().unwrap();
+        write_v1_db(file.path());
+
+        DbTableSQLite::open(file.path()).unwrap();
+        // migrate() runs on every open; without the version write-back this second open would
+        // re-issue ALTER TABLE and fail with "duplicate column name".
+        let db = DbTableSQLite::open(file.path()).expect("second open must succeed");
+        assert_eq!(db.get_word(1).unwrap().forms.len(), 2);
+        assert_eq!(db_version(file.path()), 2);
+    }
+
+    // ── word_form readings ────────────────────────────────────────────────────
+
+    #[test]
+    fn form_reading_round_trips() {
+        let (db, _f) = open_test_db();
+        let mut w = sample_word();
+        w.forms = vec![(
+            "masu_form".into(),
+            "食べます".into(),
+            Some("たべます".into()),
+        )];
+        let id = db.create_word(&w).unwrap();
+        let form = db.get_word(id).unwrap().forms.into_iter().next().unwrap();
+        assert_eq!(form.value, "食べます");
+        assert_eq!(form.reading.as_deref(), Some("たべます"));
+    }
+
+    #[test]
+    fn form_without_reading_is_none() {
+        let (db, _f) = open_test_db();
+        let id = db.create_word(&sample_word()).unwrap();
+        assert!(db.get_word(id).unwrap().forms.iter().all(|f| f.reading.is_none()));
+    }
+
+    #[test]
+    fn blank_reading_normalizes_to_absent_and_value_is_trimmed() {
+        let (db, _f) = open_test_db();
+        let mut w = sample_word();
+        w.forms = vec![(
+            "past_tense".into(),
+            "  walked  ".into(),
+            Some("   ".into()),
+        )];
+        let id = db.create_word(&w).unwrap();
+        let form = db.get_word(id).unwrap().forms.into_iter().next().unwrap();
+        assert_eq!(form.value, "walked");
+        assert!(form.reading.is_none());
     }
 
     #[test]
@@ -392,7 +515,7 @@ mod tests {
             note: None,
             language: "en".into(),
             meanings: vec![],
-            forms: vec![("past_tense".into(), "forsook".into())],
+            forms: vec![("past_tense".into(), "forsook".into(), None)],
             sentences: vec![],
         };
         db.update_word(id, &update).unwrap();

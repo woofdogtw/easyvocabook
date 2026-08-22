@@ -1,6 +1,7 @@
 package tw.idv.woofdog.easyvocabook
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -170,6 +171,170 @@ class DbTableSQLiteTest {
         assertEquals("walk", fetched.word)
         assertEquals(1, fetched.wordMeanings.size)
         assertEquals(1, fetched.wordForms.size)
+    }
+
+    // ── v1 → v2 migration ─────────────────────────────────────────────────────
+
+    /**
+     * Write a version-1 database by hand: word_forms without the `reading` column.
+     * [userVersion] models PRAGMA user_version, which the desktop app never sets — a file
+     * synced from it arrives as 0 and must still be migrated off db_info.version.
+     */
+    private fun writeV1Database(file: File, userVersion: Int) {
+        val raw = SQLiteDatabase.openOrCreateDatabase(file, null)
+        raw.execSQL(
+            """CREATE TABLE db_info (
+                id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT NOT NULL, description TEXT,
+                default_language TEXT NOT NULL DEFAULT 'en', version INTEGER NOT NULL,
+                last_modified INTEGER NOT NULL)"""
+        )
+        raw.execSQL(
+            """CREATE TABLE words (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, word TEXT NOT NULL, reading TEXT,
+                meaning TEXT NOT NULL, part_of_speech TEXT, note TEXT, language TEXT NOT NULL,
+                practice_count INTEGER NOT NULL DEFAULT 0, correct_count INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL, practiced_at INTEGER)"""
+        )
+        raw.execSQL(
+            """CREATE TABLE word_meanings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                meaning TEXT NOT NULL, UNIQUE(word_id, meaning))"""
+        )
+        // v1 shape: no reading column
+        raw.execSQL(
+            """CREATE TABLE word_forms (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                label TEXT NOT NULL, value TEXT NOT NULL)"""
+        )
+        raw.execSQL(
+            """CREATE TABLE sentences (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+                sentence TEXT NOT NULL, translation TEXT)"""
+        )
+        raw.execSQL(
+            "INSERT INTO db_info (id, name, description, default_language, version, last_modified) " +
+                "VALUES (1, 'Book', NULL, 'en', 1, 0)"
+        )
+        raw.execSQL(
+            "INSERT INTO words (id, word, meaning, language, created_at) VALUES (1, '食べる', '吃', 'ja', 0)"
+        )
+        // A legacy row whose label carried a reading — it must survive untouched.
+        raw.execSQL("INSERT INTO word_forms (word_id, label, value) VALUES (1, 'hiragana', 'たべる')")
+        raw.execSQL("INSERT INTO word_forms (word_id, label, value) VALUES (1, 'masu_form', '食べます')")
+        raw.version = userVersion
+        raw.close()
+    }
+
+    private fun readVersion(file: File): Int =
+        SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { raw ->
+            raw.rawQuery("SELECT version FROM db_info WHERE id = 1", null).use { c ->
+                c.moveToFirst(); c.getInt(0)
+            }
+        }
+
+    private fun columnNames(file: File, table: String): List<String> =
+        SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { raw ->
+            raw.rawQuery("PRAGMA table_info($table)", null).use { c ->
+                val idx = c.getColumnIndex("name")
+                buildList { while (c.moveToNext()) add(c.getString(idx)) }
+            }
+        }
+
+    @Test
+    fun v1Database_migratesToV2WithRowsIntact() = runTest {
+        val f = File(context.cacheDir, "v1_${System.nanoTime()}.db")
+        try {
+            writeV1Database(f, userVersion = 1)
+            val migrated = DbTableSQLite(context, f)
+            migrated.writableDatabase
+            val word = migrated.getWord(1)
+            migrated.close()
+
+            assertEquals(2, readVersion(f))
+            assertTrue("reading" in columnNames(f, "word_forms"))
+            // Existing rows keep label and value, and gain a null reading.
+            val forms = word!!.wordForms
+            assertEquals(setOf("hiragana", "masu_form"), forms.map { it.label }.toSet())
+            assertEquals("たべる", forms.first { it.label == "hiragana" }.value)
+            assertNull(forms.first { it.label == "masu_form" }.reading)
+        } finally {
+            f.delete()
+        }
+    }
+
+    @Test
+    fun v1DatabaseFromDesktop_withZeroUserVersion_stillMigrates() = runTest {
+        // The desktop app never writes PRAGMA user_version, so a synced file reports 0.
+        // SQLiteOpenHelper would route this to onCreate (all no-ops); db_info.version must win.
+        val f = File(context.cacheDir, "desktop_${System.nanoTime()}.db")
+        try {
+            writeV1Database(f, userVersion = 0)
+            val migrated = DbTableSQLite(context, f)
+            migrated.writableDatabase
+            migrated.close()
+
+            assertTrue("reading" in columnNames(f, "word_forms"))
+            assertEquals(2, readVersion(f))
+        } finally {
+            f.delete()
+        }
+    }
+
+    @Test
+    fun migratedDatabase_reopensWithoutError() = runTest {
+        val f = File(context.cacheDir, "reopen_${System.nanoTime()}.db")
+        try {
+            writeV1Database(f, userVersion = 0)
+            DbTableSQLite(context, f).use { it.writableDatabase }
+            // Second open must not re-run ALTER TABLE (duplicate column name).
+            val again = DbTableSQLite(context, f)
+            again.writableDatabase
+            val word = again.getWord(1)
+            again.close()
+            assertEquals(2, readVersion(f))
+            assertEquals(2, word!!.wordForms.size)
+        } finally {
+            f.delete()
+        }
+    }
+
+    // ── word_form readings ────────────────────────────────────────────────────
+
+    @Test
+    fun wordFormReading_roundTrips() = runTest {
+        val id = db.createWord(
+            sampleWord().copy(wordForms = listOf(WordForm(0, "masu_form", "食べます", "たべます")))
+        )
+        val form = db.getWord(id)!!.wordForms.single()
+        assertEquals("食べます", form.value)
+        assertEquals("たべます", form.reading)
+    }
+
+    @Test
+    fun wordFormWithoutReading_returnsNull() = runTest {
+        val id = db.createWord(sampleWord().copy(wordForms = listOf(WordForm(0, "past_tense", "walked"))))
+        assertNull(db.getWord(id)!!.wordForms.single().reading)
+    }
+
+    @Test
+    fun blankReadingNormalizesToAbsent() = runTest {
+        val id = db.createWord(
+            sampleWord().copy(wordForms = listOf(WordForm(0, "past_tense", "walked", "   ")))
+        )
+        assertNull(db.getWord(id)!!.wordForms.single().reading)
+    }
+
+    @Test
+    fun formValueIsTrimmedOnSave() = runTest {
+        val id = db.createWord(
+            sampleWord().copy(wordForms = listOf(WordForm(0, "past_tense", "  walked  ", "  wɔːkt  ")))
+        )
+        val form = db.getWord(id)!!.wordForms.single()
+        assertEquals("walked", form.value)
+        assertEquals("wɔːkt", form.reading)
     }
 
     private fun sampleWord() = WordEntry(

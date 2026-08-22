@@ -164,7 +164,7 @@ fn dialog_content(app: &App) -> Element<'_, Message> {
 
         let rows = state.forms.iter().enumerate().fold(
             column![].spacing(4),
-            |col, (i, (label, value))| {
+            |col, (i, (label, value, reading))| {
                 let canonicals: Vec<&'static str> = form_canonicals.to_vec();
                 let displays_for_on_select = form_displays.clone();
                 let displays_for_picker = form_displays.clone();
@@ -187,8 +187,11 @@ fn dialog_content(app: &App) -> Element<'_, Message> {
                 col.push(
                     row![
                         label_picker,
-                        text_input("", value)
+                        text_input(&t("edit.form_value"), value)
                             .on_input(move |s| Message::WordEditFormValue(i, s))
+                            .width(Length::Fill),
+                        text_input(&t("edit.form_reading"), reading)
+                            .on_input(move |s| Message::WordEditFormReading(i, s))
                             .width(Length::Fill),
                         button(text("✕"))
                             .style(button::danger)

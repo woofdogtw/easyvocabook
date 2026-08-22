@@ -58,7 +58,8 @@ pub struct WordEditState {
     pub primary_meaning: String,
     pub pos: String,
     pub extra_meanings: Vec<String>,
-    pub forms: Vec<(String, String)>,
+    /// (label, value, reading) per word-form row.
+    pub forms: Vec<(String, String, String)>,
     pub sentences: Vec<(String, String)>,
     pub error: Option<String>,
 }
@@ -102,7 +103,13 @@ impl WordEditState {
             forms: e
                 .forms
                 .iter()
-                .map(|f| (f.label.clone(), f.value.clone()))
+                .map(|f| {
+                    (
+                        f.label.clone(),
+                        f.value.clone(),
+                        f.reading.clone().unwrap_or_default(),
+                    )
+                })
                 .collect(),
             sentences: e
                 .sentences
@@ -120,12 +127,16 @@ impl WordEditState {
 
     fn repopulate_forms(&mut self) {
         let suggestions = labels::suggested_labels(&self.language, &self.pos);
-        let old: std::collections::HashMap<String, String> = self.forms.iter().cloned().collect();
+        let old: std::collections::HashMap<String, (String, String)> = self
+            .forms
+            .iter()
+            .map(|(l, v, r)| (l.clone(), (v.clone(), r.clone())))
+            .collect();
         self.forms = suggestions
             .iter()
             .map(|&label| {
-                let value = old.get(label).cloned().unwrap_or_default();
-                (label.to_owned(), value)
+                let (value, reading) = old.get(label).cloned().unwrap_or_default();
+                (label.to_owned(), value, reading)
             })
             .collect();
     }
@@ -155,8 +166,17 @@ impl WordEditState {
             forms: self
                 .forms
                 .iter()
-                .filter(|(_, v)| !v.trim().is_empty())
-                .map(|(l, v)| (l.clone(), v.trim().to_owned()))
+                // A row survives if it carries either a value or a reading; only a row with
+                // neither is dropped, so a reading-only form can be recorded.
+                .filter(|(_, v, r)| !v.trim().is_empty() || !r.trim().is_empty())
+                .map(|(l, v, r)| {
+                    let reading = r.trim();
+                    (
+                        l.clone(),
+                        v.trim().to_owned(),
+                        (!reading.is_empty()).then(|| reading.to_owned()),
+                    )
+                })
                 .collect(),
             sentences: self
                 .sentences
@@ -204,7 +224,7 @@ pub struct QuizState {
     pub submitted: bool,
     pub gave_up: bool,
     pub typing_correct: Option<bool>,
-    pub field_results: Vec<(String, bool, String)>,
+    pub field_results: Vec<crate::quiz::engine::FieldResult>,
     pub choice_correct: Option<bool>,
 }
 
@@ -340,6 +360,7 @@ pub enum Message {
     WordEditRemoveForm(usize),
     WordEditFormLabel(usize, String),
     WordEditFormValue(usize, String),
+    WordEditFormReading(usize, String),
     WordEditAddSentence,
     WordEditRemoveSentence(usize),
     WordEditSentence(usize, String),
@@ -614,7 +635,9 @@ impl App {
                 .copied()
                 .unwrap_or("")
                 .to_owned();
-                self.word_edit.forms.push((default_label, String::new()));
+                self.word_edit
+                    .forms
+                    .push((default_label, String::new(), String::new()));
             }
             Message::WordEditRemoveForm(i) => {
                 if i < self.word_edit.forms.len() {
@@ -629,6 +652,11 @@ impl App {
             Message::WordEditFormValue(i, s) => {
                 if let Some(f) = self.word_edit.forms.get_mut(i) {
                     f.1 = s;
+                }
+            }
+            Message::WordEditFormReading(i, s) => {
+                if let Some(f) = self.word_edit.forms.get_mut(i) {
+                    f.2 = s;
                 }
             }
             Message::WordEditAddSentence => {

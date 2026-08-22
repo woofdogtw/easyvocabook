@@ -194,12 +194,109 @@ class QuizEngineTest {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
+    // ── gradeTyping: per-form readings ────────────────────────────────────────
+
+    @Test
+    fun gradeTyping_formAnsweredWithItsReading_isCorrect() {
+        val w = word(1, "食べる", "ja", pos = "verb", reading = "たべる",
+            formsWithReading = listOf(Triple("masu_form", "食べます", "たべます")))
+        val card = engine.buildTypingCard(w)
+        val masu = card.fields.indexOfFirst { it.label == "masu_form" }
+        val inputs = MutableList(card.fields.size) { "" }
+        inputs[0] = "食べる"; inputs[masu] = "たべます"
+        val result = engine.gradeTyping(card, inputs, emptyList())
+        assertTrue(result.fieldResults[masu].correct)
+    }
+
+    @Test
+    fun gradeTyping_formAnsweredWithItsValue_isCorrect() {
+        val w = word(1, "食べる", "ja", pos = "verb", reading = "たべる",
+            formsWithReading = listOf(Triple("masu_form", "食べます", "たべます")))
+        val card = engine.buildTypingCard(w)
+        val masu = card.fields.indexOfFirst { it.label == "masu_form" }
+        val inputs = MutableList(card.fields.size) { "" }
+        inputs[0] = "食べる"; inputs[masu] = "食べます"
+        val result = engine.gradeTyping(card, inputs, emptyList())
+        assertTrue(result.fieldResults[masu].correct)
+    }
+
+    @Test
+    fun gradeTyping_formWithoutReading_matchesValueOnly() {
+        val w = word(1, "walk", "en", pos = "verb", forms = listOf("past_tense" to "walked"))
+        val card = engine.buildTypingCard(w)
+        val past = card.fields.indexOfFirst { it.label == "past_tense" }
+        val inputs = MutableList(card.fields.size) { "" }
+        inputs[0] = "walk"; inputs[past] = "something else"
+        val result = engine.gradeTyping(card, inputs, emptyList())
+        assertFalse(result.fieldResults[past].correct)
+    }
+
+    @Test
+    fun gradeTyping_readingOnlyForm_rejectsEmptyAnswer() {
+        // A form may carry only a reading; an empty answer must not satisfy its empty value.
+        val w = word(1, "食べる", "ja", pos = "verb", reading = "たべる",
+            formsWithReading = listOf(Triple("masu_form", "", "たべます")))
+        val card = engine.buildTypingCard(w)
+        val masu = card.fields.indexOfFirst { it.label == "masu_form" }
+        val inputs = MutableList(card.fields.size) { "" }
+        inputs[0] = "食べる"
+        assertFalse(engine.gradeTyping(card, inputs, emptyList()).fieldResults[masu].correct)
+
+        inputs[masu] = "たべます"
+        assertTrue(engine.gradeTyping(card, inputs, emptyList()).fieldResults[masu].correct)
+    }
+
+    @Test
+    fun gradeTyping_surroundingWhitespaceIgnored() {
+        val w = word(1, "walk", "en", pos = "verb", forms = listOf("past_tense" to "walked"))
+        val card = engine.buildTypingCard(w)
+        val past = card.fields.indexOfFirst { it.label == "past_tense" }
+        val inputs = MutableList(card.fields.size) { "" }
+        inputs[0] = "  walk  "; inputs[past] = "\u3000walked\u3000"  // ASCII and full-width spaces
+        val result = engine.gradeTyping(card, inputs, emptyList())
+        assertTrue(result.fieldResults[0].correct)
+        assertTrue(result.fieldResults[past].correct)
+    }
+
+    @Test
+    fun gradeTyping_caseFoldingCoversNonAscii() {
+        val w = word(1, "café", "en")
+        val card = engine.buildTypingCard(w)
+        val result = engine.gradeTyping(card, listOf("CAFÉ"), emptyList())
+        assertTrue(result.fieldResults[0].correct)
+    }
+
+    @Test
+    fun gradeTyping_kanaScriptsAreNotFolded() {
+        val w = word(1, "食べる", "ja", pos = "verb", reading = "たべる",
+            formsWithReading = listOf(Triple("masu_form", "食べます", "たべます")))
+        val card = engine.buildTypingCard(w)
+        val masu = card.fields.indexOfFirst { it.label == "masu_form" }
+        val inputs = MutableList(card.fields.size) { "" }
+        inputs[0] = "食べる"; inputs[masu] = "タベマス"
+        val result = engine.gradeTyping(card, inputs, emptyList())
+        assertFalse(result.fieldResults[masu].correct)
+    }
+
+    @Test
+    fun gradeTyping_revealExposesFormReading() {
+        val w = word(1, "食べる", "ja", pos = "verb", reading = "たべる",
+            formsWithReading = listOf(Triple("masu_form", "食べます", "たべます")))
+        val card = engine.buildTypingCard(w)
+        val masu = card.fields.indexOfFirst { it.label == "masu_form" }
+        val result = engine.gradeTyping(card, MutableList(card.fields.size) { "" }, emptyList())
+        assertEquals("食べます", result.fieldResults[masu].correctValue)
+        assertEquals("たべます", result.fieldResults[masu].correctReading)
+        assertEquals("たべる", result.fieldResults[0].correctReading)
+    }
+
     private fun word(
         id: Long, wordStr: String, lang: String,
         meaning: String = "意思",
         pos: String? = null,
         reading: String? = null,
         forms: List<Pair<String, String>> = emptyList(),
+        formsWithReading: List<Triple<String, String, String?>> = emptyList(),
         meanings: List<String> = emptyList(),
         practiceCount: Int = 0,
         correctCount: Int = 0,
@@ -209,7 +306,11 @@ class QuizEngineTest {
         practiceCount = practiceCount, correctCount = correctCount,
         createdAt = 0L, practicedAt = null,
         wordMeanings = meanings.mapIndexed { i, m -> WordMeaning(i.toLong(), m) },
-        wordForms = forms.mapIndexed { i, (l, v) -> tw.idv.woofdog.easyvocabook.data.model.WordForm(i.toLong(), l, v) },
+        wordForms = forms.mapIndexed { i, (l, v) ->
+            tw.idv.woofdog.easyvocabook.data.model.WordForm(i.toLong(), l, v)
+        } + formsWithReading.mapIndexed { i, (l, v, r) ->
+            tw.idv.woofdog.easyvocabook.data.model.WordForm((forms.size + i).toLong(), l, v, r)
+        },
         sentences = emptyList(),
     )
 }

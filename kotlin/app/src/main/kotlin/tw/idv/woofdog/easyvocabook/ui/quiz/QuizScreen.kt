@@ -150,7 +150,10 @@ private fun TypingResultView(result: TypingResult, vm: QuizViewModel) {
                     val labelText = Labels.formLabelResId(fr.label)
                         ?.let { stringResource(it) } ?: fr.label
                     Text(labelText, style = MaterialTheme.typography.labelSmall)
-                    if (!fr.correct) Text(fr.correctValue, color = green)
+                    // Shown whether or not the field was answered correctly: writing the kanji
+                    // right does not mean the learner knows how to read it.
+                    val answer = formatAnswer(fr.correctValue, fr.correctReading)
+                    if (answer.isNotEmpty()) Text(answer, color = green)
                 }
             }
         }
@@ -193,7 +196,11 @@ private fun McqResultView(result: tw.idv.woofdog.easyvocabook.quiz.McqResult, vm
     val red = MaterialTheme.colorScheme.error
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.padding(16.dp)) {
-            Text(result.card.word.word, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(
+                formatAnswer(result.card.word.word, result.card.word.reading),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+            )
         }
         LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp)) {
             itemsIndexed(result.card.options) { _, opt ->
@@ -216,5 +223,19 @@ private fun McqResultView(result: tw.idv.woofdog.easyvocabook.quiz.McqResult, vm
         Button(onClick = { vm.next() }, modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.quiz_next))
         }
+    }
+}
+
+/**
+ * Render an answer as `value（reading）`, degrading cleanly when either part is missing:
+ * a field carrying only a reading shows the reading alone, with no empty parentheses.
+ */
+private fun formatAnswer(value: String?, reading: String?): String {
+    val v = value?.trim().orEmpty()
+    val r = reading?.trim().orEmpty()
+    return when {
+        v.isNotEmpty() && r.isNotEmpty() -> "$v（$r）"
+        v.isNotEmpty() -> v
+        else -> r
     }
 }

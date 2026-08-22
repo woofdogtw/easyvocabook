@@ -1,6 +1,6 @@
 use rusqlite::{Connection, Result};
 
-pub const CURRENT_VERSION: i64 = 1;
+pub const CURRENT_VERSION: i64 = 2;
 
 const CREATE_V1: &str = "
 CREATE TABLE IF NOT EXISTS db_info (
@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS word_forms (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
     word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
     label   TEXT    NOT NULL,
-    value   TEXT    NOT NULL
+    value   TEXT    NOT NULL,
+    reading TEXT
 );
 
 CREATE TABLE IF NOT EXISTS sentences (
@@ -69,15 +70,44 @@ pub fn seed_db_info(conn: &Connection, name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Run all migrations from `installed_version` up to `CURRENT_VERSION`.
+/// Run all migrations from `installed_version` up to `CURRENT_VERSION`, then record the new
+/// version in `db_info`.
+///
+/// This is called on *every* open, so the version write-back is what stops a step from running
+/// twice: without it the v1→v2 `ALTER TABLE` would be re-issued on the next open and fail with
+/// `duplicate column name`. Steps are additionally idempotent so a half-migrated file recovers.
+///
 /// Returns an error if `installed_version > CURRENT_VERSION`.
-pub fn migrate(_conn: &Connection, installed_version: i64) -> Result<()> {
+pub fn migrate(conn: &Connection, installed_version: i64) -> Result<()> {
     if installed_version > CURRENT_VERSION {
         return Err(rusqlite::Error::InvalidQuery);
     }
-    // No migrations yet beyond v1 — add numbered steps here as schema evolves.
-    // e.g.: if installed_version < 2 { conn.execute_batch(MIGRATE_V1_TO_V2)?; }
+    if installed_version >= CURRENT_VERSION {
+        return Ok(());
+    }
+
+    if installed_version < 2 && !has_column(conn, "word_forms", "reading")? {
+        conn.execute_batch("ALTER TABLE word_forms ADD COLUMN reading TEXT;")?;
+    }
+
+    conn.execute(
+        "UPDATE db_info SET version = ?1 WHERE id = 1",
+        rusqlite::params![CURRENT_VERSION],
+    )?;
     Ok(())
+}
+
+/// Whether `table` already has `column`, so a migration step can be skipped.
+fn has_column(conn: &Connection, table: &str, column: &str) -> Result<bool> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let mut rows = stmt.query([])?;
+    while let Some(row) = rows.next()? {
+        let name: String = row.get(1)?;
+        if name == column {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 pub fn now_epoch() -> i64 {

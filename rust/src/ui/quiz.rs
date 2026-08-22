@@ -218,12 +218,15 @@ fn reveal_view(app: &App) -> Element<'_, Message> {
                 .spacing(4),
             ]
             .spacing(6);
-            for (label, correct, expected) in &app.quiz.field_results {
-                let label_display = app.t_label(label);
+            // Shown whether or not the field was answered correctly: writing the kanji right
+            // does not mean the learner knows how to read it.
+            for fr in &app.quiz.field_results {
+                let label_display = app.t_label(&fr.label);
+                let answer = format_answer(&fr.expected, fr.expected_reading.as_deref());
                 col = col.push(
                     row![
-                        text(if *correct { "✓" } else { "✗" }).width(Length::Fixed(24.0)),
-                        text(format!("{label_display}: {expected}")),
+                        text(if fr.correct { "✓" } else { "✗" }).width(Length::Fixed(24.0)),
+                        text(format!("{label_display}: {answer}")),
                     ]
                     .spacing(4),
                 );
@@ -295,4 +298,16 @@ fn reveal_view(app: &App) -> Element<'_, Message> {
     .height(Length::Fill);
 
     body.into()
+}
+
+/// Render an answer as `value（reading）`, degrading cleanly when either part is missing:
+/// a field carrying only a reading shows the reading alone, with no empty parentheses.
+fn format_answer(value: &str, reading: Option<&str>) -> String {
+    let v = value.trim();
+    let r = reading.map(str::trim).unwrap_or("");
+    match (v.is_empty(), r.is_empty()) {
+        (false, false) => format!("{v}（{r}）"),
+        (false, true) => v.to_owned(),
+        _ => r.to_owned(),
+    }
 }

@@ -1,9 +1,4 @@
-# word-edit-ui Specification
-
-## Purpose
-TBD - created by archiving change rust-desktop. Update Purpose after archive.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Add/Edit word modal dialog
 The system SHALL provide a platform-appropriate editing surface for creating and editing words:
@@ -60,65 +55,7 @@ input. [＋ Add sentence] appends a new row; [×] removes a row.
 - **WHEN** the user opens a word that has a form labelled `hiragana`, changes nothing in that row, and saves
 - **THEN** the row is saved with its label unchanged
 
-### Requirement: Part-of-speech dropdown options per language
-The part-of-speech dropdown SHALL show different options based on the selected language:
-
-**English** (`en`): noun, verb, adjective, adverb, pronoun, preposition, conjunction, interjection, other
-
-**Japanese** (`ja`): noun (名詞), verb (動詞), i-adj (い形容詞), na-adj (な形容詞), adverb (副詞),
-particle (助詞), aux-verb (助動詞), conjunction (接続詞), other
-
-The value stored in `words.part_of_speech` SHALL be the language-neutral key (e.g., `i-adj`),
-not the display string.
-
-#### Scenario: Switching language resets part-of-speech
-- **WHEN** the user changes the language dropdown from `en` to `ja`
-- **THEN** the part-of-speech dropdown updates to show Japanese options
-
-### Requirement: word_forms suggestions by language and POS
-When the user selects a language + part_of_speech combination, the system SHALL automatically
-populate the word_forms section with suggested (empty) label rows based on the canonical label
-vocabulary:
-
-| Language | POS | Suggested labels |
-|----------|-----|-----------------|
-| en | verb | base_form, past_tense, past_participle, gerund |
-| en | noun | singular, plural |
-| en | adjective | comparative, superlative |
-| ja | verb | dictionary_form, masu_form, ta_form, te_form, nai_form |
-| ja | i-adj | te_form, negative, past |
-| ja | na-adj | te_form, negative |
-| ja | noun | counter, particle |
-
-Suggestions appear as pre-labelled empty rows. The user may fill, remove, or add custom rows.
-
-#### Scenario: Suggestions appear on POS change
-- **WHEN** the user selects language=en, part_of_speech=verb
-- **THEN** four word_forms rows appear: base_form, past_tense, past_participle, gerund (all empty)
-
-#### Scenario: Changing POS replaces suggestions
-- **WHEN** the user changes part_of_speech from verb to noun (with no values filled in yet)
-- **THEN** the verb suggestion rows are replaced with singular/plural rows
-
-### Requirement: Language memory for new-word dialog
-When opening the add-word surface, the language field SHALL default to the last language
-the user used when saving a word. The default SHALL be `en` on first use.
-
-The last-used language SHALL be stored in a platform-appropriate persistent store:
-- **PC (Rust)**: `settings.toml`
-- **Android (Kotlin)**: `SharedPreferences` (`SP_LAST_LANGUAGE`)
-
-#### Scenario: Last-used language remembered on Android
-- **WHEN** the user saves a Japanese word on Android and then opens the add-word sheet again
-- **THEN** the language dropdown defaults to `ja`
-
-### Requirement: word_meanings deduplication at input
-If the user enters the same text in two meaning fields (primary or additional), the system SHALL
-silently ignore the duplicate on save (`INSERT OR IGNORE`).
-
-#### Scenario: Duplicate meaning not saved twice
-- **WHEN** the user types "放棄" in both the primary meaning and an additional meaning field
-- **THEN** only one "放棄" meaning is stored for that word
+## ADDED Requirements
 
 ### Requirement: Reading input per word form
 The add/edit word dialog SHALL provide a reading input for every word form row, alongside the
