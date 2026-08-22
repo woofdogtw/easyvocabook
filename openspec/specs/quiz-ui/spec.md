@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change rust-desktop. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Quiz tab as default view
 The Quiz tab SHALL be the first tab and the default view shown when the application starts.
 When no quizzable words exist, the tab SHALL display an empty-state message.
@@ -39,7 +41,10 @@ For typing mode the system SHALL display:
 - **[Submit]** and **[Give Up / Show Answer]** buttons
 
 After submission, the system SHALL display:
-- Each field with a ✓ or ✗ indicator and the correct value
+- Each field with a ✓ or ✗ indicator and the correct value, followed by its reading in
+  parentheses when the field has one — for the base word field and every word form field alike,
+  and regardless of whether that field was answered correctly. A field that carries only a
+  reading shows that reading on its own, without empty parentheses or an empty prefix
 - All valid synonym answers
 - **[Next]** button to advance to the next card (no self-report; verdict is determined automatically)
 
@@ -55,6 +60,23 @@ After submission, the system SHALL display:
 - **WHEN** the user submits an answer and there are synonyms in the database
 - **THEN** all valid synonym words are listed below the user's answer
 
+#### Scenario: Give-up reveals readings for every field
+- **WHEN** the user gives up on a JA verb card whose `masu_form` is `食べます` with reading `たべます`
+- **THEN** the result shows that field's correct value together with its reading, so the learner
+  can read the answer
+
+#### Scenario: Correctly answered fields still show the answer
+- **WHEN** the user answers a field correctly and the card is revealed
+- **THEN** that field still shows its correct value, and its reading when it has one
+
+#### Scenario: Field with only a reading shows the reading alone
+- **WHEN** a revealed field has a reading but no value
+- **THEN** the reading is shown on its own, with no empty parentheses or empty prefix
+
+#### Scenario: Field without a reading shows value only
+- **WHEN** a revealed field has a correct value but no reading
+- **THEN** only the value is shown, with no empty parentheses
+
 ### Requirement: Multiple-choice quiz UI (英翻中 / 日翻中)
 For multiple-choice mode the system SHALL display:
 - `words.word` (and `words.reading` if present) as the question
@@ -64,7 +86,9 @@ For multiple-choice mode the system SHALL display:
 - **[Submit]** and **[Give Up / Show Answer]** buttons
 
 After submission, the system SHALL mark each option with ✓ (correct) or ✗ (incorrect/missed)
-and show **[Next]** to advance (no self-report).
+and show **[Next]** to advance (no self-report). The answer view SHALL keep showing the word
+with its reading, in the same form as the question view, so the reading remains visible after
+giving up.
 
 #### Scenario: All correct meanings always visible
 - **WHEN** the quiz word has 5 correct meanings
@@ -77,6 +101,10 @@ and show **[Next]** to advance (no self-report).
 #### Scenario: Options are shuffled
 - **WHEN** the multiple-choice options are generated
 - **THEN** the order of options is randomized each time
+
+#### Scenario: Reading stays visible on the answer view
+- **WHEN** the user gives up on a JA multiple-choice card for `雨` with reading `あめ`
+- **THEN** the answer view shows `雨` together with `あめ`, not the word alone
 
 ### Requirement: Skip to next card
 The Quiz tab action bar SHALL contain a **⏭ Skip** button that discards the current card and
@@ -120,8 +148,12 @@ On Android, the typing quiz card SHALL be implemented as a scrollable `Column` c
 - A row with `[Give Up]` (`TextButton`) and `[Submit]` (`Button`)
 - A `⏭ Skip` `IconButton` in the top action bar
 
+Each field remains a single input; the reading is an accepted alternative answer, not a second
+input box.
+
 After the user submits or gives up, the card transitions to a result view showing each field with
-a ✓ or ✗ indicator, the correct value, and any valid synonyms, followed by a `[Next →]` button.
+a ✓ or ✗ indicator, the correct value with its reading when present — shown for correctly and
+incorrectly answered fields alike — and any valid synonyms, followed by a `[Next →]` button.
 
 #### Scenario: Android typing quiz shows correct word_form fields
 - **WHEN** an English verb is selected for a typing quiz on Android
@@ -130,6 +162,10 @@ a ✓ or ✗ indicator, the correct value, and any valid synonyms, followed by a
 #### Scenario: Android typing quiz result shows all field verdicts
 - **WHEN** the user submits a partially correct answer on Android
 - **THEN** each field shows its ✓/✗ indicator and the correct value before [Next →] appears
+
+#### Scenario: Android typing result shows form readings
+- **WHEN** the user gives up on a JA verb card on Android and its forms have readings
+- **THEN** each revealed field shows its value together with its reading
 
 ### Requirement: Android typing quiz — single-line inputs with keyboard navigation
 Each `OutlinedTextField` in the typing quiz card SHALL use `singleLine = true` to prevent
@@ -158,7 +194,8 @@ containing:
 - A `⏭ Skip` `IconButton` in the top action bar
 
 After submission, each row SHALL be color-coded (correct ✓ / incorrect ✗) and the `[Next →]`
-button SHALL appear. Options SHALL be shuffled before display.
+button SHALL appear. Options SHALL be shuffled before display. The result view SHALL render the
+word heading with its reading in parentheses, matching the question view.
 
 #### Scenario: Android MCQ options rendered as Compose checkboxes
 - **WHEN** a multiple-choice quiz card is shown on Android
@@ -168,3 +205,6 @@ button SHALL appear. Options SHALL be shuffled before display.
 - **WHEN** the multiple-choice options are generated on Android
 - **THEN** the order is randomized; correct meanings are not always first
 
+#### Scenario: Android MCQ result keeps the reading
+- **WHEN** the user submits or gives up on a JA multiple-choice card whose word has a reading
+- **THEN** the result view heading shows the word with its reading in parentheses
