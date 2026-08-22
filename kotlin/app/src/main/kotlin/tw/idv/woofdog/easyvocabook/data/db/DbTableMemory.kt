@@ -42,14 +42,22 @@ class DbTableMemory : DbTableBase {
 
     override suspend fun createWord(data: WordEntry): Long {
         val id = (words.maxOfOrNull { it.id } ?: 0L) + 1L
-        words.add(data.copy(id = id))
+        words.add(normalize(data).copy(id = id))
         return id
     }
 
     override suspend fun updateWord(id: Long, data: WordEntry) {
         val idx = words.indexOfFirst { it.id == id }
-        if (idx >= 0) words[idx] = data.copy(id = id)
+        if (idx >= 0) words[idx] = normalize(data).copy(id = id)
     }
+
+    // Apply the same word_form normalization DbTableSQLite performs on save, so both
+    // implementations return identical values for the same input.
+    private fun normalize(entry: WordEntry): WordEntry = entry.copy(
+        wordForms = entry.wordForms.map {
+            it.copy(value = it.value.trim(), reading = it.reading?.trim()?.takeIf { r -> r.isNotEmpty() })
+        }
+    )
 
     override suspend fun deleteWord(id: Long) {
         words.removeAll { it.id == id }

@@ -129,22 +129,34 @@ fun WordEditSheet(
                 val canonicalLabels = Labels.formLabelsForLanguage(state.language)
                 val labelOptions = if (form.label in canonicalLabels || form.label.isBlank())
                     canonicalLabels else listOf(form.label) + canonicalLabels
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    DropdownField(
-                        label = stringResource(R.string.word_edit_form_label),
-                        options = labelOptions,
-                        selected = form.label,
-                        onSelect = { vm.setFormLabel(idx, it) },
-                        displayFor = formDisplayFor,
-                        modifier = Modifier.weight(1f),
-                    )
+                // Label + value on one line, reading stacked below: three inputs plus the remove
+                // button do not fit side by side on a phone-width bottom sheet.
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        DropdownField(
+                            label = stringResource(R.string.word_edit_form_label),
+                            options = labelOptions,
+                            selected = form.label,
+                            onSelect = { vm.setFormLabel(idx, it) },
+                            displayFor = formDisplayFor,
+                            modifier = Modifier.weight(1f),
+                        )
+                        OutlinedTextField(
+                            value = form.value,
+                            onValueChange = { vm.setFormValue(idx, it) },
+                            label = { Text(stringResource(R.string.word_edit_form_value)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { vm.removeWordForm(idx) }) { Icon(Icons.Default.Close, null) }
+                    }
                     OutlinedTextField(
-                        value = form.value,
-                        onValueChange = { vm.setFormValue(idx, it) },
-                        label = { Text(stringResource(R.string.word_edit_form_value)) },
-                        modifier = Modifier.weight(1f)
+                        value = form.reading,
+                        onValueChange = { vm.setFormReading(idx, it) },
+                        label = { Text(stringResource(R.string.word_edit_reading)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    IconButton(onClick = { vm.removeWordForm(idx) }) { Icon(Icons.Default.Close, null) }
                 }
             }
             TextButton(onClick = { vm.addWordForm() }) { Text(stringResource(R.string.word_edit_add_form)) }

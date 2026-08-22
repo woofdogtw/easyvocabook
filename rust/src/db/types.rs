@@ -72,6 +72,8 @@ pub struct WordForm {
     pub id: i64,
     pub label: String,
     pub value: String,
+    /// Optional pronunciation for this specific form (kana, phonetics, …).
+    pub reading: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -111,7 +113,8 @@ pub struct NewWord {
     pub note: Option<String>,
     pub language: String,
     pub meanings: Vec<String>,
-    pub forms: Vec<(String, String)>,
+    /// (label, value, reading) — reading is optional per form.
+    pub forms: Vec<(String, String, Option<String>)>,
     pub sentences: Vec<(String, Option<String>)>,
 }
 
@@ -125,6 +128,7 @@ pub struct UpdateWord {
     pub note: Option<String>,
     pub language: String,
     pub meanings: Vec<String>,
-    pub forms: Vec<(String, String)>,
+    /// (label, value, reading) — reading is optional per form.
+    pub forms: Vec<(String, String, Option<String>)>,
     pub sentences: Vec<(String, Option<String>)>,
 }

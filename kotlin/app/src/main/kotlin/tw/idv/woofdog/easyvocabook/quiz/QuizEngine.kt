@@ -6,7 +6,7 @@ import kotlin.random.Random
 
 // ── Result types ──────────────────────────────────────────────────────────────
 
-data class TypingField(val label: String, val value: String)
+data class TypingField(val label: String, val value: String, val reading: String? = null)
 
 data class TypingCard(
     val word: WordEntry,
@@ -19,6 +19,7 @@ data class TypingFieldResult(
     val userInput: String,
     val correct: Boolean,
     val correctValue: String,
+    val correctReading: String? = null,
 )
 
 data class TypingResult(
@@ -89,46 +90,71 @@ class QuizEngine(private val random: Random = Random.Default) {
             word.meaning
         }
         val suggestedLabels = WordFormLabels.forWord(word.language, word.partOfSpeech)
-        val formMap = word.wordForms.associate { it.label to it.value }
         val formFields = if (suggestedLabels.isNotEmpty()) {
-            suggestedLabels.map { label -> TypingField(label, formMap[label] ?: "") }
+            suggestedLabels.map { label ->
+                val form = word.wordForms.find { it.label == label }
+                TypingField(label, form?.value ?: "", form?.reading)
+            }
         } else {
-            word.wordForms.map { TypingField(it.label, it.value) }
+            word.wordForms.map { TypingField(it.label, it.value, it.reading) }
         }
         // Always test the word itself first; ensures at least one graded field
-        val fields = listOf(TypingField("word", word.word)) + formFields
+        val fields = listOf(TypingField("word", word.word, word.reading)) + formFields
         return TypingCard(word = word, meaningPrompt = prompt, fields = fields)
+    }
+
+    /**
+     * The single answer-matching rule: an input matches a field when it equals either the value
+     * or the reading, comparing trimmed and case-insensitively.
+     *
+     * Both sides are guarded on emptiness. The guard on [value] matters as much as the one on
+     * [reading]: a form may carry only a reading, and an unguarded comparison would let an empty
+     * answer match an empty value and mark such a field correct.
+     *
+     * Case folding is Unicode (so `café` matches `CAFÉ`); kana are deliberately not folded, so
+     * katakana never satisfies a hiragana reading.
+     */
+    private fun matches(input: String, value: String?, reading: String?): Boolean {
+        val typed = input.trim()
+        val v = value?.trim().orEmpty()
+        val r = reading?.trim().orEmpty()
+        return (v.isNotEmpty() && typed.equals(v, ignoreCase = true)) ||
+            (r.isNotEmpty() && typed.equals(r, ignoreCase = true))
     }
 
     fun gradeTyping(card: TypingCard, userInputs: List<String>, allWords: List<WordEntry>): TypingResult {
         val word = card.word
         val synonyms = findSynonyms(word, allWords)
 
-        // Grade the base word (first field is the base/dictionary form)
         val fieldResults = card.fields.mapIndexed { idx, field ->
-            val input = userInputs.getOrElse(idx) { "" }.trim()
+            val input = userInputs.getOrElse(idx) { "" }
             val expected = field.value
-            val correct = if (expected.isBlank()) {
-                true // missing form: accept anything
+            val expectedReading = field.reading
+            // A field is unspecified — and accepts anything — only when it carries neither a
+            // value nor a reading. That subsumes the "synonym has no row for this label" case.
+            val correct = if (expected.isBlank() && expectedReading.isNullOrBlank()) {
+                true
             } else {
-                input.equals(expected, ignoreCase = true) ||
-                // For the "word" field: also accept reading (e.g. hiragana for kanji),
-                // synonym word strings, and synonym readings — any is sufficient.
-                (field.label == "word" && (
-                    (!word.reading.isNullOrBlank() && input.equals(word.reading, ignoreCase = true)) ||
-                    synonyms.any { it.equals(input, ignoreCase = true) } ||
-                    synonyms.any { syn ->
-                        allWords.find { it.word.equals(syn, ignoreCase = true) }
-                            ?.reading?.equals(input, ignoreCase = true) == true
-                    }
-                )) ||
+                matches(input, expected, expectedReading) ||
+                // Any synonym of the prompt may be answered instead of the selected word; for
+                // the base field its own word/reading count, for the others its matching form.
                 synonyms.any { syn ->
-                    val synWord = allWords.find { it.word.equals(syn, ignoreCase = true) }
-                    synWord?.wordForms?.find { it.label == field.label }?.value
-                        ?.equals(input, ignoreCase = true) == true
+                    val synWord = allWords.find { matches(syn, it.word, null) } ?: return@any false
+                    if (field.label == "word") {
+                        matches(input, synWord.word, synWord.reading)
+                    } else {
+                        val synForm = synWord.wordForms.find { it.label == field.label }
+                        synForm != null && matches(input, synForm.value, synForm.reading)
+                    }
                 }
             }
-            TypingFieldResult(label = field.label, userInput = input, correct = correct, correctValue = expected)
+            TypingFieldResult(
+                label = field.label,
+                userInput = input.trim(),
+                correct = correct,
+                correctValue = expected,
+                correctReading = expectedReading,
+            )
         }
 
         return TypingResult(

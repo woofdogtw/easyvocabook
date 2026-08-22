@@ -17,6 +17,7 @@ data class WordForm(
     val id: Long,
     val label: String,
     val value: String,
+    val reading: String? = null,
 )
 
 data class Sentence(

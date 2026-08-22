@@ -12,7 +12,7 @@ import tw.idv.woofdog.easyvocabook.MainActivity
 import tw.idv.woofdog.easyvocabook.data.model.*
 import tw.idv.woofdog.easyvocabook.quiz.WordFormLabels
 
-data class FormField(val label: String, val value: String)
+data class FormField(val label: String, val value: String, val reading: String = "")
 
 data class SentenceField(val text: String, val translation: String)
 
@@ -57,7 +57,7 @@ class WordEditViewModel(application: Application) : AndroidViewModel(application
                 primaryMeaning = w.meaning,
                 additionalMeanings = w.wordMeanings.map { it.meaning },
                 note = w.note ?: "",
-                wordForms = w.wordForms.map { FormField(it.label, it.value) },
+                wordForms = w.wordForms.map { FormField(it.label, it.value, it.reading.orEmpty()) },
                 sentences = w.sentences.map { SentenceField(it.sentence, it.translation ?: "") },
             )
         }
@@ -89,6 +89,10 @@ class WordEditViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun addWordForm() { _state.value = _state.value.copy(wordForms = _state.value.wordForms + FormField("", "")) }
+    fun setFormReading(idx: Int, v: String) {
+        val updated = _state.value.wordForms.toMutableList().apply { this[idx] = this[idx].copy(reading = v) }
+        _state.value = _state.value.copy(wordForms = updated)
+    }
     fun setFormLabel(idx: Int, v: String) {
         val updated = _state.value.wordForms.toMutableList().apply { this[idx] = this[idx].copy(label = v) }
         _state.value = _state.value.copy(wordForms = updated)
@@ -136,7 +140,9 @@ class WordEditViewModel(application: Application) : AndroidViewModel(application
                 language = s.language,
                 practiceCount = 0, correctCount = 0, createdAt = now, practicedAt = null,
                 wordMeanings = s.additionalMeanings.filter { it.isNotBlank() }.map { WordMeaning(0, it.trim()) },
-                wordForms = s.wordForms.filter { it.label.isNotBlank() }.map { WordForm(0, it.label, it.value) },
+                wordForms = s.wordForms
+                    .filter { it.label.isNotBlank() && (it.value.isNotBlank() || it.reading.isNotBlank()) }
+                    .map { WordForm(0, it.label, it.value.trim(), it.reading.trim().takeIf { r -> r.isNotEmpty() }) },
                 sentences = s.sentences.filter { it.text.isNotBlank() }.map { Sentence(0, it.text, it.translation.takeIf { t -> t.isNotBlank() }) },
             )
             if (s.wordId == null) repo.createWord(data)
@@ -150,7 +156,7 @@ class WordEditViewModel(application: Application) : AndroidViewModel(application
         WordFormLabels.forWord(language, pos).map { FormField(it, "") }
 
     private fun mergeForms(existing: List<FormField>, suggested: List<FormField>): List<FormField> {
-        val existingMap = existing.associate { it.label to it.value }
-        return suggested.map { FormField(it.label, existingMap[it.label] ?: "") }
+        val existingMap = existing.associateBy { it.label }
+        return suggested.map { FormField(it.label, existingMap[it.label]?.value ?: "", existingMap[it.label]?.reading ?: "") }
     }
 }

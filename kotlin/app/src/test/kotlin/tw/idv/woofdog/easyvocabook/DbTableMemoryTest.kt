@@ -87,4 +87,28 @@ class DbTableMemoryTest {
         val all = mem.listWords()
         assertTrue(all.all { it.practiceCount == 0 && it.correctCount == 0 && it.practicedAt == null })
     }
+
+    // ── word_form readings ────────────────────────────────────────────────────
+
+    @Test
+    fun wordFormReading_roundTrips() = runTest {
+        val id = mem.createWord(
+            WordEntry(0L, "食べる", "たべる", "吃", "verb", null, "ja", 0, 0, 0L, null,
+                emptyList(), listOf(WordForm(0, "masu_form", "食べます", "たべます")), emptyList())
+        )
+        val form = mem.getWord(id)!!.wordForms.single()
+        assertEquals("食べます", form.value)
+        assertEquals("たべます", form.reading)
+    }
+
+    @Test
+    fun blankReadingNormalizesToAbsent_matchingSqlite() = runTest {
+        val id = mem.createWord(
+            WordEntry(0L, "walk", null, "走路", "verb", null, "en", 0, 0, 0L, null,
+                emptyList(), listOf(WordForm(0, "past_tense", "  walked  ", "   ")), emptyList())
+        )
+        val form = mem.getWord(id)!!.wordForms.single()
+        assertEquals("walked", form.value)
+        assertNull(form.reading)
+    }
 }

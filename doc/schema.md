@@ -4,22 +4,52 @@
 
 Single SQLite file: `easyvocabook.db`  
 Platform path: `{data_local_dir}/easyvocabook/easyvocabook.db`  
-Current version: **1**
+Current version: **2**
 
 All date/time values are **Unix epoch seconds** stored as `INTEGER` (`i64`). No timezone info is stored.
 
 ## Version policy
+
+`db_info.version` is the **only** authority on a file's schema version.
 
 - `db_info.version` is checked on every open.
 - `version > CURRENT_VERSION` → refuse to open; show "Please update the app to open this file".
 - `version < CURRENT_VERSION` → run sequential migration SQL.
 - `version == CURRENT_VERSION` → open normally.
 
+**`PRAGMA user_version` is not maintained by either platform and MUST NOT be branched on.**
+The Rust desktop app never writes it, so every file it produces reports `user_version = 0`.
+On Android this matters: `SQLiteOpenHelper` routes `onCreate`/`onUpgrade` off that pragma, so a
+synced desktop file would be sent to `onCreate` — whose statements are all
+`CREATE TABLE IF NOT EXISTS` and therefore no-ops — and would silently skip its migration.
+Android must run its migration from `db_info.version` instead (see below).
+
 ## Migration strategy
 
-Each schema version adds a numbered migration function. On open the code runs all migrations
-from the installed version up to `CURRENT_VERSION` in order. Migrations are additive-first
-(new columns with defaults, new tables) to stay compatible with the Android implementation.
+Each schema version adds a numbered migration step. On open the code runs all migrations from the
+installed version up to `CURRENT_VERSION` in order. Migrations are additive-first (new columns
+with defaults, new tables) to stay compatible with the Android implementation.
+
+Two rules keep a migration from running twice:
+
+1. Each step is guarded by the installed version, and the migration writes
+   `db_info.version = CURRENT_VERSION` when it finishes. Without the write-back the step would
+   re-run on the next open — the Rust `migrate()` is called on every open — and fail.
+2. Each step is additionally idempotent (for example, checking whether a column already exists
+   before adding it), because Android can reach the same step from two code paths in one open.
+
+## Migrations
+
+### v1 → v2 — `word_forms.reading`
+
+Adds an optional per-form reading. Purely additive: no existing row is rewritten, relabelled, or
+deleted. Rows whose label was previously used to carry a reading (such as `hiragana` or
+`phonetic`) are left exactly as they are.
+
+```sql
+ALTER TABLE word_forms ADD COLUMN reading TEXT;
+UPDATE db_info SET version = 2 WHERE id = 1;
+```
 
 ## Tables
 
@@ -76,13 +106,17 @@ CREATE TABLE word_meanings (
 
 Conjugation/inflection data for a word (0..N). Labels are language-specific constants
 (see `db::labels`). Custom labels outside the canonical set are accepted without error.
+Each form carries its own optional `reading`, so every form — not just the base word — can
+record a pronunciation. Value and reading are trimmed on save; a reading that is empty after
+trimming is stored as `NULL`.
 
 ```sql
 CREATE TABLE word_forms (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
     word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
     label   TEXT    NOT NULL,
-    value   TEXT    NOT NULL
+    value   TEXT    NOT NULL,
+    reading TEXT                 -- kana / pronunciation for this form (v2+)
 );
 ```
 

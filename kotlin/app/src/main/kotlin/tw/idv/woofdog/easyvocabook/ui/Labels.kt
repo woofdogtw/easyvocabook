@@ -47,16 +47,20 @@ object Labels {
 
     // ── Canonical label lists per language ────────────────────────────────────
 
+    // "phonetic" and "hiragana" are intentionally absent: their only purpose was to carry a
+    // pronunciation, which every word form now records in its own `reading`. "kanji" (a written
+    // form) and "pitch_accent" (an accent pattern) are not readings and stay. Retired labels keep
+    // their formLabelResId() mappings so existing rows still show a translated name.
     val EN_FORM_LABELS = listOf(
         "base_form", "past_tense", "past_participle", "gerund",
         "singular", "plural", "comparative", "superlative",
-        "phonetic", "collocation",
+        "collocation",
     )
 
     val JA_FORM_LABELS = listOf(
         "dictionary_form", "masu_form", "ta_form", "te_form", "nai_form",
         "negative", "past", "particle",
-        "kanji", "hiragana", "pitch_accent", "counter", "transitive_pair", "origin",
+        "kanji", "pitch_accent", "counter", "transitive_pair", "origin",
     )
 
     fun formLabelsForLanguage(lang: String): List<String> = when (lang) {
