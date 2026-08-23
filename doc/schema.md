@@ -4,7 +4,7 @@
 
 Single SQLite file: `easyvocabook.db`  
 Platform path: `{data_local_dir}/easyvocabook/easyvocabook.db`  
-Current version: **2**
+Current version: **1**
 
 All date/time values are **Unix epoch seconds** stored as `INTEGER` (`i64`). No timezone info is stored.
 
@@ -27,7 +27,8 @@ Android must run its migration from `db_info.version` instead (see below).
 ## Migration strategy
 
 Each schema version adds a numbered migration step. On open the code runs all migrations from the
-installed version up to `CURRENT_VERSION` in order. Migrations are additive-first (new columns
+installed version up to `CURRENT_VERSION` in order. No steps exist yet; the rules below describe
+how one must behave when it is added. Migrations are additive-first (new columns
 with defaults, new tables) to stay compatible with the Android implementation.
 
 Two rules keep a migration from running twice:
@@ -40,16 +41,13 @@ Two rules keep a migration from running twice:
 
 ## Migrations
 
-### v1 → v2 — `word_forms.reading`
+None yet. The schema is still at its first version: everything added before release was folded
+into the version 1 DDL rather than versioned forward, so that version numbers stay available for
+upgrades that real users' databases will need.
 
-Adds an optional per-form reading. Purely additive: no existing row is rewritten, relabelled, or
-deleted. Rows whose label was previously used to carry a reading (such as `hiragana` or
-`phonetic`) are left exactly as they are.
-
-```sql
-ALTER TABLE word_forms ADD COLUMN reading TEXT;
-UPDATE db_info SET version = 2 WHERE id = 1;
-```
+The machinery above stays in place regardless — the version guard, the `db_info.version`
+authority rule, and the write-back — so the first migration added after release has a working
+path to run through.
 
 ## Tables
 
@@ -72,6 +70,11 @@ CREATE TABLE db_info (
 
 One row per vocabulary entry.
 
+`transitivity` and `verb_group` describe the verb itself rather than one of its inflections,
+which is why they are columns here and not `word_forms` rows. Both are `NULL` for non-verbs and
+for languages that do not distinguish them. Like `part_of_speech`, they store language-neutral
+keys and are translated for display.
+
 ```sql
 CREATE TABLE words (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,6 +84,8 @@ CREATE TABLE words (
     part_of_speech TEXT,               -- language-neutral key: noun, verb, i-adj, …
     note           TEXT,
     language       TEXT    NOT NULL,   -- ISO code: en, ja, …
+    transitivity   TEXT,               -- verbs only: intransitive | transitive | ambitransitive
+    verb_group     TEXT,               -- verbs only: godan | ichidan | irregular
     practice_count INTEGER NOT NULL DEFAULT 0,
     correct_count  INTEGER NOT NULL DEFAULT 0,
     created_at     INTEGER NOT NULL,   -- Unix epoch seconds
@@ -110,13 +115,17 @@ Each form carries its own optional `reading`, so every form — not just the bas
 record a pronunciation. Value and reading are trimmed on save; a reading that is empty after
 trimming is stored as `NULL`.
 
+For Japanese verbs, `transitive_pair` records the paired transitive or intransitive verb. A verb
+with no partner has **no such row at all** — the field is always offered when editing a Japanese
+verb, so leaving it blank states that no partner exists rather than that nobody has filled it in.
+
 ```sql
 CREATE TABLE word_forms (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
     word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
     label   TEXT    NOT NULL,
     value   TEXT    NOT NULL,
-    reading TEXT                 -- kana / pronunciation for this form (v2+)
+    reading TEXT                 -- kana / pronunciation for this form
 );
 ```
 

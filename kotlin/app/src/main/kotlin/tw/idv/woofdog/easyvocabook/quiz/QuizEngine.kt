@@ -52,10 +52,13 @@ object WordFormLabels {
             else -> emptyList()
         }
         "ja" -> when (pos) {
-            "verb", "動詞" -> listOf("dictionary_form", "masu_form", "ta_form", "te_form", "nai_form")
+            "verb", "動詞" -> listOf(
+                "dictionary_form", "masu_form", "ta_form", "te_form", "nai_form", "transitive_pair",
+            )
             "i-adj", "い形容詞" -> listOf("te_form", "negative", "past")
             "na-adj", "な形容詞" -> listOf("te_form", "negative")
-            "particle", "助詞" -> listOf("particle")
+            // Japanese nouns suggest nothing: they have no plural, a counter is not unique for
+            // most nouns, and a particle depends on sentence role rather than the noun itself.
             else -> emptyList()
         }
         else -> emptyList()
@@ -90,16 +93,20 @@ class QuizEngine(private val random: Random = Random.Default) {
             word.meaning
         }
         val suggestedLabels = WordFormLabels.forWord(word.language, word.partOfSpeech)
-        val formFields = if (suggestedLabels.isNotEmpty()) {
-            suggestedLabels.map { label ->
-                val form = word.wordForms.find { it.label == label }
-                TypingField(label, form?.value ?: "", form?.reading)
-            }
-        } else {
-            word.wordForms.map { TypingField(it.label, it.value, it.reading) }
+        // Fields come from the table alone. There is deliberately no fallback to "whatever forms
+        // this word happens to have": an unlisted combination shows no form fields, exactly as on
+        // the desktop, so a custom form added to a Japanese noun cannot reintroduce a divergence.
+        val formFields = suggestedLabels.map { label ->
+            val form = word.wordForms.find { it.label == label }
+            TypingField(label, form?.value ?: "", form?.reading)
         }
         // Always test the word itself first; ensures at least one graded field
-        val fields = listOf(TypingField("word", word.word, word.reading)) + formFields
+        // Japanese verbs are additionally asked their transitivity, chosen rather than typed.
+        val verbFields =
+            if (word.language == "ja" && word.partOfSpeech == "verb")
+                listOf(TypingField(TRANSITIVITY_FIELD, word.transitivity.orEmpty()))
+            else emptyList()
+        val fields = listOf(TypingField(WORD_FIELD, word.word, word.reading)) + formFields + verbFields
         return TypingCard(word = word, meaningPrompt = prompt, fields = fields)
     }
 
@@ -122,29 +129,57 @@ class QuizEngine(private val random: Random = Random.Default) {
             (r.isNotEmpty() && typed.equals(r, ignoreCase = true))
     }
 
+    companion object {
+        /** Label of the pseudo-field that holds the base word itself. */
+        const val WORD_FIELD = "word"
+
+        /**
+         * Label of the pseudo-field holding the verb's transitivity. Not a word form: it
+         * describes the verb itself and is answered by choosing one of three keys, not by typing.
+         */
+        const val TRANSITIVITY_FIELD = "transitivity"
+    }
+
     fun gradeTyping(card: TypingCard, userInputs: List<String>, allWords: List<WordEntry>): TypingResult {
         val word = card.word
         val synonyms = findSynonyms(word, allWords)
+
+        // Decide which word is being graded against *before* grading any field. The user may
+        // answer with a synonym, in which case that word's own forms are the expectation.
+        // Grading each field independently against "the selected word or any synonym" would let
+        // a string that happens to equal some synonym's field satisfy an empty expectation.
+        val baseInput = userInputs.getOrElse(0) { "" }
+        val matched: WordEntry? =
+            if (matches(baseInput, word.word, word.reading)) word
+            else synonyms.firstNotNullOfOrNull { syn ->
+                allWords.find { matches(syn, it.word, null) }
+                    ?.takeIf { matches(baseInput, it.word, it.reading) }
+            }
+        val answeredWithSynonym = matched != null && matched !== word
 
         val fieldResults = card.fields.mapIndexed { idx, field ->
             val input = userInputs.getOrElse(idx) { "" }
             val expected = field.value
             val expectedReading = field.reading
-            // A field is unspecified — and accepts anything — only when it carries neither a
-            // value nor a reading. That subsumes the "synonym has no row for this label" case.
-            val correct = if (expected.isBlank() && expectedReading.isNullOrBlank()) {
-                true
-            } else {
-                matches(input, expected, expectedReading) ||
-                // Any synonym of the prompt may be answered instead of the selected word; for
-                // the base field its own word/reading count, for the others its matching form.
-                synonyms.any { syn ->
-                    val synWord = allWords.find { matches(syn, it.word, null) } ?: return@any false
-                    if (field.label == "word") {
-                        matches(input, synWord.word, synWord.reading)
-                    } else {
-                        val synForm = synWord.wordForms.find { it.label == field.label }
-                        synForm != null && matches(input, synForm.value, synForm.reading)
+
+            val correct = when {
+                // The base field is right exactly when the typed word was recognised at all.
+                field.label == WORD_FIELD -> matched != null
+                matched == null -> false
+                // A chosen key, compared against what the matched word records.
+                field.label == TRANSITIVITY_FIELD -> {
+                    val expectedKey = matched.transitivity.orEmpty()
+                    if (expectedKey.isBlank()) input.isBlank() else input == expectedKey
+                }
+                else -> {
+                    val form = matched.wordForms.find { it.label == field.label }
+                    when {
+                        // A synonym with no data for this label is not the user's mistake.
+                        form == null && answeredWithSynonym -> true
+                        // Nothing recorded to answer: the answer is nothing.
+                        form == null -> input.isBlank()
+                        form.value.isBlank() && form.reading.isNullOrBlank() -> input.isBlank()
+                        else -> matches(input, form.value, form.reading)
                     }
                 }
             }

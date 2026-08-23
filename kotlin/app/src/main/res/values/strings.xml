@@ -149,4 +149,12 @@
     <!-- Errors -->
     <string name="error_db_too_new">Database version is too new. Please update the app.</string>
     <string name="error_sync_failed">Sync failed: %1$s</string>
+    <string name="transitivity_intransitive">Intransitive (自動詞)</string>
+    <string name="transitivity_transitive">Transitive (他動詞)</string>
+    <string name="transitivity_ambitransitive">Both (自他両用)</string>
+    <string name="verb_group_godan">Group I (五段)</string>
+    <string name="verb_group_ichidan">Group II (一段)</string>
+    <string name="verb_group_irregular">Irregular</string>
+    <string name="word_edit_transitivity">Transitivity</string>
+    <string name="word_edit_verb_group">Verb group</string>
 </resources>

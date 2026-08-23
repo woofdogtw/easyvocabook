@@ -39,10 +39,12 @@ pub fn suggested_labels(language: &str, pos: &str) -> &'static [&'static str] {
             "ta_form",
             "te_form",
             "nai_form",
+            "transitive_pair",
         ],
         ("ja", "i-adj") => &["te_form", "negative", "past"],
         ("ja", "na-adj") => &["te_form", "negative"],
-        ("ja", "noun") => &["counter", "particle"],
+        // Japanese nouns suggest nothing: they have no plural, a counter is not unique for most
+        // nouns, and a particle depends on sentence role rather than the noun itself.
         _ => &[],
     }
 }
@@ -82,6 +84,32 @@ pub const JA_FORM_LABELS: &[&str] = &[
     "transitive_pair",
     "origin",
 ];
+
+/// Transitivity keys for Japanese verbs. Language-neutral, like `part_of_speech`.
+pub const TRANSITIVITY_KEYS: &[&str] = &["intransitive", "transitive", "ambitransitive"];
+
+/// Verb group keys for Japanese verbs.
+pub const VERB_GROUP_KEYS: &[&str] = &["godan", "ichidan", "irregular"];
+
+/// Maps a transitivity key to its locale string key.
+pub fn transitivity_locale_key(key: &str) -> &'static str {
+    match key {
+        "intransitive" => "transitivity.intransitive",
+        "transitive" => "transitivity.transitive",
+        "ambitransitive" => "transitivity.ambitransitive",
+        _ => "",
+    }
+}
+
+/// Maps a verb group key to its locale string key.
+pub fn verb_group_locale_key(key: &str) -> &'static str {
+    match key {
+        "godan" => "verb_group.godan",
+        "ichidan" => "verb_group.ichidan",
+        "irregular" => "verb_group.irregular",
+        _ => "",
+    }
+}
 
 /// Maps a canonical `part_of_speech` key to the corresponding locale string key.
 pub fn pos_locale_key(pos: &str) -> &'static str {
@@ -207,8 +235,23 @@ mod tests {
     }
 
     #[test]
-    fn ja_noun_suggestions_unchanged() {
-        assert_eq!(suggested_labels("ja", "noun"), &["counter", "particle"]);
+    fn ja_noun_suggests_nothing() {
+        assert!(suggested_labels("ja", "noun").is_empty());
         assert!(suggested_labels("ja", "particle").is_empty());
+    }
+
+    #[test]
+    fn ja_verb_suggests_the_paired_verb() {
+        assert!(suggested_labels("ja", "verb").contains(&"transitive_pair"));
+    }
+
+    #[test]
+    fn verb_attribute_keys_have_locale_keys() {
+        for k in TRANSITIVITY_KEYS {
+            assert!(!transitivity_locale_key(k).is_empty(), "{k} has no locale key");
+        }
+        for k in VERB_GROUP_KEYS {
+            assert!(!verb_group_locale_key(k).is_empty(), "{k} has no locale key");
+        }
     }
 }

@@ -38,6 +38,8 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
                 part_of_speech TEXT,
                 note           TEXT,
                 language       TEXT    NOT NULL,
+                transitivity   TEXT,
+                verb_group     TEXT,
                 practice_count INTEGER NOT NULL DEFAULT 0,
                 correct_count  INTEGER NOT NULL DEFAULT 0,
                 created_at     INTEGER NOT NULL,
@@ -122,13 +124,15 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
         }
         if (installed >= CURRENT_VERSION) return
 
-        if (installed < 2 && !hasColumn(db, "word_forms", "reading")) {
-            db.execSQL("ALTER TABLE word_forms ADD COLUMN reading TEXT")
-        }
+        // No migration steps exist yet: everything added before release went into the version 1
+        // DDL. Steps are added here, each guarded by `installed` and made idempotent with
+        // hasColumn(), because onUpgrade and onOpen can both reach this in a single open.
 
         db.execSQL("UPDATE db_info SET version = ? WHERE id = 1", arrayOf<Any>(CURRENT_VERSION))
     }
 
+    /** Kept for the first migration added after release; no step needs it yet. */
+    @Suppress("unused")
     private fun hasColumn(db: SQLiteDatabase, table: String, column: String): Boolean =
         db.rawQuery("PRAGMA table_info($table)", null).use { c ->
             val nameIdx = c.getColumnIndex("name")
@@ -187,7 +191,7 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
 
         val words = mutableMapOf<Long, WordEntry>()
         val wordIds = mutableListOf<Long>()
-        db.rawQuery("SELECT id, word, reading, meaning, part_of_speech, note, language, practice_count, correct_count, created_at, practiced_at FROM words w $whereClause ORDER BY w.word ASC", args)
+        db.rawQuery("SELECT id, word, reading, meaning, part_of_speech, note, language, transitivity, verb_group, practice_count, correct_count, created_at, practiced_at FROM words w $whereClause ORDER BY w.word ASC", args)
             .use { c ->
                 while (c.moveToNext()) {
                     val id = c.getLong(0)
@@ -200,10 +204,12 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
                         partOfSpeech = if (c.isNull(4)) null else c.getString(4),
                         note = if (c.isNull(5)) null else c.getString(5),
                         language = c.getString(6),
-                        practiceCount = c.getInt(7),
-                        correctCount = c.getInt(8),
-                        createdAt = c.getLong(9),
-                        practicedAt = if (c.isNull(10)) null else c.getLong(10),
+                        transitivity = if (c.isNull(7)) null else c.getString(7),
+                        verbGroup = if (c.isNull(8)) null else c.getString(8),
+                        practiceCount = c.getInt(9),
+                        correctCount = c.getInt(10),
+                        createdAt = c.getLong(11),
+                        practicedAt = if (c.isNull(12)) null else c.getLong(12),
                         wordMeanings = emptyList(),
                         wordForms = emptyList(),
                         sentences = emptyList(),
@@ -343,6 +349,8 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
         put("part_of_speech", data.partOfSpeech)
         put("note", data.note)
         put("language", data.language)
+        put("transitivity", data.transitivity.takeIf { data.partOfSpeech == "verb" })
+        put("verb_group", data.verbGroup.takeIf { data.partOfSpeech == "verb" })
         put("practice_count", data.practiceCount)
         put("correct_count", data.correctCount)
         put("created_at", data.createdAt)
@@ -357,6 +365,8 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
         put("part_of_speech", data.partOfSpeech)
         put("note", data.note)
         put("language", data.language)
+        put("transitivity", data.transitivity.takeIf { data.partOfSpeech == "verb" })
+        put("verb_group", data.verbGroup.takeIf { data.partOfSpeech == "verb" })
     }
 
     private fun insertSubRecords(db: SQLiteDatabase, wordId: Long, data: WordEntry) {
@@ -389,7 +399,7 @@ class DbTableSQLite(context: Context, dbFile: File) : SQLiteOpenHelper(
     }
 
     companion object {
-        const val CURRENT_VERSION = 2
+        const val CURRENT_VERSION = 1
 
         fun dbFile(context: Context): File = File(context.filesDir, "easyvocabook.db")
     }

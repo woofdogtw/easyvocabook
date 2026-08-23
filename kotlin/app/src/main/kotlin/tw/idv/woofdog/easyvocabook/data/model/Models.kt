@@ -41,6 +41,11 @@ data class WordEntry(
     val wordMeanings: List<WordMeaning>,
     val wordForms: List<WordForm>,
     val sentences: List<Sentence>,
+    /** Verbs only: intransitive | transitive | ambitransitive. Last so existing positional
+     *  construction keeps working. */
+    val transitivity: String? = null,
+    /** Verbs only: godan | ichidan | irregular. */
+    val verbGroup: String? = null,
 )
 
 data class WordFilter(

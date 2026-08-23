@@ -3,6 +3,12 @@ use rusqlite::{Connection, Result, params};
 use crate::db::schema::now_epoch;
 use crate::db::types::*;
 
+/// The verb attributes describe a verb; anything else stores neither, so the column is `NULL`
+/// whatever a caller supplied.
+fn verb_only(value: &Option<String>, part_of_speech: Option<&str>) -> Option<String> {
+    if part_of_speech == Some("verb") { value.clone() } else { None }
+}
+
 /// Trim a form reading and treat an all-whitespace one as absent, so "no reading" is a single
 /// representation (`NULL`) rather than a mix of empty strings and nulls.
 pub(crate) fn normalize_reading(reading: &Option<String>) -> Option<String> {
@@ -86,6 +92,8 @@ impl DbTableSQLite {
         part_of_speech: Option<String>,
         note: Option<String>,
         language: String,
+        transitivity: Option<String>,
+        verb_group: Option<String>,
         practice_count: i64,
         correct_count: i64,
         created_at: i64,
@@ -100,6 +108,8 @@ impl DbTableSQLite {
             part_of_speech,
             note,
             language,
+            transitivity,
+            verb_group,
             practice_count,
             correct_count,
             created_at,
@@ -148,6 +158,7 @@ impl DbTableBase for DbTableSQLite {
             .conn
             .query_row(
                 "SELECT id, word, reading, meaning, part_of_speech, note, language,
+                    transitivity, verb_group,
                     practice_count, correct_count, created_at, practiced_at
              FROM words WHERE id = ?1",
                 params![id],
@@ -160,16 +171,19 @@ impl DbTableBase for DbTableSQLite {
                         row.get::<_, Option<String>>(4)?,
                         row.get::<_, Option<String>>(5)?,
                         row.get::<_, String>(6)?,
-                        row.get::<_, i64>(7)?,
-                        row.get::<_, i64>(8)?,
+                        row.get::<_, Option<String>>(7)?,
+                        row.get::<_, Option<String>>(8)?,
                         row.get::<_, i64>(9)?,
-                        row.get::<_, Option<i64>>(10)?,
+                        row.get::<_, i64>(10)?,
+                        row.get::<_, i64>(11)?,
+                        row.get::<_, Option<i64>>(12)?,
                     ))
                 },
             )
             .ok()?;
         self.row_to_entry(
             row.0, row.1, row.2, row.3, row.4, row.5, row.6, row.7, row.8, row.9, row.10,
+            row.11, row.12,
         )
         .ok()
     }
@@ -179,8 +193,9 @@ impl DbTableBase for DbTableSQLite {
         let tx = self.conn.unchecked_transaction()?;
 
         tx.execute(
-            "INSERT INTO words (word, reading, meaning, part_of_speech, note, language, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO words (word, reading, meaning, part_of_speech, note, language,
+                                transitivity, verb_group, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             params![
                 word.word,
                 word.reading,
@@ -188,6 +203,8 @@ impl DbTableBase for DbTableSQLite {
                 word.part_of_speech,
                 word.note,
                 word.language,
+                verb_only(&word.transitivity, word.part_of_speech.as_deref()),
+                verb_only(&word.verb_group, word.part_of_speech.as_deref()),
                 now
             ],
         )?;
@@ -226,7 +243,7 @@ impl DbTableBase for DbTableSQLite {
 
         tx.execute(
             "UPDATE words SET word=?1, reading=?2, meaning=?3, part_of_speech=?4,
-                     note=?5, language=?6 WHERE id=?7",
+                     note=?5, language=?6, transitivity=?7, verb_group=?8 WHERE id=?9",
             params![
                 word.word,
                 word.reading,
@@ -234,6 +251,8 @@ impl DbTableBase for DbTableSQLite {
                 word.part_of_speech,
                 word.note,
                 word.language,
+                verb_only(&word.transitivity, word.part_of_speech.as_deref()),
+                verb_only(&word.verb_group, word.part_of_speech.as_deref()),
                 id
             ],
         )?;
@@ -312,6 +331,7 @@ impl DbTableSQLite {
     pub fn load_all(&self) -> Vec<WordEntry> {
         let mut stmt = match self.conn.prepare(
             "SELECT id, word, reading, meaning, part_of_speech, note, language,
+                    transitivity, verb_group,
                     practice_count, correct_count, created_at, practiced_at
              FROM words ORDER BY id",
         ) {
@@ -328,10 +348,12 @@ impl DbTableSQLite {
                 row.get::<_, Option<String>>(4)?,
                 row.get::<_, Option<String>>(5)?,
                 row.get::<_, String>(6)?,
-                row.get::<_, i64>(7)?,
-                row.get::<_, i64>(8)?,
+                row.get::<_, Option<String>>(7)?,
+                row.get::<_, Option<String>>(8)?,
                 row.get::<_, i64>(9)?,
-                row.get::<_, Option<i64>>(10)?,
+                row.get::<_, i64>(10)?,
+                row.get::<_, i64>(11)?,
+                row.get::<_, Option<i64>>(12)?,
             ))
         }) {
             Ok(r) => r,
@@ -342,6 +364,7 @@ impl DbTableSQLite {
         for row in rows.flatten() {
             if let Ok(entry) = self.row_to_entry(
                 row.0, row.1, row.2, row.3, row.4, row.5, row.6, row.7, row.8, row.9, row.10,
+                row.11, row.12,
             ) {
                 entries.push(entry);
             }
@@ -369,6 +392,8 @@ mod tests {
             part_of_speech: Some("verb".into()),
             note: None,
             language: "en".into(),
+            transitivity: None,
+            verb_group: None,
             meanings: vec!["拋棄".into()],
             forms: vec![
                 ("base_form".into(), "abandon".into(), None),
@@ -378,77 +403,33 @@ mod tests {
         }
     }
 
-    // ── v1 → v2 migration ─────────────────────────────────────────────────────
+    // ── verb attributes ───────────────────────────────────────────────────────
 
-    /// Write a version-1 database by hand: `word_forms` without the `reading` column.
-    fn write_v1_db(path: &std::path::Path) {
-        let conn = rusqlite::Connection::open(path).unwrap();
-        conn.execute_batch(
-            "CREATE TABLE db_info (
-                id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT NOT NULL, description TEXT,
-                default_language TEXT NOT NULL DEFAULT 'en', version INTEGER NOT NULL,
-                last_modified INTEGER NOT NULL);
-             CREATE TABLE words (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, word TEXT NOT NULL, reading TEXT,
-                meaning TEXT NOT NULL, part_of_speech TEXT, note TEXT, language TEXT NOT NULL,
-                practice_count INTEGER NOT NULL DEFAULT 0, correct_count INTEGER NOT NULL DEFAULT 0,
-                created_at INTEGER NOT NULL, practiced_at INTEGER);
-             CREATE TABLE word_meanings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
-                meaning TEXT NOT NULL, UNIQUE(word_id, meaning));
-             CREATE TABLE word_forms (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
-                label TEXT NOT NULL, value TEXT NOT NULL);
-             CREATE TABLE sentences (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
-                sentence TEXT NOT NULL, translation TEXT);
-             INSERT INTO db_info (id, name, default_language, version, last_modified)
-                VALUES (1, 'Book', 'ja', 1, 0);
-             INSERT INTO words (id, word, meaning, language, created_at)
-                VALUES (1, '食べる', '吃', 'ja', 0);
-             INSERT INTO word_forms (word_id, label, value) VALUES (1, 'hiragana', 'たべる');
-             INSERT INTO word_forms (word_id, label, value) VALUES (1, 'masu_form', '食べます');",
-        )
-        .unwrap();
-    }
-
-    fn db_version(path: &std::path::Path) -> i64 {
-        let conn = rusqlite::Connection::open(path).unwrap();
-        conn.query_row("SELECT version FROM db_info WHERE id = 1", [], |r| r.get(0))
-            .unwrap()
+    #[test]
+    fn verb_attributes_round_trip() {
+        let (db, _f) = open_test_db();
+        let mut w = sample_word();
+        w.language = "ja".into();
+        w.transitivity = Some("intransitive".into());
+        w.verb_group = Some("ichidan".into());
+        let id = db.create_word(&w).unwrap();
+        let e = db.get_word(id).unwrap();
+        assert_eq!(e.transitivity.as_deref(), Some("intransitive"));
+        assert_eq!(e.verb_group.as_deref(), Some("ichidan"));
     }
 
     #[test]
-    fn v1_db_migrates_to_v2_with_rows_intact() {
-        let file = NamedTempFile::new().unwrap();
-        write_v1_db(file.path());
-
-        let db = DbTableSQLite::open(file.path()).unwrap();
-        let entry = db.get_word(1).unwrap();
-        drop(db);
-
-        assert_eq!(db_version(file.path()), 2);
-        // Existing rows keep label and value, and gain a null reading.
-        assert_eq!(entry.forms.len(), 2);
-        let legacy = entry.forms.iter().find(|f| f.label == "hiragana").unwrap();
-        assert_eq!(legacy.value, "たべる");
-        assert!(legacy.reading.is_none());
-    }
-
-    #[test]
-    fn migrated_db_reopens_without_duplicate_column_error() {
-        let file = NamedTempFile::new().unwrap();
-        write_v1_db(file.path());
-
-        DbTableSQLite::open(file.path()).unwrap();
-        // migrate() runs on every open; without the version write-back this second open would
-        // re-issue ALTER TABLE and fail with "duplicate column name".
-        let db = DbTableSQLite::open(file.path()).expect("second open must succeed");
-        assert_eq!(db.get_word(1).unwrap().forms.len(), 2);
-        assert_eq!(db_version(file.path()), 2);
+    fn non_verb_carries_neither_attribute() {
+        // Even when a caller supplies them, a non-verb stores neither.
+        let (db, _f) = open_test_db();
+        let mut w = sample_word();
+        w.part_of_speech = Some("noun".into());
+        w.transitivity = Some("transitive".into());
+        w.verb_group = Some("godan".into());
+        let id = db.create_word(&w).unwrap();
+        let e = db.get_word(id).unwrap();
+        assert!(e.transitivity.is_none());
+        assert!(e.verb_group.is_none());
     }
 
     // ── word_form readings ────────────────────────────────────────────────────
@@ -514,6 +495,8 @@ mod tests {
             part_of_speech: Some("verb".into()),
             note: None,
             language: "en".into(),
+            transitivity: None,
+            verb_group: None,
             meanings: vec![],
             forms: vec![("past_tense".into(), "forsook".into(), None)],
             sentences: vec![],

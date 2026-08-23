@@ -75,13 +75,16 @@ class QuizEngineTest {
     }
 
     @Test
-    fun buildTypingCard_jaVerb_hasSixFields() {
+    fun buildTypingCard_jaVerb_hasWordFormsAndTransitivity() {
         val w = word(2, "食べる", "ja", pos = "verb",
             forms = listOf("dictionary_form" to "食べる", "masu_form" to "食べます",
                 "ta_form" to "食べた", "te_form" to "食べて", "nai_form" to "食べない"))
         val card = engine.buildTypingCard(w)
-        // word + 5 ja-verb form fields
-        assertEquals(6, card.fields.size)
+        // word + 5 conjugations + transitive_pair + the transitivity question
+        assertEquals(8, card.fields.size)
+        assertEquals(QuizEngine.WORD_FIELD, card.fields.first().label)
+        assertEquals(QuizEngine.TRANSITIVITY_FIELD, card.fields.last().label)
+        assertTrue(card.fields.any { it.label == "transitive_pair" })
     }
 
     // ── gradeTyping ───────────────────────────────────────────────────────────
@@ -129,13 +132,26 @@ class QuizEngineTest {
     }
 
     @Test
-    fun gradeTyping_missingFormAcceptsAnything() {
+    fun gradeTyping_blankFormOnTheSelectedWord_demandsABlankAnswer() {
         val w = word(1, "walk", "en", pos = "verb",
             forms = listOf("base_form" to ""))  // blank value
         val card = engine.buildTypingCard(w)
-        // fields[0]="word"(walk), fields[1]="base_form"(blank→accept anything)
-        val result = engine.gradeTyping(card, listOf("walk", "anything"), emptyList())
-        assertTrue(result.fieldResults[1].correct) // blank form accepts anything
+        // Nothing is recorded for base_form, so nothing is the answer.
+        assertFalse(engine.gradeTyping(card, listOf("walk", "anything"), listOf(w)).fieldResults[1].correct)
+        assertTrue(engine.gradeTyping(card, listOf("walk", ""), listOf(w)).fieldResults[1].correct)
+    }
+
+    @Test
+    fun gradeTyping_synonymWithoutThatForm_stillAcceptsAnything() {
+        // The leniency that survives the stricter rule: answering with a legitimate synonym must
+        // not be penalised for data the synonym happens not to carry.
+        val target = word(1, "walk", "en", pos = "verb", meaning = "走路",
+            forms = listOf("base_form" to "walk", "past_tense" to "walked"))
+        val synonym = word(2, "stroll", "en", pos = "verb", meaning = "走路")
+        val card = engine.buildTypingCard(target)
+        val past = card.fields.indexOfFirst { it.label == "past_tense" }
+        val inputs = MutableList(card.fields.size) { "" }.also { it[0] = "stroll"; it[past] = "whatever" }
+        assertTrue(engine.gradeTyping(card, inputs, listOf(target, synonym)).fieldResults[past].correct)
     }
 
     // ── buildMcqCard ──────────────────────────────────────────────────────────
@@ -290,6 +306,136 @@ class QuizEngineTest {
         assertEquals("たべる", result.fieldResults[0].correctReading)
     }
 
+    /// The Rust UI once graded the base field its own way and rejected every reading; Kotlin
+    /// routes it through the same predicate as any other field. Pinned so it stays that way.
+    @Test
+    fun baseWordField_acceptsTheReading() {
+        val adj = word(1, "長い", "ja", meaning = "長", pos = "i-adj", reading = "ながい")
+        val card = engine.buildTypingCard(adj)
+        val inputs = MutableList(card.fields.size) { "" }
+
+        inputs[0] = "長い"
+        assertTrue(engine.gradeTyping(card, inputs, listOf(adj)).fieldResults[0].correct)
+
+        inputs[0] = "ながい"
+        assertTrue(
+            "the reading must be accepted for the base word",
+            engine.gradeTyping(card, inputs, listOf(adj)).fieldResults[0].correct,
+        )
+
+        inputs[0] = "  ながい  "
+        assertTrue(engine.gradeTyping(card, inputs, listOf(adj)).fieldResults[0].correct)
+
+        inputs[0] = "みじかい"
+        assertFalse(engine.gradeTyping(card, inputs, listOf(adj)).fieldResults[0].correct)
+    }
+
+    @Test
+    fun baseWordField_acceptsTheReadingForANoun() {
+        val noun = word(1, "自分", "ja", meaning = "自己", pos = "noun", reading = "じぶん")
+        val card = engine.buildTypingCard(noun)
+        val inputs = MutableList(card.fields.size) { "じぶん" }
+        assertTrue(engine.gradeTyping(card, inputs, listOf(noun)).fieldResults[0].correct)
+    }
+
+    // ── verb transitivity and the stricter empty rule ─────────────────────────
+
+    /** Inputs sized to a card, with the base word filled in. */
+    private fun inputsFor(card: tw.idv.woofdog.easyvocabook.quiz.TypingCard, base: String) =
+        MutableList(card.fields.size) { "" }.also { it[0] = base }
+
+    private fun jaVerb(
+        pairValue: String? = null,
+        transitivity: String? = "intransitive",
+    ) = word(1, "食べる", "ja", pos = "verb", reading = "たべる", transitivity = transitivity,
+        forms = buildList {
+            add("dictionary_form" to "食べる")
+            if (pairValue != null) add("transitive_pair" to pairValue)
+        })
+
+    @Test
+    fun partnerlessVerb_typingAnything_isIncorrect() {
+        val w = jaVerb(pairValue = null)
+        val card = engine.buildTypingCard(w)
+        val idx = card.fields.indexOfFirst { it.label == "transitive_pair" }
+        val inputs = inputsFor(card, "食べる").also { it[idx] = "食べさせる" }
+        val r = engine.gradeTyping(card, inputs, listOf(w))
+        assertFalse(r.fieldResults[idx].correct)
+        assertFalse(r.allCorrect)
+    }
+
+    @Test
+    fun partnerlessVerb_leftBlank_isCorrect() {
+        val w = jaVerb(pairValue = null)
+        val card = engine.buildTypingCard(w)
+        val idx = card.fields.indexOfFirst { it.label == "transitive_pair" }
+        val inputs = inputsFor(card, "食べる").also { it[card.fields.lastIndex] = "intransitive" }
+        assertTrue(engine.gradeTyping(card, inputs, listOf(w)).fieldResults[idx].correct)
+    }
+
+    @Test
+    fun verbWithPartner_requiresThatPartner() {
+        val w = jaVerb(pairValue = "食べさせる")
+        val card = engine.buildTypingCard(w)
+        val idx = card.fields.indexOfFirst { it.label == "transitive_pair" }
+        val inputs = inputsFor(card, "食べる")
+        assertFalse(engine.gradeTyping(card, inputs, listOf(w)).fieldResults[idx].correct)
+        inputs[idx] = "食べさせる"
+        assertTrue(engine.gradeTyping(card, inputs, listOf(w)).fieldResults[idx].correct)
+    }
+
+    @Test
+    fun emptyExpectationAppliesToAnyField() {
+        // A conjugation the word has no value for now demands a blank answer.
+        val w = word(1, "食べる", "ja", pos = "verb", reading = "たべる", transitivity = "transitive",
+            forms = listOf("dictionary_form" to "食べる"))
+        val card = engine.buildTypingCard(w)
+        val idx = card.fields.indexOfFirst { it.label == "nai_form" }
+        val inputs = inputsFor(card, "食べる").also { it[idx] = "anything" }
+        assertFalse(engine.gradeTyping(card, inputs, listOf(w)).fieldResults[idx].correct)
+    }
+
+    @Test
+    fun wrongTransitivityType_failsTheAnswer() {
+        val w = jaVerb(transitivity = "transitive")
+        val card = engine.buildTypingCard(w)
+        val idx = card.fields.lastIndex
+        val inputs = inputsFor(card, "食べる").also { it[idx] = "intransitive" }
+        val r = engine.gradeTyping(card, inputs, listOf(w))
+        assertFalse(r.fieldResults[idx].correct)
+        assertFalse(r.allCorrect)
+    }
+
+    @Test
+    fun ambitransitiveIsADistinctAnswer() {
+        val w = jaVerb(transitivity = "ambitransitive")
+        val card = engine.buildTypingCard(w)
+        val idx = card.fields.lastIndex
+        val inputs = inputsFor(card, "食べる").also { it[idx] = "intransitive" }
+        assertFalse(engine.gradeTyping(card, inputs, listOf(w)).fieldResults[idx].correct)
+        inputs[idx] = "ambitransitive"
+        assertTrue(engine.gradeTyping(card, inputs, listOf(w)).fieldResults[idx].correct)
+    }
+
+    @Test
+    fun verbQuestionsAreJapaneseOnly() {
+        val en = word(1, "walk", "en", pos = "verb", forms = listOf("base_form" to "walk"))
+        val card = engine.buildTypingCard(en)
+        assertTrue(card.fields.none { it.label == QuizEngine.TRANSITIVITY_FIELD })
+        assertTrue(card.fields.none { it.label == "transitive_pair" })
+    }
+
+    @Test
+    fun japaneseNounIsQuizzedOnTheWordAlone() {
+        // The suggestion table lists nothing for ja/noun, and there is no fallback to the word's
+        // own forms, so a custom row must not become a question.
+        val n = word(1, "本", "ja", pos = "noun", reading = "ほん",
+            forms = listOf("counter" to "冊"))
+        val card = engine.buildTypingCard(n)
+        assertEquals(1, card.fields.size)
+        assertEquals(QuizEngine.WORD_FIELD, card.fields.first().label)
+    }
+
     private fun word(
         id: Long, wordStr: String, lang: String,
         meaning: String = "意思",
@@ -300,6 +446,7 @@ class QuizEngineTest {
         meanings: List<String> = emptyList(),
         practiceCount: Int = 0,
         correctCount: Int = 0,
+        transitivity: String? = null,
     ) = WordEntry(
         id = id, word = wordStr, reading = reading, meaning = meaning,
         partOfSpeech = pos, note = null, language = lang,
@@ -312,5 +459,6 @@ class QuizEngineTest {
             tw.idv.woofdog.easyvocabook.data.model.WordForm((forms.size + i).toLong(), l, v, r)
         },
         sentences = emptyList(),
+        transitivity = transitivity,
     )
 }

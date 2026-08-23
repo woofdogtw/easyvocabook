@@ -1,6 +1,6 @@
 use rusqlite::{Connection, Result};
 
-pub const CURRENT_VERSION: i64 = 2;
+pub const CURRENT_VERSION: i64 = 1;
 
 const CREATE_V1: &str = "
 CREATE TABLE IF NOT EXISTS db_info (
@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS words (
     part_of_speech TEXT,
     note           TEXT,
     language       TEXT    NOT NULL,
+    transitivity   TEXT,
+    verb_group     TEXT,
     practice_count INTEGER NOT NULL DEFAULT 0,
     correct_count  INTEGER NOT NULL DEFAULT 0,
     created_at     INTEGER NOT NULL,
@@ -73,9 +75,13 @@ pub fn seed_db_info(conn: &Connection, name: &str) -> Result<()> {
 /// Run all migrations from `installed_version` up to `CURRENT_VERSION`, then record the new
 /// version in `db_info`.
 ///
-/// This is called on *every* open, so the version write-back is what stops a step from running
-/// twice: without it the v1→v2 `ALTER TABLE` would be re-issued on the next open and fail with
-/// `duplicate column name`. Steps are additionally idempotent so a half-migrated file recovers.
+/// No steps exist yet: everything added before release went into the version 1 DDL rather than
+/// being versioned forward, so the numbers stay available for upgrades real users will need.
+///
+/// The machinery stays regardless, because this is called on *every* open and the first step
+/// added after release depends on it: the version write-back is what stops a step running twice,
+/// and each step must additionally be idempotent (see [`has_column`]) because Android can reach
+/// the same step from two code paths in one open.
 ///
 /// Returns an error if `installed_version > CURRENT_VERSION`.
 pub fn migrate(conn: &Connection, installed_version: i64) -> Result<()> {
@@ -86,9 +92,7 @@ pub fn migrate(conn: &Connection, installed_version: i64) -> Result<()> {
         return Ok(());
     }
 
-    if installed_version < 2 && !has_column(conn, "word_forms", "reading")? {
-        conn.execute_batch("ALTER TABLE word_forms ADD COLUMN reading TEXT;")?;
-    }
+    // Numbered steps go here, each guarded by `installed_version`.
 
     conn.execute(
         "UPDATE db_info SET version = ?1 WHERE id = 1",
@@ -98,6 +102,8 @@ pub fn migrate(conn: &Connection, installed_version: i64) -> Result<()> {
 }
 
 /// Whether `table` already has `column`, so a migration step can be skipped.
+/// Kept for the first migration added after release; no step needs it yet.
+#[allow(dead_code)]
 fn has_column(conn: &Connection, table: &str, column: &str) -> Result<bool> {
     let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
     let mut rows = stmt.query([])?;
