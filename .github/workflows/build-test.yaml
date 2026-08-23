@@ -7,7 +7,7 @@ on:
     branches:
       - main
 env:
-  LLVM_COV_VER: v0.6.16
+  LLVM_COV_VER: v0.9.0
 jobs:
   # Android unit tests (Robolectric + Compose UI) — PR and push
   test-android:
@@ -99,9 +99,10 @@ jobs:
 
   # Push to main: Android coverage via JaCoCo
   # Android coverage report — push to main only
+  # Also runs on PRs: the Coverage job needs its artifact, and a skipped dependency would keep
+  # that job from ever running there.
   coverage-android:
     name: Android coverage
-    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -138,9 +139,11 @@ jobs:
           path: kotlin/app/build/reports/jacoco/jacocoTestReport/
 
   # Push to main: coverage report published to GitHub Pages
+  # Runs on PRs too, so a broken toolchain is caught before it reaches main — the report step
+  # once failed for five weeks unnoticed because this job only ran after merging. Publishing
+  # stays push-only; a PR just proves the report can still be produced.
   coverage:
     name: Coverage
-    if: ${{ github.event_name == 'push' }}
     needs: [coverage-android]
     runs-on: ubuntu-24.04
     permissions:
@@ -191,6 +194,7 @@ jobs:
       - name: Include Android coverage in pages
         run: cp -r android-coverage coverage/android
       - name: Publish coverage to GitHub Pages
+        if: ${{ github.event_name == 'push' }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: coverage
