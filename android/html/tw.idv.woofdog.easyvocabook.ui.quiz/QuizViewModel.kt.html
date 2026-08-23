@@ -39,78 +39,90 @@ sealed class QuizUiState {
 <span class="fc" id="L39">        }</span>
 <span class="fc" id="L40">    }</span>
 
-    fun setLanguageFilter(language: String?) {
-<span class="nc" id="L43">        languageFilter = language</span>
-<span class="nc" id="L44">        drawNext()</span>
-<span class="nc" id="L45">    }</span>
+    /**
+     * Re-draw only when the quiz has nothing to show.
+     *
+     * A sync can fill an empty database while this screen is already open, and nothing else
+     * calls [drawNext] until the user acts — so the quiz kept saying there were no words until
+     * the app was force-closed. Refreshing unconditionally would be worse: returning to the tab
+     * mid-question would throw away what the user had typed.
+     */
+    fun refreshIfEmpty() {
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (_state.value is QuizUiState.Empty) drawNext()</span>
+<span class="fc" id="L52">    }</span>
 
-<span class="fc" id="L47">    fun skip() = drawNext()</span>
+    fun setLanguageFilter(language: String?) {
+<span class="nc" id="L55">        languageFilter = language</span>
+<span class="nc" id="L56">        drawNext()</span>
+<span class="nc" id="L57">    }</span>
+
+<span class="fc" id="L59">    fun skip() = drawNext()</span>
 
     fun submitTyping(inputs: List&lt;String&gt;) {
-<span class="pc bpc" id="L50" title="2 of 4 branches missed.">        val st = _state.value as? QuizUiState.TypingCard ?: return</span>
-<span class="fc" id="L51">        val result = engine.gradeTyping(st.card, inputs, allWords)</span>
-<span class="fc" id="L52">        updateStats(st.card.word, result.allCorrect)</span>
-<span class="fc" id="L53">        _state.value = QuizUiState.TypingResult(result)</span>
-<span class="fc" id="L54">    }</span>
+<span class="pc bpc" id="L62" title="2 of 4 branches missed.">        val st = _state.value as? QuizUiState.TypingCard ?: return</span>
+<span class="fc" id="L63">        val result = engine.gradeTyping(st.card, inputs, allWords)</span>
+<span class="fc" id="L64">        updateStats(st.card.word, result.allCorrect)</span>
+<span class="fc" id="L65">        _state.value = QuizUiState.TypingResult(result)</span>
+<span class="fc" id="L66">    }</span>
 
     fun giveUpTyping() {
-<span class="pc bpc" id="L57" title="2 of 4 branches missed.">        val st = _state.value as? QuizUiState.TypingCard ?: return</span>
-<span class="fc" id="L58">        val result = engine.gradeTyping(st.card, st.inputs, allWords)</span>
-<span class="fc" id="L59">        updateStats(st.card.word, isCorrect = false)</span>
-<span class="fc" id="L60">        _state.value = QuizUiState.TypingResult(result)</span>
-<span class="fc" id="L61">    }</span>
+<span class="pc bpc" id="L69" title="2 of 4 branches missed.">        val st = _state.value as? QuizUiState.TypingCard ?: return</span>
+<span class="fc" id="L70">        val result = engine.gradeTyping(st.card, st.inputs, allWords)</span>
+<span class="fc" id="L71">        updateStats(st.card.word, isCorrect = false)</span>
+<span class="fc" id="L72">        _state.value = QuizUiState.TypingResult(result)</span>
+<span class="fc" id="L73">    }</span>
 
     fun submitMcq(selected: Set&lt;String&gt;) {
-<span class="pc bpc" id="L64" title="2 of 4 branches missed.">        val st = _state.value as? QuizUiState.McqCard ?: return</span>
-<span class="fc" id="L65">        val result = engine.gradeMcq(st.card, selected)</span>
-<span class="fc" id="L66">        updateStats(st.card.word, result.allCorrect)</span>
-<span class="fc" id="L67">        _state.value = QuizUiState.McqResult(result)</span>
-<span class="fc" id="L68">    }</span>
+<span class="pc bpc" id="L76" title="2 of 4 branches missed.">        val st = _state.value as? QuizUiState.McqCard ?: return</span>
+<span class="fc" id="L77">        val result = engine.gradeMcq(st.card, selected)</span>
+<span class="fc" id="L78">        updateStats(st.card.word, result.allCorrect)</span>
+<span class="fc" id="L79">        _state.value = QuizUiState.McqResult(result)</span>
+<span class="fc" id="L80">    }</span>
 
     fun giveUpMcq() {
-<span class="nc bnc" id="L71" title="All 4 branches missed.">        val st = _state.value as? QuizUiState.McqCard ?: return</span>
-<span class="nc" id="L72">        val result = engine.gradeMcq(st.card, emptySet())</span>
-<span class="nc" id="L73">        updateStats(st.card.word, isCorrect = false)</span>
-<span class="nc" id="L74">        _state.value = QuizUiState.McqResult(result)</span>
-<span class="nc" id="L75">    }</span>
+<span class="nc bnc" id="L83" title="All 4 branches missed.">        val st = _state.value as? QuizUiState.McqCard ?: return</span>
+<span class="nc" id="L84">        val result = engine.gradeMcq(st.card, emptySet())</span>
+<span class="nc" id="L85">        updateStats(st.card.word, isCorrect = false)</span>
+<span class="nc" id="L86">        _state.value = QuizUiState.McqResult(result)</span>
+<span class="nc" id="L87">    }</span>
 
-<span class="nc" id="L77">    fun next() = drawNext()</span>
+<span class="nc" id="L89">    fun next() = drawNext()</span>
 
     fun updateTypingInput(index: Int, value: String) {
-<span class="pc bpc" id="L80" title="2 of 4 branches missed.">        val st = _state.value as? QuizUiState.TypingCard ?: return</span>
-<span class="fc" id="L81">        val newInputs = st.inputs.toMutableList().apply { this[index] = value }</span>
-<span class="fc" id="L82">        _state.value = st.copy(inputs = newInputs)</span>
-<span class="fc" id="L83">    }</span>
+<span class="pc bpc" id="L92" title="2 of 4 branches missed.">        val st = _state.value as? QuizUiState.TypingCard ?: return</span>
+<span class="fc" id="L93">        val newInputs = st.inputs.toMutableList().apply { this[index] = value }</span>
+<span class="fc" id="L94">        _state.value = st.copy(inputs = newInputs)</span>
+<span class="fc" id="L95">    }</span>
 
     fun toggleMcqSelection(meaning: String) {
-<span class="nc bnc" id="L86" title="All 4 branches missed.">        val st = _state.value as? QuizUiState.McqCard ?: return</span>
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        val newSelected = if (meaning in st.selected) st.selected - meaning else st.selected + meaning</span>
-<span class="nc" id="L88">        _state.value = st.copy(selected = newSelected)</span>
-<span class="nc" id="L89">    }</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">        val st = _state.value as? QuizUiState.McqCard ?: return</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        val newSelected = if (meaning in st.selected) st.selected - meaning else st.selected + meaning</span>
+<span class="nc" id="L100">        _state.value = st.copy(selected = newSelected)</span>
+<span class="nc" id="L101">    }</span>
 
     private fun drawNext() {
-<span class="fc" id="L92">        allWords = repo.memory.allWords()</span>
-<span class="fc" id="L93">        val filter = WordFilter(language = languageFilter)</span>
-<span class="fc" id="L94">        val word = engine.nextWord(allWords, filter)</span>
-<span class="fc bfc" id="L95" title="All 2 branches covered.">        if (word == null) {</span>
-<span class="fc" id="L96">            _state.value = QuizUiState.Empty</span>
-<span class="fc" id="L97">            return</span>
+<span class="fc" id="L104">        allWords = repo.memory.allWords()</span>
+<span class="fc" id="L105">        val filter = WordFilter(language = languageFilter)</span>
+<span class="fc" id="L106">        val word = engine.nextWord(allWords, filter)</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (word == null) {</span>
+<span class="fc" id="L108">            _state.value = QuizUiState.Empty</span>
+<span class="fc" id="L109">            return</span>
         }
         // Alternate between typing and MCQ randomly (50/50)
-<span class="fc bfc" id="L100" title="All 2 branches covered.">        if ((System.nanoTime() % 2L) == 0L) {</span>
-<span class="fc" id="L101">            val card = engine.buildTypingCard(word)</span>
-<span class="fc bfc" id="L102" title="All 2 branches covered.">            _state.value = QuizUiState.TypingCard(card, List(card.fields.size) { &quot;&quot; })</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if ((System.nanoTime() % 2L) == 0L) {</span>
+<span class="fc" id="L113">            val card = engine.buildTypingCard(word)</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            _state.value = QuizUiState.TypingCard(card, List(card.fields.size) { &quot;&quot; })</span>
         } else {
-<span class="fc" id="L104">            val card = engine.buildMcqCard(word, allWords)</span>
-<span class="fc" id="L105">            _state.value = QuizUiState.McqCard(card, emptySet())</span>
+<span class="fc" id="L116">            val card = engine.buildMcqCard(word, allWords)</span>
+<span class="fc" id="L117">            _state.value = QuizUiState.McqCard(card, emptySet())</span>
         }
-<span class="fc" id="L107">    }</span>
+<span class="fc" id="L119">    }</span>
 
     private fun updateStats(word: WordEntry, isCorrect: Boolean) {
-<span class="fc" id="L110">        viewModelScope.launch {</span>
-<span class="fc" id="L111">            repo.updatePracticeStats(word.id, isCorrect)</span>
-<span class="fc" id="L112">            allWords = repo.memory.allWords()</span>
-<span class="fc" id="L113">        }</span>
-<span class="fc" id="L114">    }</span>
+<span class="fc" id="L122">        viewModelScope.launch {</span>
+<span class="fc" id="L123">            repo.updatePracticeStats(word.id, isCorrect)</span>
+<span class="fc" id="L124">            allWords = repo.memory.allWords()</span>
+<span class="fc" id="L125">        }</span>
+<span class="fc" id="L126">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

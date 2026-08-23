@@ -300,19 +300,24 @@ import tw.idv.woofdog.easyvocabook.ui.wordedit.WordEditSheet
 
 @Composable
 <span class="nc bnc" id="L302" title="All 22 branches missed.">private fun HomophoneDialog(word: WordEntry, allWords: List&lt;WordEntry&gt;, onDismiss: () -&gt; Unit) {</span>
-<span class="nc" id="L303">    val homophones = allWords.filter { other -&gt;</span>
-<span class="nc bnc" id="L304" title="All 4 branches missed.">        other.id != word.id &amp;&amp; other.language == word.language &amp;&amp;</span>
-<span class="nc bnc" id="L305" title="All 4 branches missed.">            (if (word.reading != null) other.reading == word.reading</span>
-<span class="nc" id="L306">            else other.word.equals(word.word, ignoreCase = true))</span>
+    // Same comparison as quiz answer matching — trimmed, Unicode case folding, no kana folding —
+    // so the two features cannot drift apart. No word form label is consulted.
+<span class="nc bnc" id="L305" title="All 4 branches missed.">    fun same(a: String?, b: String?) = a?.trim().orEmpty().let { x -&gt;</span>
+<span class="nc bnc" id="L306" title="All 10 branches missed.">        x.isNotEmpty() &amp;&amp; x.equals(b?.trim().orEmpty(), ignoreCase = true)</span>
+<span class="nc" id="L307">    }</span>
+<span class="nc" id="L308">    val homophones = allWords.filter { other -&gt;</span>
+<span class="nc bnc" id="L309" title="All 4 branches missed.">        other.id != word.id &amp;&amp; other.language == word.language &amp;&amp;</span>
+<span class="nc bnc" id="L310" title="All 4 branches missed.">            (if (word.reading != null) same(other.reading, word.reading)</span>
+<span class="nc" id="L311">            else same(other.word, word.word))</span>
     }
-<span class="nc bnc" id="L308" title="All 2 branches missed.">    AlertDialog(</span>
-<span class="nc" id="L309">        onDismissRequest = onDismiss,</span>
-<span class="pc bnc" id="L310" title="All 2 branches missed.">        title = { Text(stringResource(R.string.word_list_action_homophones)) },</span>
-<span class="nc" id="L311">        text = {</span>
-<span class="nc bnc" id="L312" title="All 2 branches missed.">            if (homophones.isEmpty()) Text(&quot;—&quot;)</span>
-<span class="nc bnc" id="L313" title="All 2 branches missed.">            else Column { homophones.forEach { Text(&quot;${it.word}: ${it.meaning}&quot;) } }</span>
-<span class="nc" id="L314">        },</span>
-<span class="pc bnc" id="L315" title="All 4 branches missed.">        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } }</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">    AlertDialog(</span>
+<span class="nc" id="L314">        onDismissRequest = onDismiss,</span>
+<span class="pc bnc" id="L315" title="All 2 branches missed.">        title = { Text(stringResource(R.string.word_list_action_homophones)) },</span>
+<span class="nc" id="L316">        text = {</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">            if (homophones.isEmpty()) Text(&quot;—&quot;)</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">            else Column { homophones.forEach { Text(&quot;${it.word}: ${it.meaning}&quot;) } }</span>
+<span class="nc" id="L319">        },</span>
+<span class="pc bnc" id="L320" title="All 4 branches missed.">        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } }</span>
     )
-<span class="nc bnc" id="L317" title="All 2 branches missed.">}</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">}</span>
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

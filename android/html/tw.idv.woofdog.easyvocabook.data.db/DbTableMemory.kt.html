@@ -38,59 +38,73 @@ import tw.idv.woofdog.easyvocabook.data.model.WordFilter
 <span class="fc" id="L38">        return result</span>
     }
 
-<span class="pc bpc" id="L41" title="3 of 6 branches missed.">    override suspend fun getWord(id: Long): WordEntry? = words.find { it.id == id }</span>
+<span class="pc bpc" id="L41" title="1 of 6 branches missed.">    override suspend fun getWord(id: Long): WordEntry? = words.find { it.id == id }</span>
 
     override suspend fun createWord(data: WordEntry): Long {
-<span class="nc bnc" id="L44" title="All 8 branches missed.">        val id = (words.maxOfOrNull { it.id } ?: 0L) + 1L</span>
-<span class="nc" id="L45">        words.add(data.copy(id = id))</span>
-<span class="nc" id="L46">        return id</span>
+<span class="pc bpc" id="L44" title="3 of 8 branches missed.">        val id = (words.maxOfOrNull { it.id } ?: 0L) + 1L</span>
+<span class="fc" id="L45">        words.add(normalize(data).copy(id = id))</span>
+<span class="fc" id="L46">        return id</span>
     }
 
     override suspend fun updateWord(id: Long, data: WordEntry) {
 <span class="nc bnc" id="L50" title="All 2 branches missed.">        val idx = words.indexOfFirst { it.id == id }</span>
-<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (idx &gt;= 0) words[idx] = data.copy(id = id)</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (idx &gt;= 0) words[idx] = normalize(data).copy(id = id)</span>
 <span class="nc" id="L52">    }</span>
 
+    // Apply the same word_form normalization DbTableSQLite performs on save, so both
+    // implementations return identical values for the same input.
+    private fun normalize(entry: WordEntry): WordEntry {
+<span class="fc" id="L57">        val isVerb = entry.partOfSpeech == &quot;verb&quot;</span>
+<span class="fc" id="L58">        return entry.copy(</span>
+            // The verb attributes describe a verb; anything else stores neither.
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            transitivity = entry.transitivity.takeIf { isVerb },</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            verbGroup = entry.verbGroup.takeIf { isVerb },</span>
+<span class="fc" id="L62">            wordForms = entry.wordForms.map {</span>
+<span class="pc bpc" id="L63" title="2 of 8 branches missed.">                it.copy(value = it.value.trim(), reading = it.reading?.trim()?.takeIf { r -&gt; r.isNotEmpty() })</span>
+            },
+        )
+    }
+
     override suspend fun deleteWord(id: Long) {
-<span class="nc bnc" id="L55" title="All 2 branches missed.">        words.removeAll { it.id == id }</span>
-<span class="nc" id="L56">    }</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        words.removeAll { it.id == id }</span>
+<span class="nc" id="L70">    }</span>
 
     override suspend fun clearPracticeStats() {
-<span class="fc" id="L59">        val cleared = words.map { it.copy(practiceCount = 0, correctCount = 0, practicedAt = null) }</span>
-<span class="fc" id="L60">        words.clear()</span>
-<span class="fc" id="L61">        words.addAll(cleared)</span>
-<span class="fc" id="L62">    }</span>
+<span class="fc" id="L73">        val cleared = words.map { it.copy(practiceCount = 0, correctCount = 0, practicedAt = null) }</span>
+<span class="fc" id="L74">        words.clear()</span>
+<span class="fc" id="L75">        words.addAll(cleared)</span>
+<span class="fc" id="L76">    }</span>
 
     override suspend fun updatePracticeStats(wordId: Long, correct: Boolean, practicedAt: Long) {
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        val idx = words.indexOfFirst { it.id == wordId }</span>
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (idx &gt;= 0) {</span>
-<span class="fc" id="L67">            val w = words[idx]</span>
-<span class="fc" id="L68">            words[idx] = w.copy(</span>
-<span class="fc" id="L69">                practiceCount = w.practiceCount + 1,</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">                correctCount = if (correct) w.correctCount + 1 else w.correctCount,</span>
-<span class="fc" id="L71">                practicedAt = practicedAt,</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        val idx = words.indexOfFirst { it.id == wordId }</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (idx &gt;= 0) {</span>
+<span class="fc" id="L81">            val w = words[idx]</span>
+<span class="fc" id="L82">            words[idx] = w.copy(</span>
+<span class="fc" id="L83">                practiceCount = w.practiceCount + 1,</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                correctCount = if (correct) w.correctCount + 1 else w.correctCount,</span>
+<span class="fc" id="L85">                practicedAt = practicedAt,</span>
             )
         }
-<span class="fc" id="L74">    }</span>
+<span class="fc" id="L88">    }</span>
 
     // Incremental updates (called after SQLite write succeeds)
-<span class="fc" id="L77">    fun addWord(entry: WordEntry) { words.add(entry) }</span>
+<span class="fc" id="L91">    fun addWord(entry: WordEntry) { words.add(entry) }</span>
     fun replaceWord(entry: WordEntry) {
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        val idx = words.indexOfFirst { it.id == entry.id }</span>
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (idx &gt;= 0) {</span>
-<span class="fc" id="L81">            val existing = words[idx]</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        val idx = words.indexOfFirst { it.id == entry.id }</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (idx &gt;= 0) {</span>
+<span class="fc" id="L95">            val existing = words[idx]</span>
             // Preserve stats that the editor must not overwrite
-<span class="fc" id="L83">            words[idx] = entry.copy(</span>
-<span class="fc" id="L84">                practiceCount = existing.practiceCount,</span>
-<span class="fc" id="L85">                correctCount = existing.correctCount,</span>
-<span class="fc" id="L86">                createdAt = existing.createdAt,</span>
-<span class="fc" id="L87">                practicedAt = existing.practicedAt,</span>
+<span class="fc" id="L97">            words[idx] = entry.copy(</span>
+<span class="fc" id="L98">                practiceCount = existing.practiceCount,</span>
+<span class="fc" id="L99">                correctCount = existing.correctCount,</span>
+<span class="fc" id="L100">                createdAt = existing.createdAt,</span>
+<span class="fc" id="L101">                practicedAt = existing.practicedAt,</span>
             )
         } else {
-<span class="nc" id="L90">            words.add(entry)</span>
+<span class="nc" id="L104">            words.add(entry)</span>
         }
-<span class="fc" id="L92">    }</span>
-<span class="fc bfc" id="L93" title="All 2 branches covered.">    fun removeWord(id: Long) { words.removeAll { it.id == id } }</span>
-<span class="fc" id="L94">    fun allWords(): List&lt;WordEntry&gt; = words.toList()</span>
+<span class="fc" id="L106">    }</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">    fun removeWord(id: Long) { words.removeAll { it.id == id } }</span>
+<span class="fc" id="L108">    fun allWords(): List&lt;WordEntry&gt; = words.toList()</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -17,33 +17,39 @@
 <span class="pc" id="L17">    val id: Long,</span>
 <span class="fc" id="L18">    val label: String,</span>
 <span class="fc" id="L19">    val value: String,</span>
+<span class="fc" id="L20">    val reading: String? = null,</span>
+<span class="fc" id="L21">)</span>
+
+<span class="fc" id="L23">data class Sentence(</span>
+<span class="pc" id="L24">    val id: Long,</span>
+<span class="fc" id="L25">    val sentence: String,</span>
+<span class="fc" id="L26">    val translation: String?,</span>
 )
 
-<span class="fc" id="L22">data class Sentence(</span>
-<span class="pc" id="L23">    val id: Long,</span>
-<span class="fc" id="L24">    val sentence: String,</span>
-<span class="fc" id="L25">    val translation: String?,</span>
-)
+<span class="fc" id="L29">data class WordEntry(</span>
+<span class="fc" id="L30">    val id: Long,</span>
+<span class="fc" id="L31">    val word: String,</span>
+<span class="fc" id="L32">    val reading: String?,</span>
+<span class="fc" id="L33">    val meaning: String,</span>
+<span class="fc" id="L34">    val partOfSpeech: String?,</span>
+<span class="fc" id="L35">    val note: String?,</span>
+<span class="fc" id="L36">    val language: String,</span>
+<span class="fc" id="L37">    val practiceCount: Int,</span>
+<span class="fc" id="L38">    val correctCount: Int,</span>
+<span class="fc" id="L39">    val createdAt: Long,</span>
+<span class="fc" id="L40">    val practicedAt: Long?,</span>
+<span class="fc" id="L41">    val wordMeanings: List&lt;WordMeaning&gt;,</span>
+<span class="fc" id="L42">    val wordForms: List&lt;WordForm&gt;,</span>
+<span class="fc" id="L43">    val sentences: List&lt;Sentence&gt;,</span>
+    /** Verbs only: intransitive | transitive | ambitransitive. Last so existing positional
+     *  construction keeps working. */
+<span class="fc" id="L46">    val transitivity: String? = null,</span>
+    /** Verbs only: godan | ichidan | irregular. */
+<span class="fc" id="L48">    val verbGroup: String? = null,</span>
+<span class="fc" id="L49">)</span>
 
-<span class="fc" id="L28">data class WordEntry(</span>
-<span class="fc" id="L29">    val id: Long,</span>
-<span class="fc" id="L30">    val word: String,</span>
-<span class="fc" id="L31">    val reading: String?,</span>
-<span class="fc" id="L32">    val meaning: String,</span>
-<span class="fc" id="L33">    val partOfSpeech: String?,</span>
-<span class="fc" id="L34">    val note: String?,</span>
-<span class="fc" id="L35">    val language: String,</span>
-<span class="fc" id="L36">    val practiceCount: Int,</span>
-<span class="fc" id="L37">    val correctCount: Int,</span>
-<span class="fc" id="L38">    val createdAt: Long,</span>
-<span class="fc" id="L39">    val practicedAt: Long?,</span>
-<span class="fc" id="L40">    val wordMeanings: List&lt;WordMeaning&gt;,</span>
-<span class="fc" id="L41">    val wordForms: List&lt;WordForm&gt;,</span>
-<span class="fc" id="L42">    val sentences: List&lt;Sentence&gt;,</span>
-)
-
-<span class="fc" id="L45">data class WordFilter(</span>
-<span class="fc" id="L46">    val language: String? = null,</span>
-<span class="fc" id="L47">    val query: String? = null,</span>
-<span class="fc" id="L48">)</span>
+<span class="fc" id="L51">data class WordFilter(</span>
+<span class="fc" id="L52">    val language: String? = null,</span>
+<span class="fc" id="L53">    val query: String? = null,</span>
+<span class="fc" id="L54">)</span>
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
