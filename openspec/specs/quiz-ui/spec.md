@@ -38,13 +38,19 @@ Pressing it SHALL immediately reveal the correct answer and record the attempt a
 For typing mode the system SHALL display:
 - A randomly-chosen meaning from the word's full meaning set as the prompt (large text)
 - One or more text input fields (fields depend on language + part_of_speech)
+- For a Japanese verb, a three-way single choice for the transitivity type — 自動詞 / 他動詞 /
+  自他両用 — with no option preselected, so an unanswered question is never credited as a guess
 - **[Submit]** and **[Give Up / Show Answer]** buttons
 
 After submission, the system SHALL display:
 - Each field with a ✓ or ✗ indicator and the correct value, followed by its reading in
   parentheses when the field has one — for the base word field and every word form field alike,
   and regardless of whether that field was answered correctly. A field that carries only a
-  reading shows that reading on its own, without empty parentheses or an empty prefix
+  reading shows that reading on its own, without empty parentheses or an empty prefix, and a
+  field with no expected answer at all shows `-`, so that "there is nothing to answer" reads as
+  an answer rather than an omission
+- For a Japanese verb, its verb group — 五段 (I 類) / 一段 (II 類) / 不規則 — shown for
+  reference and never marked correct or incorrect
 - All valid synonym answers
 - **[Next]** button to advance to the next card (no self-report; verdict is determined automatically)
 
@@ -76,6 +82,26 @@ After submission, the system SHALL display:
 #### Scenario: Field without a reading shows value only
 - **WHEN** a revealed field has a correct value but no reading
 - **THEN** only the value is shown, with no empty parentheses
+
+#### Scenario: Type question rendered as three options
+- **WHEN** a Japanese verb typing card is shown
+- **THEN** three mutually exclusive transitivity options are offered, none of them preselected
+
+#### Scenario: Unanswered type question is incorrect
+- **WHEN** the user submits without choosing a type
+- **THEN** the type question is marked incorrect
+
+#### Scenario: Empty expected answer reveals a dash
+- **WHEN** a revealed field has no expected value or reading, as for a verb with no partner
+- **THEN** the field shows `-` rather than an empty space
+
+#### Scenario: Verb group is revealed but not graded
+- **WHEN** a Japanese verb card is revealed
+- **THEN** its verb group is shown with no ✓ or ✗ indicator
+
+#### Scenario: Type question absent for other languages
+- **WHEN** an English word is quizzed
+- **THEN** no transitivity choice is rendered
 
 ### Requirement: Multiple-choice quiz UI (英翻中 / 日翻中)
 For multiple-choice mode the system SHALL display:
@@ -145,6 +171,8 @@ On Android, the typing quiz card SHALL be implemented as a scrollable `Column` c
 - One `OutlinedTextField` for the base word (always shown)
 - Additional `OutlinedTextField`s for each required `word_form` field (based on language + part_of_speech);
   field labels SHALL use localized names (e.g. "過去式" for `past_tense` in Chinese locales)
+- For a Japanese verb, a `Row` of three `RadioButton`s for the transitivity type, none selected
+  initially, and a read-only `Text` showing the verb group
 - A row with `[Give Up]` (`TextButton`) and `[Submit]` (`Button`)
 - A `⏭ Skip` `IconButton` in the top action bar
 
@@ -166,6 +194,10 @@ incorrectly answered fields alike — and any valid synonyms, followed by a `[Ne
 #### Scenario: Android typing result shows form readings
 - **WHEN** the user gives up on a JA verb card on Android and its forms have readings
 - **THEN** each revealed field shows its value together with its reading
+
+#### Scenario: Android renders the transitivity choice
+- **WHEN** a Japanese verb typing card is shown on Android
+- **THEN** three `RadioButton`s appear for the type, with none selected
 
 ### Requirement: Android typing quiz — single-line inputs with keyboard navigation
 Each `OutlinedTextField` in the typing quiz card SHALL use `singleLine = true` to prevent

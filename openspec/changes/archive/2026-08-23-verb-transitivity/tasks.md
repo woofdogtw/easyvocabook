@@ -158,7 +158,7 @@
       rejects a wrong one; a verb without a partner requires a blank answer and rejects any text;
       the type question grades correctly and reveals `-` where there is no partner
 - [x] 10.5 Confirm neither Japanese-verb question appears for English words or Japanese nouns
-- [ ] 10.6 After archiving, rename the scenario `Japanese word with particle data adds particle
+- [x] 10.6 After archiving, rename the scenario `Japanese word with particle data adds particle
       field` in `openspec/specs/quiz-engine/spec.md` to match what it now says — for example
       `Recording a particle does not create a question`. A scenario cannot be renamed from inside
       a change, so the main spec is edited directly afterwards, the same way the stale `(future)`
