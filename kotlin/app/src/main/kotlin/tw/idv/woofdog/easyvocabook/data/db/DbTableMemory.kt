@@ -53,11 +53,17 @@ class DbTableMemory : DbTableBase {
 
     // Apply the same word_form normalization DbTableSQLite performs on save, so both
     // implementations return identical values for the same input.
-    private fun normalize(entry: WordEntry): WordEntry = entry.copy(
-        wordForms = entry.wordForms.map {
-            it.copy(value = it.value.trim(), reading = it.reading?.trim()?.takeIf { r -> r.isNotEmpty() })
-        }
-    )
+    private fun normalize(entry: WordEntry): WordEntry {
+        val isVerb = entry.partOfSpeech == "verb"
+        return entry.copy(
+            // The verb attributes describe a verb; anything else stores neither.
+            transitivity = entry.transitivity.takeIf { isVerb },
+            verbGroup = entry.verbGroup.takeIf { isVerb },
+            wordForms = entry.wordForms.map {
+                it.copy(value = it.value.trim(), reading = it.reading?.trim()?.takeIf { r -> r.isNotEmpty() })
+            },
+        )
+    }
 
     override suspend fun deleteWord(id: Long) {
         words.removeAll { it.id == id }

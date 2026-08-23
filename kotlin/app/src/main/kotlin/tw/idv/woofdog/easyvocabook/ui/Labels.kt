@@ -45,6 +45,26 @@ object Labels {
         else -> R.string.lang_en
     }
 
+    // ── Verb attributes (Japanese) ────────────────────────────────────────────
+
+    /** Language-neutral keys, like part_of_speech; translated for display. */
+    val TRANSITIVITY_KEYS = listOf("intransitive", "transitive", "ambitransitive")
+    val VERB_GROUP_KEYS = listOf("godan", "ichidan", "irregular")
+
+    fun transitivityResId(key: String): Int? = when (key) {
+        "intransitive"   -> R.string.transitivity_intransitive
+        "transitive"     -> R.string.transitivity_transitive
+        "ambitransitive" -> R.string.transitivity_ambitransitive
+        else -> null
+    }
+
+    fun verbGroupResId(key: String): Int? = when (key) {
+        "godan"     -> R.string.verb_group_godan
+        "ichidan"   -> R.string.verb_group_ichidan
+        "irregular" -> R.string.verb_group_irregular
+        else -> null
+    }
+
     // ── Canonical label lists per language ────────────────────────────────────
 
     // "phonetic" and "hiragana" are intentionally absent: their only purpose was to carry a

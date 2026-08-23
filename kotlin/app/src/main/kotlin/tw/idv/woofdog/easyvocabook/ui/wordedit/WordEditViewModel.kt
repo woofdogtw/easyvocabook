@@ -25,6 +25,9 @@ data class WordEditUiState(
     val primaryMeaning: String = "",
     val additionalMeanings: List<String> = emptyList(),
     val note: String = "",
+    /** Japanese verbs only; empty means unanswered. */
+    val transitivity: String = "",
+    val verbGroup: String = "",
     val wordForms: List<FormField> = emptyList(),
     val sentences: List<SentenceField> = emptyList(),
     val errorWord: Boolean = false,
@@ -57,6 +60,8 @@ class WordEditViewModel(application: Application) : AndroidViewModel(application
                 primaryMeaning = w.meaning,
                 additionalMeanings = w.wordMeanings.map { it.meaning },
                 note = w.note ?: "",
+                transitivity = w.transitivity ?: "",
+                verbGroup = w.verbGroup ?: "",
                 wordForms = w.wordForms.map { FormField(it.label, it.value, it.reading.orEmpty()) },
                 sentences = w.sentences.map { SentenceField(it.sentence, it.translation ?: "") },
             )
@@ -66,7 +71,9 @@ class WordEditViewModel(application: Application) : AndroidViewModel(application
     fun setLanguage(lang: String) {
         val prefs = getApplication<Application>().getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(MainActivity.SP_LAST_LANGUAGE, lang).apply()
-        _state.value = _state.value.copy(language = lang, wordForms = suggestedForms(lang, _state.value.pos))
+        _state.value = _state.value.copy(language = lang,
+            wordForms = suggestedForms(lang, _state.value.pos))
+            .clearVerbAttributesUnlessJaVerb()
     }
 
     fun setWord(v: String) { _state.value = _state.value.copy(word = v, errorWord = false) }
@@ -74,7 +81,16 @@ class WordEditViewModel(application: Application) : AndroidViewModel(application
     fun setPOS(v: String) {
         _state.value = _state.value.copy(pos = v,
             wordForms = mergeForms(_state.value.wordForms, suggestedForms(_state.value.language, v)))
+            .clearVerbAttributesUnlessJaVerb()
     }
+
+    fun setTransitivity(v: String) { _state.value = _state.value.copy(transitivity = v) }
+    fun setVerbGroup(v: String) { _state.value = _state.value.copy(verbGroup = v) }
+
+    /** The verb attributes describe a Japanese verb; anything else must not keep them. */
+    private fun WordEditUiState.clearVerbAttributesUnlessJaVerb(): WordEditUiState =
+        if (language == "ja" && pos == "verb") this
+        else copy(transitivity = "", verbGroup = "")
     fun setPrimaryMeaning(v: String) { _state.value = _state.value.copy(primaryMeaning = v, errorMeaning = false) }
     fun setNote(v: String) { _state.value = _state.value.copy(note = v) }
 
@@ -138,6 +154,8 @@ class WordEditViewModel(application: Application) : AndroidViewModel(application
                 partOfSpeech = s.pos.trim().takeIf { it.isNotBlank() },
                 note = s.note.trim().takeIf { it.isNotBlank() },
                 language = s.language,
+                transitivity = s.transitivity.takeIf { it.isNotBlank() },
+                verbGroup = s.verbGroup.takeIf { it.isNotBlank() },
                 practiceCount = 0, correctCount = 0, createdAt = now, practicedAt = null,
                 wordMeanings = s.additionalMeanings.filter { it.isNotBlank() }.map { WordMeaning(0, it.trim()) },
                 wordForms = s.wordForms

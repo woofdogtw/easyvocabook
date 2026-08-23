@@ -40,6 +40,8 @@ mod tests {
             part_of_speech: None,
             note: None,
             language: "en".into(),
+            transitivity: None,
+            verb_group: None,
             practice_count,
             correct_count,
             created_at: 0,

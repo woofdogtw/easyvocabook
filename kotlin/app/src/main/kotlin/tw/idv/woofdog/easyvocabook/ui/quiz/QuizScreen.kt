@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -22,7 +24,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import tw.idv.woofdog.easyvocabook.quiz.QuizEngine
 import tw.idv.woofdog.easyvocabook.R
 import tw.idv.woofdog.easyvocabook.quiz.McqCard
 import tw.idv.woofdog.easyvocabook.quiz.TypingCard
@@ -33,6 +39,13 @@ import tw.idv.woofdog.easyvocabook.ui.Labels
 @Composable
 fun QuizScreen(vm: QuizViewModel = viewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.refreshIfEmpty()
+        }
+    }
     val languages = listOf(null) + Labels.SUPPORTED_LANGUAGES
     var selectedLang by remember { mutableStateOf<String?>(null) }
     var langMenuExpanded by remember { mutableStateOf(false) }
@@ -111,6 +124,27 @@ private fun TypingCardView(card: TypingCard, inputs: List<String>, vm: QuizViewM
             val labelText = Labels.formLabelResId(field.label)
                 ?.let { stringResource(it) } ?: field.label
             val isLast = idx == fieldCount - 1
+
+            if (field.label == QuizEngine.TRANSITIVITY_FIELD) {
+                // A closed answer set, so it is chosen rather than typed. Nothing is preselected:
+                // a learner who does not answer must not be credited with a guess.
+                Text(stringResource(R.string.word_edit_transitivity), style = MaterialTheme.typography.labelMedium)
+                Labels.TRANSITIVITY_KEYS.forEach { key ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().selectable(
+                            selected = inputs.getOrElse(idx) { "" } == key,
+                            onClick = { vm.updateTypingInput(idx, key) },
+                            role = Role.RadioButton,
+                        ),
+                    ) {
+                        RadioButton(selected = inputs.getOrElse(idx) { "" } == key, onClick = null)
+                        Text(Labels.transitivityResId(key)?.let { stringResource(it) } ?: key)
+                    }
+                }
+                return@forEachIndexed
+            }
+
             OutlinedTextField(
                 value = inputs.getOrElse(idx) { "" },
                 onValueChange = { vm.updateTypingInput(idx, it) },
@@ -147,13 +181,19 @@ private fun TypingResultView(result: TypingResult, vm: QuizViewModel) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(if (fr.correct) "✓" else "✗", color = if (fr.correct) green else red, fontSize = 18.sp)
                 Column {
-                    val labelText = Labels.formLabelResId(fr.label)
-                        ?.let { stringResource(it) } ?: fr.label
+                    val labelText = if (fr.label == QuizEngine.TRANSITIVITY_FIELD)
+                        stringResource(R.string.word_edit_transitivity)
+                    else Labels.formLabelResId(fr.label)?.let { stringResource(it) } ?: fr.label
                     Text(labelText, style = MaterialTheme.typography.labelSmall)
                     // Shown whether or not the field was answered correctly: writing the kanji
                     // right does not mean the learner knows how to read it.
-                    val answer = formatAnswer(fr.correctValue, fr.correctReading)
-                    if (answer.isNotEmpty()) Text(answer, color = green)
+                    val answer = if (fr.label == QuizEngine.TRANSITIVITY_FIELD)
+                        fr.correctValue.takeIf { it.isNotBlank() }
+                            ?.let { k -> Labels.transitivityResId(k)?.let { stringResource(it) } ?: k }
+                            .orEmpty()
+                    else formatAnswer(fr.correctValue, fr.correctReading)
+                    // An empty expectation is itself the answer, so say so rather than showing a gap.
+                    Text(answer.ifEmpty { "-" }, color = green)
                 }
             }
         }

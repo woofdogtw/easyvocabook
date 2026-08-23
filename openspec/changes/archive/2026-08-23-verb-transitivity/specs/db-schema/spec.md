@@ -1,9 +1,4 @@
-# db-schema Specification
-
-## Purpose
-TBD - created by archiving change rust-desktop. Update Purpose after archive.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Schema tables
 The system SHALL define the SQLite schema documented in `doc/schema.md` as the single source of
@@ -79,37 +74,6 @@ rather than overwriting it. See `specs/cloud-sync/spec.md` § Latest-wins confli
 - **WHEN** a noun or an English word is stored
 - **THEN** its `transitivity` and `verb_group` are `NULL`
 
-### Requirement: Foreign key enforcement
-The system SHALL enable `PRAGMA foreign_keys = ON` on every database connection before any other
-statement is executed. Neither `rusqlite` (Rust) nor Android's `SQLiteDatabase` (Kotlin) enables
-foreign keys by default, so this PRAGMA must be applied explicitly on every connection open.
-
-#### Scenario: Deleting a word cascades to sub-tables
-- **WHEN** a word row is deleted
-- **THEN** all associated `word_meanings`, `word_forms`, and `sentences` rows are deleted automatically
-
-### Requirement: db_info single-row constraint
-The `db_info` table SHALL enforce a single row via `CHECK (id = 1)`. Any attempt to insert a
-second row SHALL be rejected by SQLite.
-
-#### Scenario: Attempting a second db_info row
-- **WHEN** an INSERT into `db_info` with any id other than 1 is attempted
-- **THEN** SQLite returns a constraint error
-
-### Requirement: Indexes for common queries
-The system SHALL create indexes to support efficient filtering and join operations:
-
-```sql
-CREATE INDEX idx_words_language_reading ON words(language, reading);
-CREATE INDEX idx_word_meanings_word_id  ON word_meanings(word_id);
-CREATE INDEX idx_word_forms_word_id     ON word_forms(word_id);
-CREATE INDEX idx_sentences_word_id      ON sentences(word_id);
-```
-
-#### Scenario: Index creation on schema init
-- **WHEN** the schema is created for the first time
-- **THEN** all four indexes are present in the database
-
 ### Requirement: DB version migration guard
 The system SHALL treat `db_info.version` as the sole authority on a database's schema version,
 and SHALL check it on open to enforce upgrade/downgrade policies. Implementations SHALL NOT rely
@@ -133,29 +97,15 @@ in place, so that the first migration added after release has a tested path to r
   `db_info.version` (as happens for a file created by the other platform)
 - **THEN** the decision to migrate is based on `db_info.version` alone
 
-### Requirement: Timestamps as Unix epoch i64
-All date/time columns (`last_modified`, `created_at`, `practiced_at`) SHALL store values as
-Unix epoch seconds (i64). No timezone information is stored.
+## REMOVED Requirements
 
-#### Scenario: Creating a word sets created_at
-- **WHEN** a new word is inserted
-- **THEN** `created_at` is set to the current Unix epoch second; `practiced_at` is NULL
+### Requirement: Schema v2 migration — word_forms.reading
+**Reason**: The schema is being rewritten at version 1 rather than versioned forward. The
+`reading` column it added now appears directly in the version 1 DDL, so there is nothing left to
+migrate. Version numbers are held in reserve until the app is released and real users have
+databases worth upgrading.
 
-### Requirement: part_of_speech stored as language-neutral key
-`words.part_of_speech` SHALL store a language-neutral ASCII key (e.g., `noun`, `verb`, `i-adj`),
-not a localized display string.
-
-#### Scenario: Japanese word with i-adj part of speech
-- **WHEN** a Japanese word with type 「い形容詞」is saved
-- **THEN** `part_of_speech` contains the string `i-adj`, not 「い形容詞」
-
-### Requirement: Android DB file path
-On Android, the database file SHALL be located at `filesDir/easyvocabook.db`
-(the app's internal storage directory — no external storage permission required). The filename
-`easyvocabook.db` is fixed and identical across all platforms, which is required for cloud sync
-(the remote file has the same name on every platform).
-
-#### Scenario: Android DB created in filesDir
-- **WHEN** the Android app opens for the first time
-- **THEN** the database is created at `context.filesDir/easyvocabook.db` with all tables of the
-  current schema version and `db_info.last_modified = 0`
+**Migration**: Existing databases are discarded and rebuilt from a regenerated seed. There is a
+single user, whose practice statistics are accepted as lost. Any surviving version 2 file must
+be deleted — on the desktop, on Android via clearing app data, and on the cloud remote —
+because the version guard refuses to open a file newer than the app supports.

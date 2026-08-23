@@ -111,4 +111,22 @@ class DbTableMemoryTest {
         assertEquals("walked", form.value)
         assertNull(form.reading)
     }
+
+    @Test
+    fun verbAttributes_matchSqliteNormalization() = runTest {
+        val verb = mem.createWord(
+            WordEntry(0L, "食べる", "たべる", "吃", "verb", null, "ja",
+                0, 0, 0L, null, emptyList(), emptyList(), emptyList(),
+                transitivity = "transitive", verbGroup = "ichidan")
+        )
+        assertEquals("transitive", mem.getWord(verb)!!.transitivity)
+
+        val noun = mem.createWord(
+            WordEntry(0L, "本", "ほん", "書", "noun", null, "ja",
+                0, 0, 0L, null, emptyList(), emptyList(), emptyList(),
+                transitivity = "transitive", verbGroup = "godan")
+        )
+        assertNull(mem.getWord(noun)!!.transitivity)
+        assertNull(mem.getWord(noun)!!.verbGroup)
+    }
 }

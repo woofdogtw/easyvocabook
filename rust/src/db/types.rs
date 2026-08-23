@@ -20,6 +20,10 @@ pub struct WordEntry {
     pub part_of_speech: Option<String>,
     pub note: Option<String>,
     pub language: String,
+    /// Verbs only: `intransitive` | `transitive` | `ambitransitive`.
+    pub transitivity: Option<String>,
+    /// Verbs only: `godan` | `ichidan` | `irregular`.
+    pub verb_group: Option<String>,
     pub practice_count: i64,
     pub correct_count: i64,
     pub created_at: i64,
@@ -112,6 +116,8 @@ pub struct NewWord {
     pub part_of_speech: Option<String>,
     pub note: Option<String>,
     pub language: String,
+    pub transitivity: Option<String>,
+    pub verb_group: Option<String>,
     pub meanings: Vec<String>,
     /// (label, value, reading) — reading is optional per form.
     pub forms: Vec<(String, String, Option<String>)>,
@@ -127,6 +133,8 @@ pub struct UpdateWord {
     pub part_of_speech: Option<String>,
     pub note: Option<String>,
     pub language: String,
+    pub transitivity: Option<String>,
+    pub verb_group: Option<String>,
     pub meanings: Vec<String>,
     /// (label, value, reading) — reading is optional per form.
     pub forms: Vec<(String, String, Option<String>)>,

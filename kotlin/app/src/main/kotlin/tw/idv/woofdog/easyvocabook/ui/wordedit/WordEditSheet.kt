@@ -2,12 +2,14 @@ package tw.idv.woofdog.easyvocabook.ui.wordedit
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -122,6 +124,42 @@ fun WordEditSheet(
                 maxLines = 3,
             )
             Spacer(Modifier.height(8.dp))
+
+            // Verb attributes — Japanese verbs only. They describe the verb itself, so they sit
+            // with the fixed fields rather than in the word_forms section.
+            if (state.language == "ja" && state.pos == "verb") {
+                Text(stringResource(R.string.word_edit_transitivity), style = MaterialTheme.typography.labelMedium)
+                Labels.TRANSITIVITY_KEYS.forEach { key ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().selectable(
+                            selected = state.transitivity == key,
+                            onClick = { vm.setTransitivity(key) },
+                            role = Role.RadioButton,
+                        ),
+                    ) {
+                        RadioButton(selected = state.transitivity == key, onClick = null)
+                        Text(Labels.transitivityResId(key)?.let { stringResource(it) } ?: key)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+
+                Text(stringResource(R.string.word_edit_verb_group), style = MaterialTheme.typography.labelMedium)
+                Labels.VERB_GROUP_KEYS.forEach { key ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().selectable(
+                            selected = state.verbGroup == key,
+                            onClick = { vm.setVerbGroup(key) },
+                            role = Role.RadioButton,
+                        ),
+                    ) {
+                        RadioButton(selected = state.verbGroup == key, onClick = null)
+                        Text(Labels.verbGroupResId(key)?.let { stringResource(it) } ?: key)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
 
             // Word forms
             Text(stringResource(R.string.word_edit_word_forms), style = MaterialTheme.typography.labelMedium)

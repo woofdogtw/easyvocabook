@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use iced::widget::{
-    Space, button, checkbox, column, container, pick_list, row, scrollable, text, text_input,
+    Space, button, checkbox, column, container, pick_list, radio, row, scrollable, text,
+    text_input,
 };
 use iced::{Element, Length};
 
@@ -124,6 +125,34 @@ fn typing_view(app: &App) -> Element<'_, Message> {
         column![].spacing(6),
         |col, (i, (label, value))| {
             let label_display = app.t_label(label);
+
+            // The transitivity question has a closed answer set, so it is chosen rather than
+            // typed. Nothing is preselected: not answering must not count as a guess.
+            if label == crate::quiz::engine::TRANSITIVITY_FIELD {
+                let selected = labels::TRANSITIVITY_KEYS
+                    .iter()
+                    .copied()
+                    .find(|k| *k == value.as_str());
+                let choices = labels::TRANSITIVITY_KEYS.iter().fold(
+                    row![].spacing(12),
+                    |r, &key| {
+                        r.push(radio(
+                            app.t(labels::transitivity_locale_key(key)),
+                            key,
+                            selected,
+                            move |k: &'static str| Message::QuizTypingField(i, k.to_owned()),
+                        ))
+                    },
+                );
+                return col.push(
+                    row![
+                        text(format!("{}:", app.t("quiz.transitivity"))).width(Length::Fixed(120.0)),
+                        choices,
+                    ]
+                    .spacing(8),
+                );
+            }
+
             col.push(
                 row![
                     text(format!("{label_display}:")).width(Length::Fixed(120.0)),
@@ -221,8 +250,23 @@ fn reveal_view(app: &App) -> Element<'_, Message> {
             // Shown whether or not the field was answered correctly: writing the kanji right
             // does not mean the learner knows how to read it.
             for fr in &app.quiz.field_results {
-                let label_display = app.t_label(&fr.label);
-                let answer = format_answer(&fr.expected, fr.expected_reading.as_deref());
+                let is_type = fr.label == crate::quiz::engine::TRANSITIVITY_FIELD;
+                let label_display = if is_type {
+                    app.t("quiz.transitivity").to_owned()
+                } else {
+                    app.t_label(&fr.label)
+                };
+                let answer = if is_type {
+                    if fr.expected.is_empty() {
+                        String::new()
+                    } else {
+                        app.t(labels::transitivity_locale_key(&fr.expected)).to_owned()
+                    }
+                } else {
+                    format_answer(&fr.expected, fr.expected_reading.as_deref())
+                };
+                // An empty expectation is itself the answer, so say so rather than showing a gap.
+                let answer = if answer.is_empty() { "-".to_owned() } else { answer };
                 col = col.push(
                     row![
                         text(if fr.correct { "✓" } else { "✗" }).width(Length::Fixed(24.0)),
@@ -265,7 +309,7 @@ fn reveal_view(app: &App) -> Element<'_, Message> {
             let forms_str: String = syn
                 .forms
                 .iter()
-                .map(|(l, v)| format!("{l}: {v}"))
+                .map(|(l, v)| format!("{}: {v}", app.t_label(l)))
                 .collect::<Vec<_>>()
                 .join(", ");
             let label = if forms_str.is_empty() {

@@ -115,6 +115,10 @@ appear in the canonical vocabulary, because every word form now carries its own 
 retained. The localized display names of the retired labels SHALL be kept, so that databases
 still containing such rows show a translated label rather than a raw key.
 
+`transitive_pair` records the paired transitive or intransitive verb. A verb with no partner
+SHALL have no `transitive_pair` row at all: because the field is always offered for Japanese
+verbs, leaving it blank is a deliberate statement that no partner exists, not an unfilled gap.
+
 Every label that the edit dialog can suggest for a language SHALL be present in that language's
 canonical list, so that a suggested label is always selectable in the label dropdown.
 
@@ -138,6 +142,10 @@ Custom labels (outside this list) SHALL be accepted without error.
 - **WHEN** the label dropdown is shown for a Japanese i-adjective, whose suggestions are
   `te_form`, `negative`, `past`
 - **THEN** all three appear as options on both platforms
+
+#### Scenario: Verb with no partner has no transitive_pair row
+- **WHEN** a Japanese verb is saved with its paired-verb field left blank
+- **THEN** no `transitive_pair` row is stored for it
 
 ### Requirement: Android DbTableBase interface
 On Android (Kotlin), the system SHALL define a `DbTableBase` Kotlin interface that abstracts all
@@ -239,3 +247,29 @@ SHALL be stored as SQL `NULL` and reported as absent.
 - **WHEN** the same word with form readings is stored through the in-memory and the SQLite
   implementation
 - **THEN** both return identical form values and readings
+
+### Requirement: Verb transitivity and group
+A word SHALL be able to carry two verb attributes describing the verb itself: a **transitivity
+type** — `intransitive` (自動詞), `transitive` (他動詞), or `ambitransitive` (自他両用) — and a
+**verb group** — `godan` (I 類), `ichidan` (II 類), or `irregular`. Both are optional and are
+absent for non-verbs and for languages that do not distinguish them.
+
+They are stored as language-neutral keys, the same convention `part_of_speech` follows, and
+displayed through the locale tables. The DB interface and both implementations (SQLite and
+in-memory) SHALL persist and return them unchanged.
+
+A verb that is `ambitransitive` behaves as both readings of the same form (ドアが開く /
+ドアを開く) and is a distinct value, not a way of saying "unknown".
+
+#### Scenario: Verb attributes round-trip
+- **WHEN** a word is saved with `transitivity = intransitive` and `verb_group = ichidan`
+- **AND** the word is loaded again
+- **THEN** both values are returned unchanged
+
+#### Scenario: Non-verb carries neither attribute
+- **WHEN** a noun is saved
+- **THEN** loading it returns no transitivity and no verb group, and no error occurs
+
+#### Scenario: In-memory and SQLite agree
+- **WHEN** the same word is stored through the in-memory and the SQLite implementation
+- **THEN** both return identical transitivity and verb group values

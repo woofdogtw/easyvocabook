@@ -113,7 +113,7 @@ fn conjugation_fields_for(entry: &WordEntry) -> Vec<ConjugationField> {
     let pos = entry.part_of_speech.as_deref().unwrap_or("");
     let labels = suggested_labels(lang, pos);
 
-    labels
+    let mut fields: Vec<ConjugationField> = labels
         .iter()
         .map(|label| {
             let form = entry.forms.iter().find(|f| f.label == *label);
@@ -123,7 +123,17 @@ fn conjugation_fields_for(entry: &WordEntry) -> Vec<ConjugationField> {
                 expected_reading: form.and_then(|f| f.reading.clone()),
             }
         })
-        .collect()
+        .collect();
+
+    // Japanese verbs are additionally asked their transitivity, chosen rather than typed.
+    if lang == "ja" && pos == "verb" {
+        fields.push(ConjugationField {
+            label: TRANSITIVITY_FIELD.to_string(),
+            expected: entry.transitivity.clone().unwrap_or_default(),
+            expected_reading: None,
+        });
+    }
+    fields
 }
 
 /// Build shuffled option list: all correct meanings + distractors.
@@ -210,6 +220,10 @@ fn is_unspecified(value: &str, reading: Option<&str>) -> bool {
     value.trim().is_empty() && reading.map(|r| r.trim().is_empty()).unwrap_or(true)
 }
 
+/// Label of the pseudo-field holding a Japanese verb's transitivity. Not a word form: it
+/// describes the verb itself and is answered by choosing one of three keys, not by typing.
+pub const TRANSITIVITY_FIELD: &str = "transitivity";
+
 /// Per-field verdict returned by [`grade_typing`], carrying enough to reveal the answer with
 /// its reading.
 #[derive(Debug, Clone)]
@@ -218,6 +232,15 @@ pub struct FieldResult {
     pub correct: bool,
     pub expected: String,
     pub expected_reading: Option<String>,
+}
+
+/// Whether the typed base word names the target or one of its synonyms.
+///
+/// The UI needs this on its own to mark the base field, and must not re-derive it: comparing
+/// `word` alone would reject a reading, which is precisely what per-word readings exist for.
+pub fn base_word_is_correct(question: &QuizQuestion, typed_word: &str, pool: &[WordEntry]) -> bool {
+    pool.iter()
+        .any(|e| e.is_related_to(question) && matches(typed_word, &e.word, e.reading.as_deref()))
 }
 
 pub fn grade_typing(
@@ -230,6 +253,9 @@ pub fn grade_typing(
     let matched = pool
         .iter()
         .find(|e| e.is_related_to(question) && matches(typed_word, &e.word, e.reading.as_deref()));
+
+    // Whether grading switched to a synonym the user typed instead of the selected word.
+    let answered_with_synonym = matched.map(|m| m.id != question.word_id).unwrap_or(false);
 
     // Grade each conjugation field.
     let mut field_results = Vec::new();
@@ -244,20 +270,37 @@ pub fn grade_typing(
 
         // Expected values come from the word the user actually typed, not the selected one.
         let (correct, expected, expected_reading) = match matched {
-            Some(m) => match m.forms.iter().find(|f| f.label == field.label) {
-                Some(f) => {
-                    let reading = f.reading.as_deref();
-                    let ok = is_unspecified(&f.value, reading)
-                        || matches(user_input, &f.value, reading);
-                    (ok, f.value.clone(), f.reading.clone())
-                }
-                None => (true, String::new(), None), // synonym has no such form — accept anything
-            },
             None => (
                 false,
                 field.expected.clone(),
                 field.expected_reading.clone(),
             ), // unknown word typed
+            Some(m) if field.label == TRANSITIVITY_FIELD => {
+                // A chosen key, compared against what the matched word records.
+                let expected_key = m.transitivity.clone().unwrap_or_default();
+                let ok = if expected_key.is_empty() {
+                    user_input.trim().is_empty()
+                } else {
+                    user_input == expected_key
+                };
+                (ok, expected_key, None)
+            }
+            Some(m) => match m.forms.iter().find(|f| f.label == field.label) {
+                Some(f) => {
+                    let reading = f.reading.as_deref();
+                    // Nothing recorded to answer means the answer is nothing.
+                    let ok = if is_unspecified(&f.value, reading) {
+                        user_input.trim().is_empty()
+                    } else {
+                        matches(user_input, &f.value, reading)
+                    };
+                    (ok, f.value.clone(), f.reading.clone())
+                }
+                // A synonym with no data for this label is not the user's mistake; the selected
+                // word having none means there is nothing to answer.
+                None if answered_with_synonym => (true, String::new(), None),
+                None => (user_input.trim().is_empty(), String::new(), None),
+            },
         };
 
         if !correct {
@@ -329,6 +372,8 @@ mod tests {
             part_of_speech: Some("verb".into()),
             note: None,
             language: lang.into(),
+            transitivity: None,
+            verb_group: None,
             practice_count: 0,
             correct_count: 0,
             created_at: 0,
@@ -567,6 +612,157 @@ mod tests {
         let f = field_of(&fields, "masu_form");
         assert_eq!(f.expected, "食べます");
         assert_eq!(f.expected_reading.as_deref(), Some("たべます"));
+    }
+
+    // ── verb transitivity and the stricter empty rule ─────────────────────────
+
+    /// A JA verb card, optionally with a partner and a recorded type.
+    fn ja_verb(pair: Option<&str>, transitivity: Option<&str>) -> WordEntry {
+        let mut e = entry(1, "食べる", "ja", &["吃"], &[("dictionary_form", "食べる")]);
+        e.reading = Some("たべる".into());
+        e.transitivity = transitivity.map(str::to_owned);
+        if let Some(p) = pair {
+            e.forms.push(WordForm {
+                id: 0,
+                label: "transitive_pair".into(),
+                value: p.to_string(),
+                reading: None,
+            });
+        }
+        e
+    }
+
+    fn field_named<'a>(res: &'a [FieldResult], label: &str) -> &'a FieldResult {
+        res.iter().find(|f| f.label == label).expect("field present")
+    }
+
+    #[test]
+    fn partnerless_verb_typing_anything_is_incorrect() {
+        let e = ja_verb(None, Some("intransitive"));
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        let (ok, fields) = grade_typing(
+            &q,
+            "食べる",
+            &[("transitive_pair".into(), "食べさせる".into())],
+            &pool,
+        );
+        assert!(!field_named(&fields, "transitive_pair").correct);
+        assert!(!ok);
+    }
+
+    #[test]
+    fn partnerless_verb_left_blank_is_correct() {
+        let e = ja_verb(None, Some("intransitive"));
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        let (_, fields) = grade_typing(
+            &q,
+            "食べる",
+            &[
+                ("transitive_pair".into(), String::new()),
+                (TRANSITIVITY_FIELD.into(), "intransitive".into()),
+            ],
+            &pool,
+        );
+        assert!(field_named(&fields, "transitive_pair").correct);
+    }
+
+    #[test]
+    fn verb_with_partner_requires_that_partner() {
+        let e = ja_verb(Some("食べさせる"), Some("intransitive"));
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+
+        let (_, wrong) = grade_typing(&q, "食べる", &[("transitive_pair".into(), String::new())], &pool);
+        assert!(!field_named(&wrong, "transitive_pair").correct);
+
+        let (_, right) = grade_typing(
+            &q,
+            "食べる",
+            &[("transitive_pair".into(), "食べさせる".into())],
+            &pool,
+        );
+        assert!(field_named(&right, "transitive_pair").correct);
+    }
+
+    #[test]
+    fn empty_expectation_applies_to_any_field() {
+        // nai_form has no recorded value, so the answer is nothing.
+        let e = ja_verb(None, Some("transitive"));
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        let (_, fields) = grade_typing(&q, "食べる", &[("nai_form".into(), "anything".into())], &pool);
+        assert!(!field_named(&fields, "nai_form").correct);
+    }
+
+    #[test]
+    fn wrong_transitivity_type_fails_the_answer() {
+        let e = ja_verb(None, Some("transitive"));
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+        let (ok, fields) = grade_typing(
+            &q,
+            "食べる",
+            &[(TRANSITIVITY_FIELD.into(), "intransitive".into())],
+            &pool,
+        );
+        assert!(!field_named(&fields, TRANSITIVITY_FIELD).correct);
+        assert!(!ok);
+    }
+
+    #[test]
+    fn ambitransitive_is_a_distinct_answer() {
+        let e = ja_verb(None, Some("ambitransitive"));
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "吃".into();
+
+        let (_, wrong) = grade_typing(&q, "食べる", &[(TRANSITIVITY_FIELD.into(), "intransitive".into())], &pool);
+        assert!(!field_named(&wrong, TRANSITIVITY_FIELD).correct);
+
+        let (_, right) = grade_typing(&q, "食べる", &[(TRANSITIVITY_FIELD.into(), "ambitransitive".into())], &pool);
+        assert!(field_named(&right, TRANSITIVITY_FIELD).correct);
+    }
+
+    #[test]
+    fn verb_questions_are_japanese_only() {
+        let e = entry(1, "walk", "en", &["走路"], &[("base_form", "walk")]);
+        let pool = vec![e.clone()];
+        let q = build_question(&e, &pool, QuizMode::Typing, 0);
+        assert!(q.conjugation_fields.iter().all(|f| f.label != TRANSITIVITY_FIELD));
+        assert!(q.conjugation_fields.iter().all(|f| f.label != "transitive_pair"));
+    }
+
+    #[test]
+    fn japanese_noun_is_quizzed_on_the_word_alone() {
+        let mut e = entry(1, "本", "ja", &["書"], &[("counter", "冊")]);
+        e.part_of_speech = Some("noun".into());
+        let pool = vec![e.clone()];
+        let q = build_question(&e, &pool, QuizMode::Typing, 0);
+        assert!(q.conjugation_fields.is_empty());
+    }
+
+    /// The UI marks the base field from this, and once computed its own way — comparing `word`
+    /// alone, which rejected every reading. One rule, one place.
+    #[test]
+    fn base_word_is_correct_accepts_the_reading() {
+        let mut e = entry(1, "長い", "ja", &["長"], &[]);
+        e.reading = Some("ながい".into());
+        e.part_of_speech = Some("i-adj".into());
+        let pool = vec![e.clone()];
+        let mut q = build_question(&e, &pool, QuizMode::Typing, 0);
+        q.prompt_meaning = "長".into();
+
+        assert!(base_word_is_correct(&q, "長い", &pool));
+        assert!(base_word_is_correct(&q, "ながい", &pool), "the reading must be accepted");
+        assert!(base_word_is_correct(&q, "  ながい  ", &pool), "and trimmed");
+        assert!(!base_word_is_correct(&q, "みじかい", &pool));
     }
 
     #[test]

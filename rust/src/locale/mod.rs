@@ -45,6 +45,15 @@ fn en(key: &'static str) -> &'static str {
         "form.counter" => "Counter",
         "form.particle" => "Particle",
         "form.transitive_pair" => "Transitive pair",
+        "transitivity.intransitive" => "Intransitive (自動詞)",
+        "transitivity.transitive" => "Transitive (他動詞)",
+        "transitivity.ambitransitive" => "Both (自他両用)",
+        "verb_group.godan" => "Group I (五段)",
+        "verb_group.ichidan" => "Group II (一段)",
+        "verb_group.irregular" => "Irregular",
+        "edit.transitivity" => "Transitivity:",
+        "quiz.transitivity" => "Transitivity",
+        "edit.verb_group" => "Verb group:",
         "form.origin" => "Origin",
 
         // Language display names
@@ -216,6 +225,15 @@ fn zh_tw_str(key: &'static str) -> Option<&'static str> {
         "form.counter" => "量詞",
         "form.particle" => "助詞",
         "form.transitive_pair" => "對應及物動詞",
+        "transitivity.intransitive" => "自動詞",
+        "transitivity.transitive" => "他動詞",
+        "transitivity.ambitransitive" => "自他両用",
+        "verb_group.godan" => "五段（I 類）",
+        "verb_group.ichidan" => "一段（II 類）",
+        "verb_group.irregular" => "不規則",
+        "edit.transitivity" => "自他動詞：",
+        "quiz.transitivity" => "自他動詞",
+        "edit.verb_group" => "動詞類：",
         "form.origin" => "語源",
         "lang.en" => "英文",
         "lang.ja" => "日文",
@@ -366,6 +384,15 @@ fn zh_cn(key: &'static str) -> Option<&'static str> {
         "form.counter" => "量词",
         "form.particle" => "助词",
         "form.transitive_pair" => "对应及物动词",
+        "transitivity.intransitive" => "自动词",
+        "transitivity.transitive" => "他动词",
+        "transitivity.ambitransitive" => "自他两用",
+        "verb_group.godan" => "五段（I 类）",
+        "verb_group.ichidan" => "一段（II 类）",
+        "verb_group.irregular" => "不规则",
+        "edit.transitivity" => "自他动词：",
+        "quiz.transitivity" => "自他动词",
+        "edit.verb_group" => "动词类：",
         "form.origin" => "语源",
         "lang.en" => "英文",
         "lang.ja" => "日文",
@@ -520,6 +547,28 @@ mod tests {
                     !TRADITIONAL_ONLY.contains(&c),
                     "zh-CN key {key:?} renders {s:?}, which contains traditional character {c:?}"
                 );
+            }
+        }
+    }
+
+    /// Every verb-attribute key must resolve in all three locales, or the UI shows a raw key —
+    /// the way `negative` and `past` once did.
+    #[test]
+    fn verb_attribute_keys_resolve_in_every_locale() {
+        use crate::db::labels::{
+            TRANSITIVITY_KEYS, VERB_GROUP_KEYS, transitivity_locale_key, verb_group_locale_key,
+        };
+        let pairs: Vec<&'static str> = TRANSITIVITY_KEYS
+            .iter()
+            .map(|k| transitivity_locale_key(k))
+            .chain(VERB_GROUP_KEYS.iter().map(|k| verb_group_locale_key(k)))
+            .collect();
+        for key in pairs {
+            assert!(!key.is_empty(), "a verb-attribute key has no locale key");
+            for lang in ["en", "zh-TW", "zh-CN"] {
+                let s = t(lang, key);
+                assert_ne!(s, key, "{key} is untranslated in {lang}");
+                assert!(!s.is_empty(), "{key} is empty in {lang}");
             }
         }
     }

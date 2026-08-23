@@ -141,4 +141,12 @@
     <!-- Errors -->
     <string name="error_db_too_new">数据库版本过新，请更新应用。</string>
     <string name="error_sync_failed">同步失败：%1$s</string>
+    <string name="transitivity_intransitive">自动词</string>
+    <string name="transitivity_transitive">他动词</string>
+    <string name="transitivity_ambitransitive">自他两用</string>
+    <string name="verb_group_godan">五段（I 类）</string>
+    <string name="verb_group_ichidan">一段（II 类）</string>
+    <string name="verb_group_irregular">不规则</string>
+    <string name="word_edit_transitivity">自他动词</string>
+    <string name="word_edit_verb_group">动词类</string>
 </resources>

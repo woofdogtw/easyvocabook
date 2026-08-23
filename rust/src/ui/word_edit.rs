@@ -1,5 +1,5 @@
 use iced::widget::{
-    Space, button, column, container, mouse_area, pick_list, row, scrollable, stack, text,
+    Space, button, column, container, mouse_area, pick_list, radio, row, scrollable, stack, text,
     text_input,
 };
 use iced::{Element, Length};
@@ -120,6 +120,62 @@ fn dialog_content(app: &App) -> Element<'_, Message> {
         row![text(t("edit.pos")).width(Length::Fixed(110.0)), pos_picker,].spacing(8),
     ]
     .spacing(8);
+
+    // ── Verb attributes (Japanese verbs only) ─────────────────────────────────
+    // They describe the verb itself, so they sit with the fixed fields rather than among the
+    // word forms. Nothing is preselected: an unanswered question must not look answered.
+
+    let is_ja_verb = state.language == "ja" && state.pos == "verb";
+    let verb_section: Element<Message> = if is_ja_verb {
+        let selected_trans = labels::TRANSITIVITY_KEYS
+            .iter()
+            .copied()
+            .find(|k| *k == state.transitivity);
+        let trans_row = labels::TRANSITIVITY_KEYS.iter().fold(
+            row![].spacing(12),
+            |r, &key| {
+                r.push(radio(
+                    app.t(labels::transitivity_locale_key(key)),
+                    key,
+                    selected_trans,
+                    |k: &'static str| Message::WordEditTransitivity(k.to_owned()),
+                ))
+            },
+        );
+
+        let selected_group = labels::VERB_GROUP_KEYS
+            .iter()
+            .copied()
+            .find(|k| *k == state.verb_group);
+        let group_row = labels::VERB_GROUP_KEYS.iter().fold(
+            row![].spacing(12),
+            |r, &key| {
+                r.push(radio(
+                    app.t(labels::verb_group_locale_key(key)),
+                    key,
+                    selected_group,
+                    |k: &'static str| Message::WordEditVerbGroup(k.to_owned()),
+                ))
+            },
+        );
+
+        column![
+            row![
+                text(t("edit.transitivity")).width(Length::Fixed(110.0)),
+                trans_row
+            ]
+            .spacing(8),
+            row![
+                text(t("edit.verb_group")).width(Length::Fixed(110.0)),
+                group_row
+            ]
+            .spacing(8),
+        ]
+        .spacing(8)
+        .into()
+    } else {
+        Space::new().into()
+    };
 
     // ── Additional meanings ───────────────────────────────────────────────────
 
@@ -271,6 +327,7 @@ fn dialog_content(app: &App) -> Element<'_, Message> {
     let body = scrollable(
         column![
             fixed_fields,
+            verb_section,
             meanings_section,
             forms_section,
             sentences_section,

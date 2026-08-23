@@ -39,6 +39,18 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Re-draw only when the quiz has nothing to show.
+     *
+     * A sync can fill an empty database while this screen is already open, and nothing else
+     * calls [drawNext] until the user acts — so the quiz kept saying there were no words until
+     * the app was force-closed. Refreshing unconditionally would be worse: returning to the tab
+     * mid-question would throw away what the user had typed.
+     */
+    fun refreshIfEmpty() {
+        if (_state.value is QuizUiState.Empty) drawNext()
+    }
+
     fun setLanguageFilter(language: String?) {
         languageFilter = language
         drawNext()

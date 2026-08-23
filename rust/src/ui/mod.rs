@@ -58,6 +58,9 @@ pub struct WordEditState {
     pub primary_meaning: String,
     pub pos: String,
     pub extra_meanings: Vec<String>,
+    /// Japanese verbs only; empty means unanswered.
+    pub transitivity: String,
+    pub verb_group: String,
     /// (label, value, reading) per word-form row.
     pub forms: Vec<(String, String, String)>,
     pub sentences: Vec<(String, String)>,
@@ -75,6 +78,8 @@ impl Default for WordEditState {
             primary_meaning: String::new(),
             pos: String::new(),
             extra_meanings: Vec::new(),
+            transitivity: String::new(),
+            verb_group: String::new(),
             forms: Vec::new(),
             sentences: Vec::new(),
             error: None,
@@ -100,6 +105,8 @@ impl WordEditState {
             primary_meaning: e.meaning.clone(),
             pos: e.part_of_speech.clone().unwrap_or_default(),
             extra_meanings: e.meanings.clone(),
+            transitivity: e.transitivity.clone().unwrap_or_default(),
+            verb_group: e.verb_group.clone().unwrap_or_default(),
             forms: e
                 .forms
                 .iter()
@@ -141,6 +148,24 @@ impl WordEditState {
             .collect();
     }
 
+    /// Drop the verb attributes when the word is no longer a Japanese verb, so a word that
+    /// changes part of speech does not keep a value the UI has stopped showing.
+    fn clear_verb_attributes_unless_ja_verb(&mut self) {
+        if !(self.language == "ja" && self.pos == "verb") {
+            self.transitivity.clear();
+            self.verb_group.clear();
+        }
+    }
+
+    /// The verb attributes describe a Japanese verb; anything else keeps neither.
+    fn verb_attribute(&self, value: &str) -> Option<String> {
+        if self.language == "ja" && self.pos == "verb" && !value.is_empty() {
+            Some(value.to_owned())
+        } else {
+            None
+        }
+    }
+
     fn to_new_word(&self) -> NewWord {
         NewWord {
             word: self.word.trim().to_owned(),
@@ -157,6 +182,8 @@ impl WordEditState {
             },
             note: None,
             language: self.language.clone(),
+            transitivity: self.verb_attribute(&self.transitivity),
+            verb_group: self.verb_attribute(&self.verb_group),
             meanings: self
                 .extra_meanings
                 .iter()
@@ -205,6 +232,8 @@ impl WordEditState {
             part_of_speech: nw.part_of_speech,
             note: nw.note,
             language: nw.language,
+            transitivity: nw.transitivity,
+            verb_group: nw.verb_group,
             meanings: nw.meanings,
             forms: nw.forms,
             sentences: nw.sentences,
@@ -361,6 +390,8 @@ pub enum Message {
     WordEditFormLabel(usize, String),
     WordEditFormValue(usize, String),
     WordEditFormReading(usize, String),
+    WordEditTransitivity(String),
+    WordEditVerbGroup(String),
     WordEditAddSentence,
     WordEditRemoveSentence(usize),
     WordEditSentence(usize, String),
@@ -605,6 +636,7 @@ impl App {
             Message::WordEditLanguage(lang) => {
                 self.word_edit.language = lang;
                 self.word_edit.repopulate_forms();
+                self.word_edit.clear_verb_attributes_unless_ja_verb();
             }
             Message::WordEditWord(s) => self.word_edit.word = s,
             Message::WordEditReading(s) => self.word_edit.reading = s,
@@ -612,6 +644,7 @@ impl App {
             Message::WordEditPos(pos) => {
                 self.word_edit.pos = pos;
                 self.word_edit.repopulate_forms();
+                self.word_edit.clear_verb_attributes_unless_ja_verb();
             }
             Message::WordEditAddMeaning => {
                 self.word_edit.extra_meanings.push(String::new());
@@ -659,6 +692,8 @@ impl App {
                     f.2 = s;
                 }
             }
+            Message::WordEditTransitivity(s) => self.word_edit.transitivity = s,
+            Message::WordEditVerbGroup(s) => self.word_edit.verb_group = s,
             Message::WordEditAddSentence => {
                 self.word_edit
                     .sentences
@@ -804,10 +839,11 @@ impl App {
 
                 match &q.mode {
                     QuizMode::Typing => {
-                        self.quiz.typing_correct = Some(
-                            pool.iter()
-                                .any(|e| e.word.eq_ignore_ascii_case(&self.quiz.typing_word)),
-                        );
+                        self.quiz.typing_correct = Some(engine::base_word_is_correct(
+                            &q,
+                            &self.quiz.typing_word,
+                            &pool,
+                        ));
                         self.quiz.field_results = field_res;
                     }
                     QuizMode::MultipleChoice => {
