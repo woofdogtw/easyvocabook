@@ -190,6 +190,60 @@ pub fn pos_display(language: &str, pos: &str, locale: &str) -> String {
 mod tests {
     use super::*;
 
+    /// The canonical `part_of_speech` lists, exactly as
+    /// `openspec/specs/word-edit-ui/spec.md` fixes them.
+    ///
+    /// `every_suggested_label_is_canonical` below iterates these constants but only checks the
+    /// labels they suggest — a display string here would make `suggested_labels` return empty and
+    /// that test would still pass. Rust held the right values by having been written correctly,
+    /// not because anything verified them. The Kotlin copy, unverified in the same way, drifted
+    /// to localized display strings and silently dropped verb attributes for six weeks.
+    #[test]
+    fn pos_lists_match_the_specification() {
+        assert_eq!(
+            EN_POS,
+            [
+                "noun",
+                "verb",
+                "adjective",
+                "adverb",
+                "pronoun",
+                "preposition",
+                "conjunction",
+                "interjection",
+                "other"
+            ]
+        );
+        assert_eq!(
+            JA_POS,
+            [
+                "noun",
+                "verb",
+                "i-adj",
+                "na-adj",
+                "adverb",
+                "particle",
+                "aux-verb",
+                "conjunction",
+                "other"
+            ]
+        );
+    }
+
+    /// A key is ASCII by definition; a localized display string never is. This is the check that
+    /// would have caught the Android divergence the day it was introduced.
+    #[test]
+    fn every_pos_is_an_ascii_key() {
+        for (lang, list) in [("en", EN_POS), ("ja", JA_POS)] {
+            for pos in list {
+                assert!(
+                    pos.is_ascii(),
+                    "{lang} part of speech {pos:?} must be a language-neutral ASCII key"
+                );
+            }
+        }
+    }
+
     /// Every label the edit dialog can suggest must be selectable in the label dropdown,
     /// otherwise a suggested row cannot be re-picked after the user changes it.
     #[test]

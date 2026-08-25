@@ -83,6 +83,28 @@ object Labels {
         "kanji", "pitch_accent", "counter", "transitive_pair", "origin",
     )
 
+    // Canonical `part_of_speech` keys, one list per language, exactly as
+    // openspec/specs/word-edit-ui/spec.md fixes them. They live here rather than in the edit
+    // screen so a test can reach them: a copy kept private inside a Compose file drifted from
+    // these keys for six weeks without anything noticing.
+    //
+    // The stored value is ALWAYS the key. Never put a display string in these lists — the value
+    // reaches the database, the desktop and the seed, all of which compare against the key form.
+    val EN_POS = listOf(
+        "noun", "verb", "adjective", "adverb",
+        "pronoun", "preposition", "conjunction", "interjection", "other",
+    )
+
+    val JA_POS = listOf(
+        "noun", "verb", "i-adj", "na-adj", "adverb",
+        "particle", "aux-verb", "conjunction", "other",
+    )
+
+    fun posForLanguage(lang: String): List<String> = when (lang) {
+        "ja" -> JA_POS
+        else -> EN_POS
+    }
+
     fun formLabelsForLanguage(lang: String): List<String> = when (lang) {
         "ja" -> JA_FORM_LABELS
         else -> EN_FORM_LABELS

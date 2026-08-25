@@ -20,9 +20,10 @@ import tw.idv.woofdog.easyvocabook.R
 import tw.idv.woofdog.easyvocabook.ui.Labels
 
 private val LANGUAGES = Labels.SUPPORTED_LANGUAGES
-private val POS_EN = listOf("", "noun", "verb", "adjective", "adverb", "phrase")
-private val POS_JA = listOf("", "名詞", "動詞", "い形容詞", "な形容詞", "副詞", "助詞", "句")
-private fun posOptions(lang: String) = if (lang == "ja") POS_JA else POS_EN
+
+// The blank entry is the "unset" option; part of speech is optional. The keys themselves come
+// from Labels so there is exactly one copy of the canonical list.
+private fun posOptions(lang: String) = listOf("") + Labels.posForLanguage(lang)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
