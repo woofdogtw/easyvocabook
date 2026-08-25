@@ -83,32 +83,54 @@ object Labels {
 <span class="fc" id="L83">        &quot;kanji&quot;, &quot;pitch_accent&quot;, &quot;counter&quot;, &quot;transitive_pair&quot;, &quot;origin&quot;,</span>
     )
 
-<span class="nc" id="L86">    fun formLabelsForLanguage(lang: String): List&lt;String&gt; = when (lang) {</span>
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        &quot;ja&quot; -&gt; JA_FORM_LABELS</span>
-<span class="nc" id="L88">        else -&gt; EN_FORM_LABELS</span>
-<span class="nc" id="L89">    }</span>
+    // Canonical `part_of_speech` keys, one list per language, exactly as
+    // openspec/specs/word-edit-ui/spec.md fixes them. They live here rather than in the edit
+    // screen so a test can reach them: a copy kept private inside a Compose file drifted from
+    // these keys for six weeks without anything noticing.
+    //
+    // The stored value is ALWAYS the key. Never put a display string in these lists — the value
+    // reaches the database, the desktop and the seed, all of which compare against the key form.
+<span class="fc" id="L93">    val EN_POS = listOf(</span>
+<span class="fc" id="L94">        &quot;noun&quot;, &quot;verb&quot;, &quot;adjective&quot;, &quot;adverb&quot;,</span>
+<span class="fc" id="L95">        &quot;pronoun&quot;, &quot;preposition&quot;, &quot;conjunction&quot;, &quot;interjection&quot;, &quot;other&quot;,</span>
+    )
+
+<span class="fc" id="L98">    val JA_POS = listOf(</span>
+<span class="fc" id="L99">        &quot;noun&quot;, &quot;verb&quot;, &quot;i-adj&quot;, &quot;na-adj&quot;, &quot;adverb&quot;,</span>
+<span class="fc" id="L100">        &quot;particle&quot;, &quot;aux-verb&quot;, &quot;conjunction&quot;, &quot;other&quot;,</span>
+    )
+
+<span class="fc" id="L103">    fun posForLanguage(lang: String): List&lt;String&gt; = when (lang) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        &quot;ja&quot; -&gt; JA_POS</span>
+<span class="fc" id="L105">        else -&gt; EN_POS</span>
+<span class="fc" id="L106">    }</span>
+
+<span class="nc" id="L108">    fun formLabelsForLanguage(lang: String): List&lt;String&gt; = when (lang) {</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        &quot;ja&quot; -&gt; JA_FORM_LABELS</span>
+<span class="nc" id="L110">        else -&gt; EN_FORM_LABELS</span>
+<span class="nc" id="L111">    }</span>
 
     // ── POS display (locale-aware, no resource needed — already short strings) ─
 
     fun posDisplay(pos: String): String {
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (pos.isBlank()) return pos</span>
-<span class="nc" id="L95">        val isZh = Locale.getDefault().language == &quot;zh&quot;</span>
-<span class="nc bnc" id="L96" title="All 15 branches missed.">        return when (pos) {</span>
-<span class="nc bnc" id="L97" title="All 2 branches missed.">            &quot;noun&quot;         -&gt; if (isZh) &quot;名詞 (noun)&quot;          else &quot;Noun&quot;</span>
-<span class="nc bnc" id="L98" title="All 2 branches missed.">            &quot;verb&quot;         -&gt; if (isZh) &quot;動詞 (verb)&quot;          else &quot;Verb&quot;</span>
-<span class="nc bnc" id="L99" title="All 2 branches missed.">            &quot;adjective&quot;    -&gt; if (isZh) &quot;形容詞 (adjective)&quot;   else &quot;Adjective&quot;</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">            &quot;adverb&quot;       -&gt; if (isZh) &quot;副詞 (adverb)&quot;        else &quot;Adverb&quot;</span>
-<span class="nc bnc" id="L101" title="All 2 branches missed.">            &quot;pronoun&quot;      -&gt; if (isZh) &quot;代名詞 (pronoun)&quot;     else &quot;Pronoun&quot;</span>
-<span class="nc bnc" id="L102" title="All 2 branches missed.">            &quot;preposition&quot;  -&gt; if (isZh) &quot;介系詞 (preposition)&quot; else &quot;Preposition&quot;</span>
-<span class="nc bnc" id="L103" title="All 2 branches missed.">            &quot;conjunction&quot;  -&gt; if (isZh) &quot;連接詞 (conjunction)&quot; else &quot;Conjunction&quot;</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">            &quot;interjection&quot; -&gt; if (isZh) &quot;感嘆詞 (interjection)&quot; else &quot;Interjection&quot;</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">            &quot;i-adj&quot;        -&gt; if (isZh) &quot;い形容詞 (i-adj)&quot;     else &quot;i-adjective&quot;</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">            &quot;na-adj&quot;       -&gt; if (isZh) &quot;な形容詞 (na-adj)&quot;    else &quot;na-adjective&quot;</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">            &quot;particle&quot;     -&gt; if (isZh) &quot;助詞 (particle)&quot;      else &quot;Particle&quot;</span>
-<span class="nc bnc" id="L108" title="All 2 branches missed.">            &quot;aux-verb&quot;     -&gt; if (isZh) &quot;助動詞 (aux-verb)&quot;    else &quot;Aux. verb&quot;</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">            &quot;other&quot;        -&gt; if (isZh) &quot;其他 (other)&quot;         else &quot;Other&quot;</span>
-<span class="nc bnc" id="L110" title="All 2 branches missed.">            &quot;phrase&quot;       -&gt; if (isZh) &quot;片語 (phrase)&quot;        else &quot;Phrase&quot;</span>
-<span class="nc" id="L111">            else           -&gt; pos</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (pos.isBlank()) return pos</span>
+<span class="nc" id="L117">        val isZh = Locale.getDefault().language == &quot;zh&quot;</span>
+<span class="nc bnc" id="L118" title="All 15 branches missed.">        return when (pos) {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            &quot;noun&quot;         -&gt; if (isZh) &quot;名詞 (noun)&quot;          else &quot;Noun&quot;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">            &quot;verb&quot;         -&gt; if (isZh) &quot;動詞 (verb)&quot;          else &quot;Verb&quot;</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            &quot;adjective&quot;    -&gt; if (isZh) &quot;形容詞 (adjective)&quot;   else &quot;Adjective&quot;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">            &quot;adverb&quot;       -&gt; if (isZh) &quot;副詞 (adverb)&quot;        else &quot;Adverb&quot;</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            &quot;pronoun&quot;      -&gt; if (isZh) &quot;代名詞 (pronoun)&quot;     else &quot;Pronoun&quot;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            &quot;preposition&quot;  -&gt; if (isZh) &quot;介系詞 (preposition)&quot; else &quot;Preposition&quot;</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            &quot;conjunction&quot;  -&gt; if (isZh) &quot;連接詞 (conjunction)&quot; else &quot;Conjunction&quot;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            &quot;interjection&quot; -&gt; if (isZh) &quot;感嘆詞 (interjection)&quot; else &quot;Interjection&quot;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">            &quot;i-adj&quot;        -&gt; if (isZh) &quot;い形容詞 (i-adj)&quot;     else &quot;i-adjective&quot;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            &quot;na-adj&quot;       -&gt; if (isZh) &quot;な形容詞 (na-adj)&quot;    else &quot;na-adjective&quot;</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">            &quot;particle&quot;     -&gt; if (isZh) &quot;助詞 (particle)&quot;      else &quot;Particle&quot;</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            &quot;aux-verb&quot;     -&gt; if (isZh) &quot;助動詞 (aux-verb)&quot;    else &quot;Aux. verb&quot;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            &quot;other&quot;        -&gt; if (isZh) &quot;其他 (other)&quot;         else &quot;Other&quot;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            &quot;phrase&quot;       -&gt; if (isZh) &quot;片語 (phrase)&quot;        else &quot;Phrase&quot;</span>
+<span class="nc" id="L133">            else           -&gt; pos</span>
         }
     }
 }

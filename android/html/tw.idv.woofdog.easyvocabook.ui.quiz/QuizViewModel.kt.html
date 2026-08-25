@@ -48,7 +48,7 @@ sealed class QuizUiState {
      * mid-question would throw away what the user had typed.
      */
     fun refreshIfEmpty() {
-<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (_state.value is QuizUiState.Empty) drawNext()</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (_state.value is QuizUiState.Empty) drawNext()</span>
 <span class="fc" id="L52">    }</span>
 
     fun setLanguageFilter(language: String?) {

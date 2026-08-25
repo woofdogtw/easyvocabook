@@ -45,69 +45,74 @@ import kotlin.random.Random
 // Word form labels per (language, partOfSpeech)
 object WordFormLabels {
 <span class="fc" id="L47">    fun forWord(language: String, pos: String?): List&lt;String&gt; = when (language) {</span>
-<span class="pc bpc" id="L48" title="2 of 8 branches missed.">        &quot;en&quot; -&gt; when (pos) {</span>
-<span class="fc" id="L49">            &quot;verb&quot; -&gt; listOf(&quot;base_form&quot;, &quot;past_tense&quot;, &quot;past_participle&quot;, &quot;gerund&quot;)</span>
-<span class="nc" id="L50">            &quot;noun&quot; -&gt; listOf(&quot;singular&quot;, &quot;plural&quot;)</span>
-<span class="nc" id="L51">            &quot;adjective&quot;, &quot;adj&quot; -&gt; listOf(&quot;comparative&quot;, &quot;superlative&quot;)</span>
-<span class="fc" id="L52">            else -&gt; emptyList()</span>
+        // Keys only. Display strings such as 「動詞」were once accepted here, which let a
+        // malformed part_of_speech behave correctly in this one place while silently failing
+        // everywhere else that compares against the key — the reason a six-week divergence went
+        // unnoticed. A wrong value must now fail consistently. Same for the &quot;adj&quot; alias, which
+        // no producer ever emitted.
+<span class="pc bpc" id="L53" title="1 of 8 branches missed.">        &quot;en&quot; -&gt; when (pos) {</span>
+<span class="fc" id="L54">            &quot;verb&quot; -&gt; listOf(&quot;base_form&quot;, &quot;past_tense&quot;, &quot;past_participle&quot;, &quot;gerund&quot;)</span>
+<span class="nc" id="L55">            &quot;noun&quot; -&gt; listOf(&quot;singular&quot;, &quot;plural&quot;)</span>
+<span class="fc" id="L56">            &quot;adjective&quot; -&gt; listOf(&quot;comparative&quot;, &quot;superlative&quot;)</span>
+<span class="fc" id="L57">            else -&gt; emptyList()</span>
         }
-<span class="pc bpc" id="L54" title="2 of 8 branches missed.">        &quot;ja&quot; -&gt; when (pos) {</span>
-<span class="fc" id="L55">            &quot;verb&quot;, &quot;動詞&quot; -&gt; listOf(</span>
-<span class="fc" id="L56">                &quot;dictionary_form&quot;, &quot;masu_form&quot;, &quot;ta_form&quot;, &quot;te_form&quot;, &quot;nai_form&quot;, &quot;transitive_pair&quot;,</span>
+<span class="pc bpc" id="L59" title="2 of 8 branches missed.">        &quot;ja&quot; -&gt; when (pos) {</span>
+<span class="fc" id="L60">            &quot;verb&quot; -&gt; listOf(</span>
+<span class="fc" id="L61">                &quot;dictionary_form&quot;, &quot;masu_form&quot;, &quot;ta_form&quot;, &quot;te_form&quot;, &quot;nai_form&quot;, &quot;transitive_pair&quot;,</span>
             )
-<span class="fc" id="L58">            &quot;i-adj&quot;, &quot;い形容詞&quot; -&gt; listOf(&quot;te_form&quot;, &quot;negative&quot;, &quot;past&quot;)</span>
-<span class="nc" id="L59">            &quot;na-adj&quot;, &quot;な形容詞&quot; -&gt; listOf(&quot;te_form&quot;, &quot;negative&quot;)</span>
+<span class="fc" id="L63">            &quot;i-adj&quot; -&gt; listOf(&quot;te_form&quot;, &quot;negative&quot;, &quot;past&quot;)</span>
+<span class="nc" id="L64">            &quot;na-adj&quot; -&gt; listOf(&quot;te_form&quot;, &quot;negative&quot;)</span>
             // Japanese nouns suggest nothing: they have no plural, a counter is not unique for
             // most nouns, and a particle depends on sentence role rather than the noun itself.
-<span class="fc" id="L62">            else -&gt; emptyList()</span>
+<span class="fc" id="L67">            else -&gt; emptyList()</span>
         }
-<span class="nc" id="L64">        else -&gt; emptyList()</span>
-<span class="fc" id="L65">    }</span>
+<span class="nc" id="L69">        else -&gt; emptyList()</span>
+<span class="fc" id="L70">    }</span>
 }
 
 // ── Engine ────────────────────────────────────────────────────────────────────
 
-<span class="fc" id="L70">class QuizEngine(private val random: Random = Random.Default) {</span>
+<span class="fc" id="L75">class QuizEngine(private val random: Random = Random.Default) {</span>
 
     fun nextWord(pool: List&lt;WordEntry&gt;, filter: WordFilter): WordEntry? {
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        val filtered = if (filter.language != null) pool.filter { it.language == filter.language } else pool</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (filtered.isEmpty()) return null</span>
-<span class="fc" id="L75">        val weights = filtered.map { w -&gt;</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (w.practiceCount == 0) 3.0</span>
-<span class="fc" id="L77">            else 1.0 + (w.practiceCount - w.correctCount).toDouble() / w.practiceCount * 3.0</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        val filtered = if (filter.language != null) pool.filter { it.language == filter.language } else pool</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (filtered.isEmpty()) return null</span>
+<span class="fc" id="L80">        val weights = filtered.map { w -&gt;</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (w.practiceCount == 0) 3.0</span>
+<span class="fc" id="L82">            else 1.0 + (w.practiceCount - w.correctCount).toDouble() / w.practiceCount * 3.0</span>
         }
-<span class="fc" id="L79">        val total = weights.sum()</span>
-<span class="fc" id="L80">        var pick = random.nextDouble() * total</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        for ((word, weight) in filtered.zip(weights)) {</span>
-<span class="fc" id="L82">            pick -= weight</span>
-<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (pick &lt;= 0) return word</span>
+<span class="fc" id="L84">        val total = weights.sum()</span>
+<span class="fc" id="L85">        var pick = random.nextDouble() * total</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        for ((word, weight) in filtered.zip(weights)) {</span>
+<span class="fc" id="L87">            pick -= weight</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (pick &lt;= 0) return word</span>
         }
-<span class="nc" id="L85">        return filtered.last()</span>
+<span class="nc" id="L90">        return filtered.last()</span>
     }
 
     fun buildTypingCard(word: WordEntry): TypingCard {
-<span class="pc bpc" id="L89" title="2 of 4 branches missed.">        val prompt = if (word.wordMeanings.isNotEmpty()) {</span>
-<span class="nc" id="L90">            val pool = listOf(word.meaning) + word.wordMeanings.map { it.meaning }</span>
-<span class="nc" id="L91">            pool[random.nextInt(pool.size)]</span>
+<span class="pc bpc" id="L94" title="2 of 4 branches missed.">        val prompt = if (word.wordMeanings.isNotEmpty()) {</span>
+<span class="nc" id="L95">            val pool = listOf(word.meaning) + word.wordMeanings.map { it.meaning }</span>
+<span class="nc" id="L96">            pool[random.nextInt(pool.size)]</span>
         } else {
-<span class="fc" id="L93">            word.meaning</span>
+<span class="fc" id="L98">            word.meaning</span>
         }
-<span class="fc" id="L95">        val suggestedLabels = WordFormLabels.forWord(word.language, word.partOfSpeech)</span>
+<span class="fc" id="L100">        val suggestedLabels = WordFormLabels.forWord(word.language, word.partOfSpeech)</span>
         // Fields come from the table alone. There is deliberately no fallback to &quot;whatever forms
         // this word happens to have&quot;: an unlisted combination shows no form fields, exactly as on
         // the desktop, so a custom form added to a Japanese noun cannot reintroduce a divergence.
-<span class="fc" id="L99">        val formFields = suggestedLabels.map { label -&gt;</span>
-<span class="fc bfc" id="L100" title="All 4 branches covered.">            val form = word.wordForms.find { it.label == label }</span>
-<span class="pc bpc" id="L101" title="1 of 6 branches missed.">            TypingField(label, form?.value ?: &quot;&quot;, form?.reading)</span>
+<span class="fc" id="L104">        val formFields = suggestedLabels.map { label -&gt;</span>
+<span class="fc bfc" id="L105" title="All 4 branches covered.">            val form = word.wordForms.find { it.label == label }</span>
+<span class="pc bpc" id="L106" title="1 of 6 branches missed.">            TypingField(label, form?.value ?: &quot;&quot;, form?.reading)</span>
         }
         // Always test the word itself first; ensures at least one graded field
         // Japanese verbs are additionally asked their transitivity, chosen rather than typed.
-<span class="fc" id="L105">        val verbFields =</span>
-<span class="fc bfc" id="L106" title="All 4 branches covered.">            if (word.language == &quot;ja&quot; &amp;&amp; word.partOfSpeech == &quot;verb&quot;)</span>
-<span class="fc bfc" id="L107" title="All 2 branches covered.">                listOf(TypingField(TRANSITIVITY_FIELD, word.transitivity.orEmpty()))</span>
-<span class="fc" id="L108">            else emptyList()</span>
-<span class="fc" id="L109">        val fields = listOf(TypingField(WORD_FIELD, word.word, word.reading)) + formFields + verbFields</span>
-<span class="fc" id="L110">        return TypingCard(word = word, meaningPrompt = prompt, fields = fields)</span>
+<span class="fc" id="L110">        val verbFields =</span>
+<span class="fc bfc" id="L111" title="All 4 branches covered.">            if (word.language == &quot;ja&quot; &amp;&amp; word.partOfSpeech == &quot;verb&quot;)</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                listOf(TypingField(TRANSITIVITY_FIELD, word.transitivity.orEmpty()))</span>
+<span class="fc" id="L113">            else emptyList()</span>
+<span class="fc" id="L114">        val fields = listOf(TypingField(WORD_FIELD, word.word, word.reading)) + formFields + verbFields</span>
+<span class="fc" id="L115">        return TypingCard(word = word, meaningPrompt = prompt, fields = fields)</span>
     }
 
     /**
@@ -122,11 +127,11 @@ object WordFormLabels {
      * katakana never satisfies a hiragana reading.
      */
     private fun matches(input: String, value: String?, reading: String?): Boolean {
-<span class="fc" id="L125">        val typed = input.trim()</span>
-<span class="pc bpc" id="L126" title="2 of 4 branches missed.">        val v = value?.trim().orEmpty()</span>
-<span class="fc bfc" id="L127" title="All 4 branches covered.">        val r = reading?.trim().orEmpty()</span>
-<span class="fc bfc" id="L128" title="All 6 branches covered.">        return (v.isNotEmpty() &amp;&amp; typed.equals(v, ignoreCase = true)) ||</span>
-<span class="fc bfc" id="L129" title="All 6 branches covered.">            (r.isNotEmpty() &amp;&amp; typed.equals(r, ignoreCase = true))</span>
+<span class="fc" id="L130">        val typed = input.trim()</span>
+<span class="pc bpc" id="L131" title="2 of 4 branches missed.">        val v = value?.trim().orEmpty()</span>
+<span class="fc bfc" id="L132" title="All 4 branches covered.">        val r = reading?.trim().orEmpty()</span>
+<span class="fc bfc" id="L133" title="All 6 branches covered.">        return (v.isNotEmpty() &amp;&amp; typed.equals(v, ignoreCase = true)) ||</span>
+<span class="fc bfc" id="L134" title="All 6 branches covered.">            (r.isNotEmpty() &amp;&amp; typed.equals(r, ignoreCase = true))</span>
     }
 
     companion object {
@@ -141,108 +146,108 @@ object WordFormLabels {
     }
 
     fun gradeTyping(card: TypingCard, userInputs: List&lt;String&gt;, allWords: List&lt;WordEntry&gt;): TypingResult {
-<span class="fc" id="L144">        val word = card.word</span>
-<span class="fc" id="L145">        val synonyms = findSynonyms(word, allWords)</span>
+<span class="fc" id="L149">        val word = card.word</span>
+<span class="fc" id="L150">        val synonyms = findSynonyms(word, allWords)</span>
 
         // Decide which word is being graded against *before* grading any field. The user may
         // answer with a synonym, in which case that word's own forms are the expectation.
         // Grading each field independently against &quot;the selected word or any synonym&quot; would let
         // a string that happens to equal some synonym's field satisfy an empty expectation.
-<span class="pc bpc" id="L151" title="2 of 4 branches missed.">        val baseInput = userInputs.getOrElse(0) { &quot;&quot; }</span>
-<span class="fc" id="L152">        val matched: WordEntry? =</span>
-<span class="fc bfc" id="L153" title="All 2 branches covered.">            if (matches(baseInput, word.word, word.reading)) word</span>
-<span class="pc bpc" id="L154" title="1 of 4 branches missed.">            else synonyms.firstNotNullOfOrNull { syn -&gt;</span>
-<span class="pc bpc" id="L155" title="1 of 4 branches missed.">                allWords.find { matches(syn, it.word, null) }</span>
-<span class="pc bpc" id="L156" title="2 of 4 branches missed.">                    ?.takeIf { matches(baseInput, it.word, it.reading) }</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">        val baseInput = userInputs.getOrElse(0) { &quot;&quot; }</span>
+<span class="fc" id="L157">        val matched: WordEntry? =</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            if (matches(baseInput, word.word, word.reading)) word</span>
+<span class="pc bpc" id="L159" title="1 of 4 branches missed.">            else synonyms.firstNotNullOfOrNull { syn -&gt;</span>
+<span class="pc bpc" id="L160" title="1 of 4 branches missed.">                allWords.find { matches(syn, it.word, null) }</span>
+<span class="pc bpc" id="L161" title="2 of 4 branches missed.">                    ?.takeIf { matches(baseInput, it.word, it.reading) }</span>
             }
-<span class="fc bfc" id="L158" title="All 4 branches covered.">        val answeredWithSynonym = matched != null &amp;&amp; matched !== word</span>
+<span class="fc bfc" id="L163" title="All 4 branches covered.">        val answeredWithSynonym = matched != null &amp;&amp; matched !== word</span>
 
-<span class="fc" id="L160">        val fieldResults = card.fields.mapIndexed { idx, field -&gt;</span>
-<span class="pc bpc" id="L161" title="1 of 6 branches missed.">            val input = userInputs.getOrElse(idx) { &quot;&quot; }</span>
-<span class="fc" id="L162">            val expected = field.value</span>
-<span class="fc" id="L163">            val expectedReading = field.reading</span>
+<span class="fc" id="L165">        val fieldResults = card.fields.mapIndexed { idx, field -&gt;</span>
+<span class="pc bpc" id="L166" title="1 of 6 branches missed.">            val input = userInputs.getOrElse(idx) { &quot;&quot; }</span>
+<span class="fc" id="L167">            val expected = field.value</span>
+<span class="fc" id="L168">            val expectedReading = field.reading</span>
 
-<span class="fc" id="L165">            val correct = when {</span>
+<span class="fc" id="L170">            val correct = when {</span>
                 // The base field is right exactly when the typed word was recognised at all.
-<span class="fc bfc" id="L167" title="All 4 branches covered.">                field.label == WORD_FIELD -&gt; matched != null</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">                matched == null -&gt; false</span>
+<span class="fc bfc" id="L172" title="All 4 branches covered.">                field.label == WORD_FIELD -&gt; matched != null</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">                matched == null -&gt; false</span>
                 // A chosen key, compared against what the matched word records.
-<span class="fc bfc" id="L170" title="All 2 branches covered.">                field.label == TRANSITIVITY_FIELD -&gt; {</span>
-<span class="fc bfc" id="L171" title="All 2 branches covered.">                    val expectedKey = matched.transitivity.orEmpty()</span>
-<span class="fc bfc" id="L172" title="All 2 branches covered.">                    if (expectedKey.isBlank()) input.isBlank() else input == expectedKey</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                field.label == TRANSITIVITY_FIELD -&gt; {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">                    val expectedKey = matched.transitivity.orEmpty()</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">                    if (expectedKey.isBlank()) input.isBlank() else input == expectedKey</span>
                 }
                 else -&gt; {
-<span class="fc bfc" id="L175" title="All 4 branches covered.">                    val form = matched.wordForms.find { it.label == field.label }</span>
-<span class="fc" id="L176">                    when {</span>
+<span class="fc bfc" id="L180" title="All 4 branches covered.">                    val form = matched.wordForms.find { it.label == field.label }</span>
+<span class="fc" id="L181">                    when {</span>
                         // A synonym with no data for this label is not the user's mistake.
-<span class="fc bfc" id="L178" title="All 4 branches covered.">                        form == null &amp;&amp; answeredWithSynonym -&gt; true</span>
+<span class="fc bfc" id="L183" title="All 4 branches covered.">                        form == null &amp;&amp; answeredWithSynonym -&gt; true</span>
                         // Nothing recorded to answer: the answer is nothing.
-<span class="fc bfc" id="L180" title="All 2 branches covered.">                        form == null -&gt; input.isBlank()</span>
-<span class="pc bpc" id="L181" title="1 of 8 branches missed.">                        form.value.isBlank() &amp;&amp; form.reading.isNullOrBlank() -&gt; input.isBlank()</span>
-<span class="fc" id="L182">                        else -&gt; matches(input, form.value, form.reading)</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">                        form == null -&gt; input.isBlank()</span>
+<span class="pc bpc" id="L186" title="1 of 8 branches missed.">                        form.value.isBlank() &amp;&amp; form.reading.isNullOrBlank() -&gt; input.isBlank()</span>
+<span class="fc" id="L187">                        else -&gt; matches(input, form.value, form.reading)</span>
                     }
                 }
             }
-<span class="fc" id="L186">            TypingFieldResult(</span>
-<span class="fc" id="L187">                label = field.label,</span>
-<span class="fc" id="L188">                userInput = input.trim(),</span>
-<span class="fc" id="L189">                correct = correct,</span>
-<span class="fc" id="L190">                correctValue = expected,</span>
-<span class="fc" id="L191">                correctReading = expectedReading,</span>
-<span class="fc" id="L192">            )</span>
+<span class="fc" id="L191">            TypingFieldResult(</span>
+<span class="fc" id="L192">                label = field.label,</span>
+<span class="fc" id="L193">                userInput = input.trim(),</span>
+<span class="fc" id="L194">                correct = correct,</span>
+<span class="fc" id="L195">                correctValue = expected,</span>
+<span class="fc" id="L196">                correctReading = expectedReading,</span>
+<span class="fc" id="L197">            )</span>
         }
 
-<span class="fc" id="L195">        return TypingResult(</span>
-<span class="fc" id="L196">            card = card,</span>
-<span class="fc" id="L197">            fieldResults = fieldResults,</span>
-<span class="fc" id="L198">            synonyms = synonyms,</span>
-<span class="fc" id="L199">            allCorrect = fieldResults.all { it.correct },</span>
+<span class="fc" id="L200">        return TypingResult(</span>
+<span class="fc" id="L201">            card = card,</span>
+<span class="fc" id="L202">            fieldResults = fieldResults,</span>
+<span class="fc" id="L203">            synonyms = synonyms,</span>
+<span class="fc" id="L204">            allCorrect = fieldResults.all { it.correct },</span>
         )
     }
 
     fun buildMcqCard(word: WordEntry, allWords: List&lt;WordEntry&gt;): McqCard {
-<span class="fc" id="L204">        val correctMeanings = buildSet {</span>
-<span class="fc" id="L205">            add(word.meaning)</span>
-<span class="fc" id="L206">            word.wordMeanings.forEach { add(it.meaning) }</span>
-<span class="fc" id="L207">        }</span>
-<span class="fc" id="L208">        val distractors = allWords.asSequence()</span>
-<span class="fc bfc" id="L209" title="All 2 branches covered.">            .filter { it.id != word.id }</span>
-<span class="pc" id="L210">            .flatMap { w -&gt; listOf(w.meaning) + w.wordMeanings.map { it.meaning } }</span>
-<span class="pc bpc" id="L211" title="1 of 2 branches missed.">            .filter { it !in correctMeanings }</span>
-<span class="fc" id="L212">            .distinct()</span>
-<span class="fc" id="L213">            .shuffled(random)</span>
-<span class="fc" id="L214">            .take(maxOf(correctMeanings.size + 3, 4) - correctMeanings.size)</span>
-<span class="fc" id="L215">            .toList()</span>
-
-<span class="fc" id="L217">        val options = (correctMeanings.map { McqOption(it, true) } + distractors.map { McqOption(it, false) })</span>
+<span class="fc" id="L209">        val correctMeanings = buildSet {</span>
+<span class="fc" id="L210">            add(word.meaning)</span>
+<span class="fc" id="L211">            word.wordMeanings.forEach { add(it.meaning) }</span>
+<span class="fc" id="L212">        }</span>
+<span class="fc" id="L213">        val distractors = allWords.asSequence()</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">            .filter { it.id != word.id }</span>
+<span class="pc" id="L215">            .flatMap { w -&gt; listOf(w.meaning) + w.wordMeanings.map { it.meaning } }</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">            .filter { it !in correctMeanings }</span>
+<span class="fc" id="L217">            .distinct()</span>
 <span class="fc" id="L218">            .shuffled(random)</span>
-<span class="fc" id="L219">        return McqCard(word = word, options = options)</span>
+<span class="fc" id="L219">            .take(maxOf(correctMeanings.size + 3, 4) - correctMeanings.size)</span>
+<span class="fc" id="L220">            .toList()</span>
+
+<span class="fc" id="L222">        val options = (correctMeanings.map { McqOption(it, true) } + distractors.map { McqOption(it, false) })</span>
+<span class="fc" id="L223">            .shuffled(random)</span>
+<span class="fc" id="L224">        return McqCard(word = word, options = options)</span>
     }
 
     fun gradeMcq(card: McqCard, selectedMeanings: Set&lt;String&gt;): McqResult {
-<span class="fc" id="L223">        val correctSet = card.options.filter { it.isCorrect }.map { it.meaning }.toSet()</span>
-<span class="fc" id="L224">        return McqResult(</span>
-<span class="fc" id="L225">            card = card,</span>
-<span class="fc" id="L226">            selected = selectedMeanings,</span>
-<span class="fc" id="L227">            allCorrect = selectedMeanings == correctSet,</span>
+<span class="fc" id="L228">        val correctSet = card.options.filter { it.isCorrect }.map { it.meaning }.toSet()</span>
+<span class="fc" id="L229">        return McqResult(</span>
+<span class="fc" id="L230">            card = card,</span>
+<span class="fc" id="L231">            selected = selectedMeanings,</span>
+<span class="fc" id="L232">            allCorrect = selectedMeanings == correctSet,</span>
         )
     }
 
     private fun findSynonyms(word: WordEntry, allWords: List&lt;WordEntry&gt;): List&lt;String&gt; {
-<span class="fc" id="L232">        val allMeanings = buildSet {</span>
-<span class="fc" id="L233">            add(word.meaning)</span>
-<span class="pc" id="L234">            word.wordMeanings.forEach { add(it.meaning) }</span>
-<span class="fc" id="L235">        }</span>
-<span class="fc" id="L236">        return allWords</span>
-<span class="pc bpc" id="L237" title="1 of 4 branches missed.">            .filter { it.id != word.id &amp;&amp; it.language == word.language }</span>
-<span class="fc" id="L238">            .filter { other -&gt;</span>
-<span class="fc" id="L239">                val otherMeanings = buildSet {</span>
-<span class="fc" id="L240">                    add(other.meaning)</span>
-<span class="pc" id="L241">                    other.wordMeanings.forEach { add(it.meaning) }</span>
-<span class="fc" id="L242">                }</span>
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">                otherMeanings.intersect(allMeanings).isNotEmpty()</span>
+<span class="fc" id="L237">        val allMeanings = buildSet {</span>
+<span class="fc" id="L238">            add(word.meaning)</span>
+<span class="pc" id="L239">            word.wordMeanings.forEach { add(it.meaning) }</span>
+<span class="fc" id="L240">        }</span>
+<span class="fc" id="L241">        return allWords</span>
+<span class="pc bpc" id="L242" title="1 of 4 branches missed.">            .filter { it.id != word.id &amp;&amp; it.language == word.language }</span>
+<span class="fc" id="L243">            .filter { other -&gt;</span>
+<span class="fc" id="L244">                val otherMeanings = buildSet {</span>
+<span class="fc" id="L245">                    add(other.meaning)</span>
+<span class="pc" id="L246">                    other.wordMeanings.forEach { add(it.meaning) }</span>
+<span class="fc" id="L247">                }</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">                otherMeanings.intersect(allMeanings).isNotEmpty()</span>
             }
-<span class="fc" id="L245">            .map { it.word }</span>
+<span class="fc" id="L250">            .map { it.word }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
