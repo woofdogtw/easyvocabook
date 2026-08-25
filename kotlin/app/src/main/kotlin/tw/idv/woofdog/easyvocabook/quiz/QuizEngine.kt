@@ -45,18 +45,23 @@ data class McqResult(
 // Word form labels per (language, partOfSpeech)
 object WordFormLabels {
     fun forWord(language: String, pos: String?): List<String> = when (language) {
+        // Keys only. Display strings such as 「動詞」were once accepted here, which let a
+        // malformed part_of_speech behave correctly in this one place while silently failing
+        // everywhere else that compares against the key — the reason a six-week divergence went
+        // unnoticed. A wrong value must now fail consistently. Same for the "adj" alias, which
+        // no producer ever emitted.
         "en" -> when (pos) {
             "verb" -> listOf("base_form", "past_tense", "past_participle", "gerund")
             "noun" -> listOf("singular", "plural")
-            "adjective", "adj" -> listOf("comparative", "superlative")
+            "adjective" -> listOf("comparative", "superlative")
             else -> emptyList()
         }
         "ja" -> when (pos) {
-            "verb", "動詞" -> listOf(
+            "verb" -> listOf(
                 "dictionary_form", "masu_form", "ta_form", "te_form", "nai_form", "transitive_pair",
             )
-            "i-adj", "い形容詞" -> listOf("te_form", "negative", "past")
-            "na-adj", "な形容詞" -> listOf("te_form", "negative")
+            "i-adj" -> listOf("te_form", "negative", "past")
+            "na-adj" -> listOf("te_form", "negative")
             // Japanese nouns suggest nothing: they have no plural, a counter is not unique for
             // most nouns, and a particle depends on sentence role rather than the noun itself.
             else -> emptyList()

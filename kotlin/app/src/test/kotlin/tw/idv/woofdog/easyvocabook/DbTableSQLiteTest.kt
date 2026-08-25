@@ -12,6 +12,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import tw.idv.woofdog.easyvocabook.data.db.DbTableSQLite
 import tw.idv.woofdog.easyvocabook.data.model.*
+import tw.idv.woofdog.easyvocabook.ui.Labels
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
@@ -198,6 +199,44 @@ class DbTableSQLiteTest {
             )
         )
         val w = db.getWord(id)!!
+        assertNull(w.transitivity)
+        assertNull(w.verbGroup)
+    }
+
+    /**
+     * Closes the loop between the option list and the persistence gate.
+     *
+     * `wordContentValues` stores `transitivity` and `verb_group` only when `part_of_speech` is
+     * exactly "verb". The Japanese dropdown used to offer "動詞", so a verb created on Android
+     * was written with both attributes NULL and nothing reported it. Driving the save with the
+     * value the dropdown actually yields is what makes that class of divergence fail here.
+     */
+    @Test
+    fun verbOptionFromTheJapaneseDropdownPersistsAttributes() = runTest {
+        val verbOption = Labels.JA_POS.single { it == "verb" }
+        val id = db.createWord(
+            sampleWord().copy(
+                language = "ja", partOfSpeech = verbOption,
+                transitivity = "transitive", verbGroup = "godan",
+            )
+        )
+        val w = db.getWord(id)!!
+        assertEquals("transitive", w.transitivity)
+        assertEquals("godan", w.verbGroup)
+    }
+
+    /** The same path with a display string is the defect this change removes. */
+    @Test
+    fun displayStringPartOfSpeechLosesVerbAttributes() = runTest {
+        val id = db.createWord(
+            sampleWord().copy(
+                language = "ja", partOfSpeech = "動詞",
+                transitivity = "transitive", verbGroup = "godan",
+            )
+        )
+        val w = db.getWord(id)!!
+        // Documents the consequence rather than endorsing it: no dropdown can produce this value
+        // any more, and PartOfSpeechTest asserts that.
         assertNull(w.transitivity)
         assertNull(w.verbGroup)
     }
