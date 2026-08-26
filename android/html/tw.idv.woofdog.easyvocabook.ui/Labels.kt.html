@@ -2,68 +2,69 @@
 
 import java.util.Locale
 import tw.idv.woofdog.easyvocabook.R
+import tw.idv.woofdog.easyvocabook.data.model.WordEntry
 
 object Labels {
 
     // ── Form label resource IDs ───────────────────────────────────────────────
 
-<span class="pc bpc" id="L10" title="21 of 26 branches missed.">    fun formLabelResId(key: String): Int? = when (key) {</span>
-<span class="fc" id="L11">        &quot;word&quot;            -&gt; R.string.form_word</span>
-<span class="fc" id="L12">        &quot;base_form&quot;       -&gt; R.string.form_base_form</span>
-<span class="fc" id="L13">        &quot;past_tense&quot;      -&gt; R.string.form_past_tense</span>
-<span class="fc" id="L14">        &quot;past_participle&quot; -&gt; R.string.form_past_participle</span>
-<span class="fc" id="L15">        &quot;gerund&quot;          -&gt; R.string.form_gerund</span>
-<span class="nc" id="L16">        &quot;singular&quot;        -&gt; R.string.form_singular</span>
-<span class="nc" id="L17">        &quot;plural&quot;          -&gt; R.string.form_plural</span>
-<span class="nc" id="L18">        &quot;comparative&quot;     -&gt; R.string.form_comparative</span>
-<span class="nc" id="L19">        &quot;superlative&quot;     -&gt; R.string.form_superlative</span>
-<span class="nc" id="L20">        &quot;dictionary_form&quot; -&gt; R.string.form_dictionary_form</span>
-<span class="nc" id="L21">        &quot;masu_form&quot;       -&gt; R.string.form_masu_form</span>
-<span class="nc" id="L22">        &quot;ta_form&quot;         -&gt; R.string.form_ta_form</span>
-<span class="nc" id="L23">        &quot;te_form&quot;         -&gt; R.string.form_te_form</span>
-<span class="nc" id="L24">        &quot;nai_form&quot;        -&gt; R.string.form_nai_form</span>
-<span class="nc" id="L25">        &quot;negative&quot;        -&gt; R.string.form_negative</span>
-<span class="nc" id="L26">        &quot;past&quot;            -&gt; R.string.form_past</span>
-<span class="nc" id="L27">        &quot;particle&quot;        -&gt; R.string.form_particle</span>
-<span class="nc" id="L28">        &quot;phonetic&quot;        -&gt; R.string.form_phonetic</span>
-<span class="nc" id="L29">        &quot;collocation&quot;     -&gt; R.string.form_collocation</span>
-<span class="nc" id="L30">        &quot;kanji&quot;           -&gt; R.string.form_kanji</span>
-<span class="nc" id="L31">        &quot;hiragana&quot;        -&gt; R.string.form_hiragana</span>
-<span class="nc" id="L32">        &quot;pitch_accent&quot;    -&gt; R.string.form_pitch_accent</span>
-<span class="nc" id="L33">        &quot;counter&quot;         -&gt; R.string.form_counter</span>
-<span class="nc" id="L34">        &quot;transitive_pair&quot; -&gt; R.string.form_transitive_pair</span>
-<span class="nc" id="L35">        &quot;origin&quot;          -&gt; R.string.form_origin</span>
-<span class="nc" id="L36">        else              -&gt; null</span>
-<span class="fc" id="L37">    }</span>
+<span class="pc bpc" id="L11" title="21 of 26 branches missed.">    fun formLabelResId(key: String): Int? = when (key) {</span>
+<span class="fc" id="L12">        &quot;word&quot;            -&gt; R.string.form_word</span>
+<span class="fc" id="L13">        &quot;base_form&quot;       -&gt; R.string.form_base_form</span>
+<span class="fc" id="L14">        &quot;past_tense&quot;      -&gt; R.string.form_past_tense</span>
+<span class="fc" id="L15">        &quot;past_participle&quot; -&gt; R.string.form_past_participle</span>
+<span class="fc" id="L16">        &quot;gerund&quot;          -&gt; R.string.form_gerund</span>
+<span class="nc" id="L17">        &quot;singular&quot;        -&gt; R.string.form_singular</span>
+<span class="nc" id="L18">        &quot;plural&quot;          -&gt; R.string.form_plural</span>
+<span class="nc" id="L19">        &quot;comparative&quot;     -&gt; R.string.form_comparative</span>
+<span class="nc" id="L20">        &quot;superlative&quot;     -&gt; R.string.form_superlative</span>
+<span class="nc" id="L21">        &quot;dictionary_form&quot; -&gt; R.string.form_dictionary_form</span>
+<span class="nc" id="L22">        &quot;masu_form&quot;       -&gt; R.string.form_masu_form</span>
+<span class="nc" id="L23">        &quot;ta_form&quot;         -&gt; R.string.form_ta_form</span>
+<span class="nc" id="L24">        &quot;te_form&quot;         -&gt; R.string.form_te_form</span>
+<span class="nc" id="L25">        &quot;nai_form&quot;        -&gt; R.string.form_nai_form</span>
+<span class="nc" id="L26">        &quot;negative&quot;        -&gt; R.string.form_negative</span>
+<span class="nc" id="L27">        &quot;past&quot;            -&gt; R.string.form_past</span>
+<span class="nc" id="L28">        &quot;particle&quot;        -&gt; R.string.form_particle</span>
+<span class="nc" id="L29">        &quot;phonetic&quot;        -&gt; R.string.form_phonetic</span>
+<span class="nc" id="L30">        &quot;collocation&quot;     -&gt; R.string.form_collocation</span>
+<span class="nc" id="L31">        &quot;kanji&quot;           -&gt; R.string.form_kanji</span>
+<span class="nc" id="L32">        &quot;hiragana&quot;        -&gt; R.string.form_hiragana</span>
+<span class="nc" id="L33">        &quot;pitch_accent&quot;    -&gt; R.string.form_pitch_accent</span>
+<span class="nc" id="L34">        &quot;counter&quot;         -&gt; R.string.form_counter</span>
+<span class="nc" id="L35">        &quot;transitive_pair&quot; -&gt; R.string.form_transitive_pair</span>
+<span class="nc" id="L36">        &quot;origin&quot;          -&gt; R.string.form_origin</span>
+<span class="nc" id="L37">        else              -&gt; null</span>
+<span class="fc" id="L38">    }</span>
 
     // ── Supported languages ───────────────────────────────────────────────────
 
-<span class="fc" id="L41">    val SUPPORTED_LANGUAGES = listOf(&quot;en&quot;, &quot;ja&quot;)</span>
+<span class="fc" id="L42">    val SUPPORTED_LANGUAGES = listOf(&quot;en&quot;, &quot;ja&quot;)</span>
 
-<span class="fc" id="L43">    fun langResId(code: String): Int = when (code) {</span>
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        &quot;ja&quot; -&gt; R.string.lang_ja</span>
-<span class="fc" id="L45">        else -&gt; R.string.lang_en</span>
-<span class="fc" id="L46">    }</span>
+<span class="fc" id="L44">    fun langResId(code: String): Int = when (code) {</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        &quot;ja&quot; -&gt; R.string.lang_ja</span>
+<span class="fc" id="L46">        else -&gt; R.string.lang_en</span>
+<span class="fc" id="L47">    }</span>
 
     // ── Verb attributes (Japanese) ────────────────────────────────────────────
 
     /** Language-neutral keys, like part_of_speech; translated for display. */
-<span class="pc" id="L51">    val TRANSITIVITY_KEYS = listOf(&quot;intransitive&quot;, &quot;transitive&quot;, &quot;ambitransitive&quot;)</span>
-<span class="pc" id="L52">    val VERB_GROUP_KEYS = listOf(&quot;godan&quot;, &quot;ichidan&quot;, &quot;irregular&quot;)</span>
+<span class="fc" id="L52">    val TRANSITIVITY_KEYS = listOf(&quot;intransitive&quot;, &quot;transitive&quot;, &quot;ambitransitive&quot;)</span>
+<span class="pc" id="L53">    val VERB_GROUP_KEYS = listOf(&quot;godan&quot;, &quot;ichidan&quot;, &quot;irregular&quot;)</span>
 
-<span class="nc bnc" id="L54" title="All 4 branches missed.">    fun transitivityResId(key: String): Int? = when (key) {</span>
-<span class="nc" id="L55">        &quot;intransitive&quot;   -&gt; R.string.transitivity_intransitive</span>
-<span class="nc" id="L56">        &quot;transitive&quot;     -&gt; R.string.transitivity_transitive</span>
-<span class="nc" id="L57">        &quot;ambitransitive&quot; -&gt; R.string.transitivity_ambitransitive</span>
-<span class="nc" id="L58">        else -&gt; null</span>
-<span class="nc" id="L59">    }</span>
+<span class="nc bnc" id="L55" title="All 4 branches missed.">    fun transitivityResId(key: String): Int? = when (key) {</span>
+<span class="nc" id="L56">        &quot;intransitive&quot;   -&gt; R.string.transitivity_intransitive</span>
+<span class="nc" id="L57">        &quot;transitive&quot;     -&gt; R.string.transitivity_transitive</span>
+<span class="nc" id="L58">        &quot;ambitransitive&quot; -&gt; R.string.transitivity_ambitransitive</span>
+<span class="nc" id="L59">        else -&gt; null</span>
+<span class="nc" id="L60">    }</span>
 
-<span class="nc bnc" id="L61" title="All 4 branches missed.">    fun verbGroupResId(key: String): Int? = when (key) {</span>
-<span class="nc" id="L62">        &quot;godan&quot;     -&gt; R.string.verb_group_godan</span>
-<span class="nc" id="L63">        &quot;ichidan&quot;   -&gt; R.string.verb_group_ichidan</span>
-<span class="nc" id="L64">        &quot;irregular&quot; -&gt; R.string.verb_group_irregular</span>
-<span class="nc" id="L65">        else -&gt; null</span>
-<span class="nc" id="L66">    }</span>
+<span class="nc bnc" id="L62" title="All 4 branches missed.">    fun verbGroupResId(key: String): Int? = when (key) {</span>
+<span class="nc" id="L63">        &quot;godan&quot;     -&gt; R.string.verb_group_godan</span>
+<span class="nc" id="L64">        &quot;ichidan&quot;   -&gt; R.string.verb_group_ichidan</span>
+<span class="nc" id="L65">        &quot;irregular&quot; -&gt; R.string.verb_group_irregular</span>
+<span class="nc" id="L66">        else -&gt; null</span>
+<span class="nc" id="L67">    }</span>
 
     // ── Canonical label lists per language ────────────────────────────────────
 
@@ -71,16 +72,16 @@ object Labels {
     // pronunciation, which every word form now records in its own `reading`. &quot;kanji&quot; (a written
     // form) and &quot;pitch_accent&quot; (an accent pattern) are not readings and stay. Retired labels keep
     // their formLabelResId() mappings so existing rows still show a translated name.
-<span class="pc" id="L74">    val EN_FORM_LABELS = listOf(</span>
-<span class="fc" id="L75">        &quot;base_form&quot;, &quot;past_tense&quot;, &quot;past_participle&quot;, &quot;gerund&quot;,</span>
-<span class="fc" id="L76">        &quot;singular&quot;, &quot;plural&quot;, &quot;comparative&quot;, &quot;superlative&quot;,</span>
-<span class="fc" id="L77">        &quot;collocation&quot;,</span>
+<span class="pc" id="L75">    val EN_FORM_LABELS = listOf(</span>
+<span class="fc" id="L76">        &quot;base_form&quot;, &quot;past_tense&quot;, &quot;past_participle&quot;, &quot;gerund&quot;,</span>
+<span class="fc" id="L77">        &quot;singular&quot;, &quot;plural&quot;, &quot;comparative&quot;, &quot;superlative&quot;,</span>
+<span class="fc" id="L78">        &quot;collocation&quot;,</span>
     )
 
-<span class="pc" id="L80">    val JA_FORM_LABELS = listOf(</span>
-<span class="fc" id="L81">        &quot;dictionary_form&quot;, &quot;masu_form&quot;, &quot;ta_form&quot;, &quot;te_form&quot;, &quot;nai_form&quot;,</span>
-<span class="fc" id="L82">        &quot;negative&quot;, &quot;past&quot;, &quot;particle&quot;,</span>
-<span class="fc" id="L83">        &quot;kanji&quot;, &quot;pitch_accent&quot;, &quot;counter&quot;, &quot;transitive_pair&quot;, &quot;origin&quot;,</span>
+<span class="pc" id="L81">    val JA_FORM_LABELS = listOf(</span>
+<span class="fc" id="L82">        &quot;dictionary_form&quot;, &quot;masu_form&quot;, &quot;ta_form&quot;, &quot;te_form&quot;, &quot;nai_form&quot;,</span>
+<span class="fc" id="L83">        &quot;negative&quot;, &quot;past&quot;, &quot;particle&quot;,</span>
+<span class="fc" id="L84">        &quot;kanji&quot;, &quot;pitch_accent&quot;, &quot;counter&quot;, &quot;transitive_pair&quot;, &quot;origin&quot;,</span>
     )
 
     // Canonical `part_of_speech` keys, one list per language, exactly as
@@ -90,47 +91,135 @@ object Labels {
     //
     // The stored value is ALWAYS the key. Never put a display string in these lists — the value
     // reaches the database, the desktop and the seed, all of which compare against the key form.
-<span class="fc" id="L93">    val EN_POS = listOf(</span>
-<span class="fc" id="L94">        &quot;noun&quot;, &quot;verb&quot;, &quot;adjective&quot;, &quot;adverb&quot;,</span>
-<span class="fc" id="L95">        &quot;pronoun&quot;, &quot;preposition&quot;, &quot;conjunction&quot;, &quot;interjection&quot;, &quot;other&quot;,</span>
+<span class="fc" id="L94">    val EN_POS = listOf(</span>
+<span class="fc" id="L95">        &quot;noun&quot;, &quot;verb&quot;, &quot;adjective&quot;, &quot;adverb&quot;,</span>
+<span class="fc" id="L96">        &quot;pronoun&quot;, &quot;preposition&quot;, &quot;conjunction&quot;, &quot;interjection&quot;, &quot;other&quot;,</span>
     )
 
-<span class="fc" id="L98">    val JA_POS = listOf(</span>
-<span class="fc" id="L99">        &quot;noun&quot;, &quot;verb&quot;, &quot;i-adj&quot;, &quot;na-adj&quot;, &quot;adverb&quot;,</span>
-<span class="fc" id="L100">        &quot;particle&quot;, &quot;aux-verb&quot;, &quot;conjunction&quot;, &quot;other&quot;,</span>
+<span class="fc" id="L99">    val JA_POS = listOf(</span>
+<span class="fc" id="L100">        &quot;noun&quot;, &quot;verb&quot;, &quot;i-adj&quot;, &quot;na-adj&quot;, &quot;adverb&quot;,</span>
+<span class="fc" id="L101">        &quot;particle&quot;, &quot;aux-verb&quot;, &quot;conjunction&quot;, &quot;other&quot;,</span>
     )
 
-<span class="fc" id="L103">    fun posForLanguage(lang: String): List&lt;String&gt; = when (lang) {</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        &quot;ja&quot; -&gt; JA_POS</span>
-<span class="fc" id="L105">        else -&gt; EN_POS</span>
-<span class="fc" id="L106">    }</span>
+<span class="fc" id="L104">    fun posForLanguage(lang: String): List&lt;String&gt; = when (lang) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        &quot;ja&quot; -&gt; JA_POS</span>
+<span class="fc" id="L106">        else -&gt; EN_POS</span>
+<span class="fc" id="L107">    }</span>
 
-<span class="nc" id="L108">    fun formLabelsForLanguage(lang: String): List&lt;String&gt; = when (lang) {</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">        &quot;ja&quot; -&gt; JA_FORM_LABELS</span>
-<span class="nc" id="L110">        else -&gt; EN_FORM_LABELS</span>
-<span class="nc" id="L111">    }</span>
+<span class="nc" id="L109">    fun formLabelsForLanguage(lang: String): List&lt;String&gt; = when (lang) {</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        &quot;ja&quot; -&gt; JA_FORM_LABELS</span>
+<span class="nc" id="L111">        else -&gt; EN_FORM_LABELS</span>
+<span class="nc" id="L112">    }</span>
+
+    // ── Word list Class and Comparison ────────────────────────────────────────
+
+    /** A word's Class: the namespace and key that decide what its Comparison cell holds. */
+<span class="pc" id="L117">    data class WordClass(val namespace: String, val key: String)</span>
+
+    /**
+     * The classification that decides what the Comparison column holds.
+     *
+     * A Japanese verb resolves to its transitivity, because that is what its companion derives
+     * from — the opposite verb. Everything else resolves to its part of speech. Null when the word
+     * records neither, which the list renders as an empty cell.
+     */
+    fun classOf(language: String, partOfSpeech: String?, transitivity: String?): WordClass? {
+<span class="fc bfc" id="L127" title="All 10 branches covered.">        if (language == &quot;ja&quot; &amp;&amp; partOfSpeech == &quot;verb&quot; &amp;&amp; !transitivity.isNullOrEmpty()) {</span>
+<span class="fc" id="L128">            return WordClass(&quot;transitivity&quot;, transitivity)</span>
+        }
+<span class="fc bfc" id="L130" title="All 8 branches covered.">        return partOfSpeech?.takeIf { it.isNotEmpty() }?.let { WordClass(&quot;pos&quot;, it) }</span>
+    }
+
+    /**
+     * The `word_forms` label whose value the Comparison column shows. Whatever is recorded is
+     * shown, irregular or not — detecting irregularity would need rules and data this lacks.
+     */
+    fun comparisonLabel(language: String, partOfSpeech: String?): String? =
+<span class="fc" id="L138">        when (language to partOfSpeech) {</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            &quot;ja&quot; to &quot;verb&quot;   -&gt; &quot;transitive_pair&quot;</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">            &quot;ja&quot; to &quot;i-adj&quot;  -&gt; &quot;negative&quot;</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">            &quot;ja&quot; to &quot;na-adj&quot; -&gt; &quot;negative&quot;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            &quot;en&quot; to &quot;verb&quot;   -&gt; &quot;past_tense&quot;</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            &quot;en&quot; to &quot;noun&quot;   -&gt; &quot;plural&quot;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            &quot;en&quot; to &quot;adjective&quot; -&gt; &quot;comparative&quot;</span>
+<span class="fc" id="L145">            else -&gt; null</span>
+<span class="fc" id="L146">        }</span>
+
+    /** The Comparison cell's text, or null when the word records no companion (rendered `—`). */
+    fun comparisonValue(word: WordEntry): String? {
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        val label = comparisonLabel(word.language, word.partOfSpeech) ?: return null</span>
+<span class="pc bpc" id="L151" title="3 of 8 branches missed.">        return word.wordForms.firstOrNull { it.label == label }?.value?.takeIf { it.isNotEmpty() }</span>
+    }
+
+    // ── Class badge abbreviations ──────────────────────────────────────────────
+    //
+    // These live in strings.xml rather than in a `when` like posDisplay below, because the
+    // traditional and simplified forms differ for three of them (動/动, 連/连, 助動/助动) and
+    // `Locale.getDefault().language == &quot;zh&quot;` cannot tell the two apart. values-zh-rTW and
+    // values-zh-rCN can.
+
+    /** Resource for a transitivity abbreviation, or null for an unknown key. */
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">    fun transitivityAbbrResId(key: String): Int? = when (key) {</span>
+<span class="fc" id="L163">        &quot;intransitive&quot;   -&gt; R.string.transitivity_abbr_intransitive</span>
+<span class="fc" id="L164">        &quot;transitive&quot;     -&gt; R.string.transitivity_abbr_transitive</span>
+<span class="fc" id="L165">        &quot;ambitransitive&quot; -&gt; R.string.transitivity_abbr_ambitransitive</span>
+<span class="nc" id="L166">        else             -&gt; null</span>
+<span class="fc" id="L167">    }</span>
+
+    /**
+     * Resource for a part-of-speech abbreviation, chosen by the **word's** language rather than
+     * the interface locale: a Japanese word gets a CJK badge and an English word a Latin one,
+     * whichever language the UI is in. Only the CJK variant tracks the interface locale, and the
+     * resource system handles that.
+     */
+<span class="fc" id="L175">    fun classAbbrResId(wordLanguage: String, pos: String): Int? = when {</span>
+<span class="pc bpc" id="L176" title="1 of 12 branches missed.">        wordLanguage == &quot;ja&quot; -&gt; when (pos) {</span>
+<span class="fc" id="L177">            &quot;noun&quot;        -&gt; R.string.pos_abbr_ja_noun</span>
+<span class="fc" id="L178">            &quot;verb&quot;        -&gt; R.string.pos_abbr_ja_verb</span>
+<span class="fc" id="L179">            &quot;i-adj&quot;       -&gt; R.string.pos_abbr_ja_i_adj</span>
+<span class="fc" id="L180">            &quot;na-adj&quot;      -&gt; R.string.pos_abbr_ja_na_adj</span>
+<span class="fc" id="L181">            &quot;adverb&quot;      -&gt; R.string.pos_abbr_ja_adverb</span>
+<span class="fc" id="L182">            &quot;particle&quot;    -&gt; R.string.pos_abbr_ja_particle</span>
+<span class="fc" id="L183">            &quot;aux-verb&quot;    -&gt; R.string.pos_abbr_ja_aux_verb</span>
+<span class="fc" id="L184">            &quot;conjunction&quot; -&gt; R.string.pos_abbr_ja_conjunction</span>
+<span class="fc" id="L185">            &quot;other&quot;       -&gt; R.string.pos_abbr_ja_other</span>
+<span class="nc" id="L186">            else          -&gt; null</span>
+        }
+<span class="pc bpc" id="L188" title="1 of 10 branches missed.">        else -&gt; when (pos) {</span>
+<span class="fc" id="L189">            &quot;noun&quot;         -&gt; R.string.pos_abbr_en_noun</span>
+<span class="fc" id="L190">            &quot;verb&quot;         -&gt; R.string.pos_abbr_en_verb</span>
+<span class="fc" id="L191">            &quot;adjective&quot;    -&gt; R.string.pos_abbr_en_adjective</span>
+<span class="fc" id="L192">            &quot;adverb&quot;       -&gt; R.string.pos_abbr_en_adverb</span>
+<span class="fc" id="L193">            &quot;pronoun&quot;      -&gt; R.string.pos_abbr_en_pronoun</span>
+<span class="fc" id="L194">            &quot;preposition&quot;  -&gt; R.string.pos_abbr_en_preposition</span>
+<span class="fc" id="L195">            &quot;conjunction&quot;  -&gt; R.string.pos_abbr_en_conjunction</span>
+<span class="fc" id="L196">            &quot;interjection&quot; -&gt; R.string.pos_abbr_en_interjection</span>
+<span class="fc" id="L197">            &quot;other&quot;        -&gt; R.string.pos_abbr_en_other</span>
+<span class="nc" id="L198">            else           -&gt; null</span>
+        }
+<span class="fc" id="L200">    }</span>
 
     // ── POS display (locale-aware, no resource needed — already short strings) ─
 
     fun posDisplay(pos: String): String {
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (pos.isBlank()) return pos</span>
-<span class="nc" id="L117">        val isZh = Locale.getDefault().language == &quot;zh&quot;</span>
-<span class="nc bnc" id="L118" title="All 15 branches missed.">        return when (pos) {</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">            &quot;noun&quot;         -&gt; if (isZh) &quot;名詞 (noun)&quot;          else &quot;Noun&quot;</span>
-<span class="nc bnc" id="L120" title="All 2 branches missed.">            &quot;verb&quot;         -&gt; if (isZh) &quot;動詞 (verb)&quot;          else &quot;Verb&quot;</span>
-<span class="nc bnc" id="L121" title="All 2 branches missed.">            &quot;adjective&quot;    -&gt; if (isZh) &quot;形容詞 (adjective)&quot;   else &quot;Adjective&quot;</span>
-<span class="nc bnc" id="L122" title="All 2 branches missed.">            &quot;adverb&quot;       -&gt; if (isZh) &quot;副詞 (adverb)&quot;        else &quot;Adverb&quot;</span>
-<span class="nc bnc" id="L123" title="All 2 branches missed.">            &quot;pronoun&quot;      -&gt; if (isZh) &quot;代名詞 (pronoun)&quot;     else &quot;Pronoun&quot;</span>
-<span class="nc bnc" id="L124" title="All 2 branches missed.">            &quot;preposition&quot;  -&gt; if (isZh) &quot;介系詞 (preposition)&quot; else &quot;Preposition&quot;</span>
-<span class="nc bnc" id="L125" title="All 2 branches missed.">            &quot;conjunction&quot;  -&gt; if (isZh) &quot;連接詞 (conjunction)&quot; else &quot;Conjunction&quot;</span>
-<span class="nc bnc" id="L126" title="All 2 branches missed.">            &quot;interjection&quot; -&gt; if (isZh) &quot;感嘆詞 (interjection)&quot; else &quot;Interjection&quot;</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">            &quot;i-adj&quot;        -&gt; if (isZh) &quot;い形容詞 (i-adj)&quot;     else &quot;i-adjective&quot;</span>
-<span class="nc bnc" id="L128" title="All 2 branches missed.">            &quot;na-adj&quot;       -&gt; if (isZh) &quot;な形容詞 (na-adj)&quot;    else &quot;na-adjective&quot;</span>
-<span class="nc bnc" id="L129" title="All 2 branches missed.">            &quot;particle&quot;     -&gt; if (isZh) &quot;助詞 (particle)&quot;      else &quot;Particle&quot;</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">            &quot;aux-verb&quot;     -&gt; if (isZh) &quot;助動詞 (aux-verb)&quot;    else &quot;Aux. verb&quot;</span>
-<span class="nc bnc" id="L131" title="All 2 branches missed.">            &quot;other&quot;        -&gt; if (isZh) &quot;其他 (other)&quot;         else &quot;Other&quot;</span>
-<span class="nc bnc" id="L132" title="All 2 branches missed.">            &quot;phrase&quot;       -&gt; if (isZh) &quot;片語 (phrase)&quot;        else &quot;Phrase&quot;</span>
-<span class="nc" id="L133">            else           -&gt; pos</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (pos.isBlank()) return pos</span>
+<span class="nc" id="L206">        val isZh = Locale.getDefault().language == &quot;zh&quot;</span>
+<span class="nc bnc" id="L207" title="All 15 branches missed.">        return when (pos) {</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">            &quot;noun&quot;         -&gt; if (isZh) &quot;名詞 (noun)&quot;          else &quot;Noun&quot;</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">            &quot;verb&quot;         -&gt; if (isZh) &quot;動詞 (verb)&quot;          else &quot;Verb&quot;</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">            &quot;adjective&quot;    -&gt; if (isZh) &quot;形容詞 (adjective)&quot;   else &quot;Adjective&quot;</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">            &quot;adverb&quot;       -&gt; if (isZh) &quot;副詞 (adverb)&quot;        else &quot;Adverb&quot;</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            &quot;pronoun&quot;      -&gt; if (isZh) &quot;代名詞 (pronoun)&quot;     else &quot;Pronoun&quot;</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">            &quot;preposition&quot;  -&gt; if (isZh) &quot;介系詞 (preposition)&quot; else &quot;Preposition&quot;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">            &quot;conjunction&quot;  -&gt; if (isZh) &quot;連接詞 (conjunction)&quot; else &quot;Conjunction&quot;</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            &quot;interjection&quot; -&gt; if (isZh) &quot;感嘆詞 (interjection)&quot; else &quot;Interjection&quot;</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">            &quot;i-adj&quot;        -&gt; if (isZh) &quot;い形容詞 (i-adj)&quot;     else &quot;i-adjective&quot;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">            &quot;na-adj&quot;       -&gt; if (isZh) &quot;な形容詞 (na-adj)&quot;    else &quot;na-adjective&quot;</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            &quot;particle&quot;     -&gt; if (isZh) &quot;助詞 (particle)&quot;      else &quot;Particle&quot;</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">            &quot;aux-verb&quot;     -&gt; if (isZh) &quot;助動詞 (aux-verb)&quot;    else &quot;Aux. verb&quot;</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">            &quot;other&quot;        -&gt; if (isZh) &quot;其他 (other)&quot;         else &quot;Other&quot;</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            &quot;phrase&quot;       -&gt; if (isZh) &quot;片語 (phrase)&quot;        else &quot;Phrase&quot;</span>
+<span class="nc" id="L222">            else           -&gt; pos</span>
         }
     }
 }
