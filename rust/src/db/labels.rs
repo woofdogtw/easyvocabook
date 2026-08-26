@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+use super::types::WordForm;
 
 /// Canonical `part_of_speech` keys for English words.
 pub const EN_POS: &[&str] = &[
@@ -101,6 +101,103 @@ pub fn transitivity_locale_key(key: &str) -> &'static str {
     }
 }
 
+/// The word list's Class: the classification that decides what the Comparison column holds.
+///
+/// A Japanese verb resolves to its transitivity, because that is what its companion is derived
+/// from — the opposite verb. Everything else resolves to its part of speech. Returns `None` when
+/// the word records neither, which the list renders as an empty cell.
+///
+/// The returned pair is `(namespace, key)`: `("transitivity", "intransitive")` or
+/// `("pos", "noun")`. Callers use it for the badge string and, in `DbTableMemory`, as a sort key.
+pub fn class_of(
+    language: &str,
+    part_of_speech: Option<&str>,
+    transitivity: Option<&str>,
+) -> Option<(&'static str, String)> {
+    if language == "ja" && part_of_speech == Some("verb") {
+        if let Some(t) = transitivity.filter(|t| !t.is_empty()) {
+            return Some(("transitivity", t.to_owned()));
+        }
+    }
+    part_of_speech
+        .filter(|p| !p.is_empty())
+        .map(|p| ("pos", p.to_owned()))
+}
+
+/// The `word_forms` label whose value the Comparison column shows, given a word's Class.
+///
+/// The companion is the form a learner has to memorise alongside the word: for a Japanese verb the
+/// verb of opposite transitivity, for an adjective its negative, for an English verb or noun the
+/// past tense or plural. Whatever is recorded is shown, irregular or not — detecting irregularity
+/// would need rules and data this does not have.
+pub fn comparison_label(language: &str, part_of_speech: Option<&str>) -> Option<&'static str> {
+    match (language, part_of_speech?) {
+        ("ja", "verb") => Some("transitive_pair"),
+        ("ja", "i-adj") | ("ja", "na-adj") => Some("negative"),
+        ("en", "verb") => Some("past_tense"),
+        ("en", "noun") => Some("plural"),
+        ("en", "adjective") => Some("comparative"),
+        _ => None,
+    }
+}
+
+/// The Comparison cell's text for a word, or `None` when it has no companion recorded.
+/// The list renders `None` as `—`.
+pub fn comparison_value<'a>(
+    language: &str,
+    part_of_speech: Option<&str>,
+    forms: &'a [WordForm],
+) -> Option<&'a str> {
+    let label = comparison_label(language, part_of_speech)?;
+    forms
+        .iter()
+        .find(|f| f.label == label)
+        .map(|f| f.value.as_str())
+        .filter(|v| !v.is_empty())
+}
+
+/// Locale key for a transitivity abbreviation, used by the word list's Class badge.
+pub fn transitivity_abbr_key(key: &str) -> &'static str {
+    match key {
+        "intransitive" => "transitivity.abbr.intransitive",
+        "transitive" => "transitivity.abbr.transitive",
+        "ambitransitive" => "transitivity.abbr.ambitransitive",
+        _ => "",
+    }
+}
+
+/// Locale key for a part-of-speech abbreviation, keyed by the **word's** language rather than the
+/// interface locale: a Japanese word gets a CJK badge and an English word a Latin one, whichever
+/// language the UI is in. Only the CJK variant tracks the interface locale, and the locale table
+/// handles that.
+pub fn class_abbr_key(word_language: &str, pos: &str) -> &'static str {
+    match (word_language, pos) {
+        ("ja", "noun") => "pos.abbr.ja.noun",
+        ("ja", "verb") => "pos.abbr.ja.verb",
+        ("ja", "i-adj") => "pos.abbr.ja.i-adj",
+        ("ja", "na-adj") => "pos.abbr.ja.na-adj",
+        ("ja", "adverb") => "pos.abbr.ja.adverb",
+        ("ja", "particle") => "pos.abbr.ja.particle",
+        ("ja", "aux-verb") => "pos.abbr.ja.aux-verb",
+        ("ja", "conjunction") => "pos.abbr.ja.conjunction",
+        ("ja", "other") => "pos.abbr.ja.other",
+        // A Japanese word with a part of speech outside JA_POS gets no badge rather than a Latin
+        // one. Unreachable through the UI, but falling through to the English table would put
+        // `Adj` on a Japanese word.
+        ("ja", _) => "",
+        (_, "noun") => "pos.abbr.en.noun",
+        (_, "verb") => "pos.abbr.en.verb",
+        (_, "adjective") => "pos.abbr.en.adjective",
+        (_, "adverb") => "pos.abbr.en.adverb",
+        (_, "pronoun") => "pos.abbr.en.pronoun",
+        (_, "preposition") => "pos.abbr.en.preposition",
+        (_, "conjunction") => "pos.abbr.en.conjunction",
+        (_, "interjection") => "pos.abbr.en.interjection",
+        (_, "other") => "pos.abbr.en.other",
+        _ => "",
+    }
+}
+
 /// Maps a verb group key to its locale string key.
 pub fn verb_group_locale_key(key: &str) -> &'static str {
     match key {
@@ -170,25 +267,91 @@ pub fn lang_locale_key(code: &str) -> &'static str {
     }
 }
 
-/// Display name for a `part_of_speech` key in a given locale.
-/// Falls back to the raw key if no translation is known.
-pub fn pos_display(language: &str, pos: &str, locale: &str) -> String {
-    match (language, pos, locale) {
-        ("ja", "i-adj", "zh-TW" | "zh-CN") => "い形容詞".into(),
-        ("ja", "na-adj", "zh-TW" | "zh-CN") => "な形容詞".into(),
-        ("ja", "noun", "zh-TW" | "zh-CN") => "名詞".into(),
-        ("ja", "verb", "zh-TW" | "zh-CN") => "動詞".into(),
-        ("ja", "adverb", "zh-TW" | "zh-CN") => "副詞".into(),
-        ("ja", "particle", "zh-TW" | "zh-CN") => "助詞".into(),
-        ("ja", "aux-verb", "zh-TW" | "zh-CN") => "助動詞".into(),
-        ("ja", "conjunction", "zh-TW" | "zh-CN") => "接続詞".into(),
-        _ => pos.to_string(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn form(label: &str, value: &str) -> WordForm {
+        WordForm { id: 0, label: label.into(), value: value.into(), reading: None }
+    }
+
+    #[test]
+    fn paired_verb_resolves_to_transitivity_and_its_partner() {
+        assert_eq!(
+            class_of("ja", Some("verb"), Some("intransitive")),
+            Some(("transitivity", "intransitive".to_owned()))
+        );
+        let forms = [form("transitive_pair", "上げる"), form("masu_form", "上がります")];
+        assert_eq!(comparison_value("ja", Some("verb"), &forms), Some("上げる"));
+    }
+
+    #[test]
+    fn partnerless_verb_keeps_its_class_but_has_no_comparison() {
+        assert_eq!(
+            class_of("ja", Some("verb"), Some("transitive")),
+            Some(("transitivity", "transitive".to_owned()))
+        );
+        let forms = [form("masu_form", "食べます")];
+        assert_eq!(comparison_value("ja", Some("verb"), &forms), None);
+    }
+
+    /// Three of the four ambitransitive verbs in the vocabulary do record a partner, so the class
+    /// must not suppress it.
+    #[test]
+    fn ambitransitive_verb_shows_a_partner_when_one_is_recorded() {
+        assert_eq!(
+            class_of("ja", Some("verb"), Some("ambitransitive")),
+            Some(("transitivity", "ambitransitive".to_owned()))
+        );
+        let forms = [form("transitive_pair", "開ける")];
+        assert_eq!(comparison_value("ja", Some("verb"), &forms), Some("開ける"));
+    }
+
+    #[test]
+    fn noun_falls_back_to_part_of_speech_and_has_no_comparison() {
+        assert_eq!(class_of("ja", Some("noun"), None), Some(("pos", "noun".to_owned())));
+        assert_eq!(comparison_value("ja", Some("noun"), &[]), None);
+    }
+
+    /// A verb whose transitivity was never filled in falls back rather than showing nothing. No
+    /// seeded word takes this path — all 289 Japanese verbs record one — so the rule exists for
+    /// words the user adds by hand, and this test is its only coverage.
+    #[test]
+    fn verb_without_transitivity_falls_back_to_part_of_speech() {
+        assert_eq!(class_of("ja", Some("verb"), None), Some(("pos", "verb".to_owned())));
+        assert_eq!(class_of("ja", Some("verb"), Some("")), Some(("pos", "verb".to_owned())));
+    }
+
+    #[test]
+    fn word_with_no_part_of_speech_has_no_class() {
+        assert_eq!(class_of("ja", None, None), None);
+        assert_eq!(class_of("ja", Some(""), None), None);
+    }
+
+    #[test]
+    fn english_forms_follow_their_part_of_speech() {
+        assert_eq!(comparison_label("en", Some("verb")), Some("past_tense"));
+        assert_eq!(comparison_label("en", Some("noun")), Some("plural"));
+        assert_eq!(comparison_label("en", Some("adjective")), Some("comparative"));
+        // Regular forms are shown too; irregularity is not detected.
+        let forms = [form("past_tense", "walked")];
+        assert_eq!(comparison_value("en", Some("verb"), &forms), Some("walked"));
+    }
+
+    /// Transitivity belongs to Japanese verbs; an English verb never takes that branch.
+    #[test]
+    fn english_verb_never_resolves_to_transitivity() {
+        assert_eq!(
+            class_of("en", Some("verb"), Some("transitive")),
+            Some(("pos", "verb".to_owned()))
+        );
+    }
+
+    #[test]
+    fn language_without_a_rule_has_no_comparison() {
+        assert_eq!(comparison_label("de", Some("noun")), None);
+        assert_eq!(comparison_value("de", Some("noun"), &[form("plural", "x")]), None);
+    }
 
     /// The canonical `part_of_speech` lists, exactly as
     /// `openspec/specs/word-edit-ui/spec.md` fixes them.

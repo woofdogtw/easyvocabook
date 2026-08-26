@@ -149,4 +149,28 @@
     <string name="verb_group_irregular">不规则</string>
     <string name="word_edit_transitivity">自他动词</string>
     <string name="word_edit_verb_group">动词类</string>
+
+    <!-- Class badge abbreviations. The script follows the word's language, not the
+         interface locale; only the CJK variant tracks the locale. -->
+    <string name="transitivity_abbr_intransitive">自</string>
+    <string name="transitivity_abbr_transitive">他</string>
+    <string name="transitivity_abbr_ambitransitive">自他</string>
+    <string name="pos_abbr_ja_noun">名</string>
+    <string name="pos_abbr_ja_verb">动</string>
+    <string name="pos_abbr_ja_i_adj">い</string>
+    <string name="pos_abbr_ja_na_adj">な</string>
+    <string name="pos_abbr_ja_adverb">副</string>
+    <string name="pos_abbr_ja_particle">助</string>
+    <string name="pos_abbr_ja_aux_verb">助动</string>
+    <string name="pos_abbr_ja_conjunction">连</string>
+    <string name="pos_abbr_ja_other">其</string>
+    <string name="pos_abbr_en_noun">N</string>
+    <string name="pos_abbr_en_verb">V</string>
+    <string name="pos_abbr_en_adjective">Adj</string>
+    <string name="pos_abbr_en_adverb">Adv</string>
+    <string name="pos_abbr_en_pronoun">Pron</string>
+    <string name="pos_abbr_en_preposition">Prep</string>
+    <string name="pos_abbr_en_conjunction">Conj</string>
+    <string name="pos_abbr_en_interjection">Interj</string>
+    <string name="pos_abbr_en_other">Oth</string>
 </resources>

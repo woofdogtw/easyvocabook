@@ -29,6 +29,8 @@ pub fn decide(local_lm: i64, remote_lm: Option<i64>) -> SyncDecision {
 }
 
 /// Run the sync: read DB timestamps, decide, then execute the required I/O.
+/// The UI drives sync through its own message flow rather than calling this, so nothing invokes it
+/// today; it stays as the headless entry point the decision logic below is written against.
 #[allow(dead_code)]
 pub async fn run_sync(client: &dyn SyncClient, db_path: &PathBuf) -> SyncResult {
     let local_lm = match read_local_last_modified(db_path) {

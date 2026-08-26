@@ -2,6 +2,7 @@ package tw.idv.woofdog.easyvocabook.ui
 
 import java.util.Locale
 import tw.idv.woofdog.easyvocabook.R
+import tw.idv.woofdog.easyvocabook.data.model.WordEntry
 
 object Labels {
 
@@ -108,6 +109,94 @@ object Labels {
     fun formLabelsForLanguage(lang: String): List<String> = when (lang) {
         "ja" -> JA_FORM_LABELS
         else -> EN_FORM_LABELS
+    }
+
+    // ── Word list Class and Comparison ────────────────────────────────────────
+
+    /** A word's Class: the namespace and key that decide what its Comparison cell holds. */
+    data class WordClass(val namespace: String, val key: String)
+
+    /**
+     * The classification that decides what the Comparison column holds.
+     *
+     * A Japanese verb resolves to its transitivity, because that is what its companion derives
+     * from — the opposite verb. Everything else resolves to its part of speech. Null when the word
+     * records neither, which the list renders as an empty cell.
+     */
+    fun classOf(language: String, partOfSpeech: String?, transitivity: String?): WordClass? {
+        if (language == "ja" && partOfSpeech == "verb" && !transitivity.isNullOrEmpty()) {
+            return WordClass("transitivity", transitivity)
+        }
+        return partOfSpeech?.takeIf { it.isNotEmpty() }?.let { WordClass("pos", it) }
+    }
+
+    /**
+     * The `word_forms` label whose value the Comparison column shows. Whatever is recorded is
+     * shown, irregular or not — detecting irregularity would need rules and data this lacks.
+     */
+    fun comparisonLabel(language: String, partOfSpeech: String?): String? =
+        when (language to partOfSpeech) {
+            "ja" to "verb"   -> "transitive_pair"
+            "ja" to "i-adj"  -> "negative"
+            "ja" to "na-adj" -> "negative"
+            "en" to "verb"   -> "past_tense"
+            "en" to "noun"   -> "plural"
+            "en" to "adjective" -> "comparative"
+            else -> null
+        }
+
+    /** The Comparison cell's text, or null when the word records no companion (rendered `—`). */
+    fun comparisonValue(word: WordEntry): String? {
+        val label = comparisonLabel(word.language, word.partOfSpeech) ?: return null
+        return word.wordForms.firstOrNull { it.label == label }?.value?.takeIf { it.isNotEmpty() }
+    }
+
+    // ── Class badge abbreviations ──────────────────────────────────────────────
+    //
+    // These live in strings.xml rather than in a `when` like posDisplay below, because the
+    // traditional and simplified forms differ for three of them (動/动, 連/连, 助動/助动) and
+    // `Locale.getDefault().language == "zh"` cannot tell the two apart. values-zh-rTW and
+    // values-zh-rCN can.
+
+    /** Resource for a transitivity abbreviation, or null for an unknown key. */
+    fun transitivityAbbrResId(key: String): Int? = when (key) {
+        "intransitive"   -> R.string.transitivity_abbr_intransitive
+        "transitive"     -> R.string.transitivity_abbr_transitive
+        "ambitransitive" -> R.string.transitivity_abbr_ambitransitive
+        else             -> null
+    }
+
+    /**
+     * Resource for a part-of-speech abbreviation, chosen by the **word's** language rather than
+     * the interface locale: a Japanese word gets a CJK badge and an English word a Latin one,
+     * whichever language the UI is in. Only the CJK variant tracks the interface locale, and the
+     * resource system handles that.
+     */
+    fun classAbbrResId(wordLanguage: String, pos: String): Int? = when {
+        wordLanguage == "ja" -> when (pos) {
+            "noun"        -> R.string.pos_abbr_ja_noun
+            "verb"        -> R.string.pos_abbr_ja_verb
+            "i-adj"       -> R.string.pos_abbr_ja_i_adj
+            "na-adj"      -> R.string.pos_abbr_ja_na_adj
+            "adverb"      -> R.string.pos_abbr_ja_adverb
+            "particle"    -> R.string.pos_abbr_ja_particle
+            "aux-verb"    -> R.string.pos_abbr_ja_aux_verb
+            "conjunction" -> R.string.pos_abbr_ja_conjunction
+            "other"       -> R.string.pos_abbr_ja_other
+            else          -> null
+        }
+        else -> when (pos) {
+            "noun"         -> R.string.pos_abbr_en_noun
+            "verb"         -> R.string.pos_abbr_en_verb
+            "adjective"    -> R.string.pos_abbr_en_adjective
+            "adverb"       -> R.string.pos_abbr_en_adverb
+            "pronoun"      -> R.string.pos_abbr_en_pronoun
+            "preposition"  -> R.string.pos_abbr_en_preposition
+            "conjunction"  -> R.string.pos_abbr_en_conjunction
+            "interjection" -> R.string.pos_abbr_en_interjection
+            "other"        -> R.string.pos_abbr_en_other
+            else           -> null
+        }
     }
 
     // ── POS display (locale-aware, no resource needed — already short strings) ─

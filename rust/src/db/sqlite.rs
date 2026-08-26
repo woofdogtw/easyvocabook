@@ -21,6 +21,8 @@ pub(crate) fn normalize_reading(reading: &Option<String>) -> Option<String> {
 
 pub trait DbTableBase {
     fn get_book_info(&self) -> Result<BookInfo>;
+    /// Part of the table contract every Easy-series app implements, and the Android side calls it.
+    /// The desktop has no screen that renames a book yet, so nothing here invokes it.
     #[allow(dead_code)]
     fn update_book_info(&self, info: &BookInfo) -> Result<()>;
     fn get_word(&self, id: i64) -> Option<WordEntry>;

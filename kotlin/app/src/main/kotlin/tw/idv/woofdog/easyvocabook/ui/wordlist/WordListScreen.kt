@@ -32,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import tw.idv.woofdog.easyvocabook.R
+import tw.idv.woofdog.easyvocabook.ui.Labels
 import tw.idv.woofdog.easyvocabook.data.model.WordEntry
 import tw.idv.woofdog.easyvocabook.ui.wordedit.WordEditSheet
 
@@ -82,9 +83,9 @@ fun WordListScreen(vm: WordListViewModel = viewModel()) {
                                         showMenu = false
                                         val next = when (state.sortOrder) {
                                             SortOrder.WORD_ASC  -> SortOrder.WORD_DESC
-                                            SortOrder.WORD_DESC -> SortOrder.RATE_ASC
-                                            SortOrder.RATE_ASC  -> SortOrder.RATE_DESC
-                                            SortOrder.RATE_DESC -> SortOrder.WORD_ASC
+                                            SortOrder.WORD_DESC -> SortOrder.CLASS_ASC
+                                            SortOrder.CLASS_ASC  -> SortOrder.CLASS_DESC
+                                            SortOrder.CLASS_DESC -> SortOrder.WORD_ASC
                                         }
                                         vm.setSortOrder(next)
                                     })
@@ -270,22 +271,68 @@ private fun WordRow(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        Row(
+        // Two lines of two cells. The Class badge belongs to the word, so it sits on the first
+        // line beside it; the companion sits on the second. Rendered next to each other they read
+        // as though the badge described the companion. Each cell wraps its own text, so a long
+        // meaning cannot push the companion out of the row.
+        val classKey = Labels.classOf(word.language, word.partOfSpeech, word.transitivity)
+        val classAbbr = classKey?.let {
+            val id = if (it.namespace == "transitivity") Labels.transitivityAbbrResId(it.key)
+                     else Labels.classAbbrResId(word.language, it.key)
+            id?.let { res -> stringResource(res) }
+        }
+        val comparison = Labels.comparisonValue(word) ?: "—"
+
+        Column(
             Modifier
                 .fillMaxWidth()
                 .combinedClickable(onClick = {}, onLongClick = { expanded = true })
                 .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Row(
+                    Modifier.weight(0.85f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     Text(word.word, fontWeight = FontWeight.SemiBold)
-                    if (!word.reading.isNullOrBlank()) Text("(${word.reading})", style = MaterialTheme.typography.bodySmall)
+                    if (!word.reading.isNullOrBlank()) {
+                        Text("(${word.reading})", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
-                Text(word.meaning, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                // The cell keeps its share of the row so badges line up down the list, but the
+                // tinted surface sits inside it and hugs the text — given the weight directly, the
+                // colour would stretch across the whole cell and stop reading as a chip.
+                Box(Modifier.weight(0.15f), contentAlignment = Alignment.TopEnd) {
+                    if (classAbbr != null) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = MaterialTheme.shapes.small,
+                        ) {
+                            Text(
+                                classAbbr,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                }
             }
-            val rate = if (word.practiceCount > 0) "${word.correctCount * 100 / word.practiceCount}%" else "—"
-            Text(rate, style = MaterialTheme.typography.bodySmall)
+            Row(verticalAlignment = Alignment.Top) {
+                Text(
+                    word.meaning,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(0.6f),
+                )
+                Text(
+                    comparison,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(0.4f),
+                )
+            }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(text = { Text(stringResource(R.string.word_list_action_edit)) },
