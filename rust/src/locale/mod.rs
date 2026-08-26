@@ -75,6 +75,31 @@ fn en(key: &'static str) -> &'static str {
         "pos.aux-verb" => "Aux. verb",
         "pos.other" => "Other",
 
+        // Class badge abbreviations. The script follows the word's language, not the
+        // interface locale; only the CJK variant tracks the locale. See
+        // openspec/specs/word-list-ui/spec.md.
+        "transitivity.abbr.intransitive" => "自",
+        "transitivity.abbr.transitive" => "他",
+        "transitivity.abbr.ambitransitive" => "自他",
+        "pos.abbr.ja.noun" => "名",
+        "pos.abbr.ja.verb" => "動",
+        "pos.abbr.ja.i-adj" => "い",
+        "pos.abbr.ja.na-adj" => "な",
+        "pos.abbr.ja.adverb" => "副",
+        "pos.abbr.ja.particle" => "助",
+        "pos.abbr.ja.aux-verb" => "助動",
+        "pos.abbr.ja.conjunction" => "連",
+        "pos.abbr.ja.other" => "其",
+        "pos.abbr.en.noun" => "N",
+        "pos.abbr.en.verb" => "V",
+        "pos.abbr.en.adjective" => "Adj",
+        "pos.abbr.en.adverb" => "Adv",
+        "pos.abbr.en.pronoun" => "Pron",
+        "pos.abbr.en.preposition" => "Prep",
+        "pos.abbr.en.conjunction" => "Conj",
+        "pos.abbr.en.interjection" => "Interj",
+        "pos.abbr.en.other" => "Oth",
+
         // Tabs
         "tab.quiz" => "Quiz",
         "tab.words" => "Words",
@@ -112,6 +137,8 @@ fn en(key: &'static str) -> &'static str {
         "words.col_word" => "Word",
         "words.col_reading" => "Reading",
         "words.col_meaning" => "Meaning",
+        "words.col_class" => "Class",
+        "words.col_comparison" => "Comparison",
         "words.col_rate" => "Correct Rate",
         "words.menu_edit" => "Edit",
         "words.menu_delete" => "Delete",
@@ -250,6 +277,31 @@ fn zh_tw_str(key: &'static str) -> Option<&'static str> {
         "pos.particle" => "助詞 (particle)",
         "pos.aux-verb" => "助動詞 (aux-verb)",
         "pos.other" => "其他 (other)",
+
+        // Class badge abbreviations. The script follows the word's language, not the
+        // interface locale; only the CJK variant tracks the locale. See
+        // openspec/specs/word-list-ui/spec.md.
+        "transitivity.abbr.intransitive" => "自",
+        "transitivity.abbr.transitive" => "他",
+        "transitivity.abbr.ambitransitive" => "自他",
+        "pos.abbr.ja.noun" => "名",
+        "pos.abbr.ja.verb" => "動",
+        "pos.abbr.ja.i-adj" => "い",
+        "pos.abbr.ja.na-adj" => "な",
+        "pos.abbr.ja.adverb" => "副",
+        "pos.abbr.ja.particle" => "助",
+        "pos.abbr.ja.aux-verb" => "助動",
+        "pos.abbr.ja.conjunction" => "連",
+        "pos.abbr.ja.other" => "其",
+        "pos.abbr.en.noun" => "N",
+        "pos.abbr.en.verb" => "V",
+        "pos.abbr.en.adjective" => "Adj",
+        "pos.abbr.en.adverb" => "Adv",
+        "pos.abbr.en.pronoun" => "Pron",
+        "pos.abbr.en.preposition" => "Prep",
+        "pos.abbr.en.conjunction" => "Conj",
+        "pos.abbr.en.interjection" => "Interj",
+        "pos.abbr.en.other" => "Oth",
         "tab.quiz" => "練習",
         "tab.words" => "單字",
         "tab.settings" => "設定",
@@ -284,6 +336,8 @@ fn zh_tw_str(key: &'static str) -> Option<&'static str> {
         "words.col_word" => "單字",
         "words.col_reading" => "讀音",
         "words.col_meaning" => "意思",
+        "words.col_class" => "分類",
+        "words.col_comparison" => "對照",
         "words.col_rate" => "正確率",
         "words.menu_edit" => "編輯",
         "words.menu_delete" => "刪除",
@@ -409,6 +463,31 @@ fn zh_cn(key: &'static str) -> Option<&'static str> {
         "pos.particle" => "助词 (particle)",
         "pos.aux-verb" => "助动词 (aux-verb)",
         "pos.other" => "其他 (other)",
+
+        // Class badge abbreviations. The script follows the word's language, not the
+        // interface locale; only the CJK variant tracks the locale. See
+        // openspec/specs/word-list-ui/spec.md.
+        "transitivity.abbr.intransitive" => "自",
+        "transitivity.abbr.transitive" => "他",
+        "transitivity.abbr.ambitransitive" => "自他",
+        "pos.abbr.ja.noun" => "名",
+        "pos.abbr.ja.verb" => "动",
+        "pos.abbr.ja.i-adj" => "い",
+        "pos.abbr.ja.na-adj" => "な",
+        "pos.abbr.ja.adverb" => "副",
+        "pos.abbr.ja.particle" => "助",
+        "pos.abbr.ja.aux-verb" => "助动",
+        "pos.abbr.ja.conjunction" => "连",
+        "pos.abbr.ja.other" => "其",
+        "pos.abbr.en.noun" => "N",
+        "pos.abbr.en.verb" => "V",
+        "pos.abbr.en.adjective" => "Adj",
+        "pos.abbr.en.adverb" => "Adv",
+        "pos.abbr.en.pronoun" => "Pron",
+        "pos.abbr.en.preposition" => "Prep",
+        "pos.abbr.en.conjunction" => "Conj",
+        "pos.abbr.en.interjection" => "Interj",
+        "pos.abbr.en.other" => "Oth",
         "tab.quiz" => "练习",
         "tab.words" => "单词",
         "tab.settings" => "设置",
@@ -431,6 +510,8 @@ fn zh_cn(key: &'static str) -> Option<&'static str> {
         "words.col_word" => "单词",
         "words.col_reading" => "读音",
         "words.col_meaning" => "意思",
+        "words.col_class" => "分类",
+        "words.col_comparison" => "对照",
         "words.col_rate" => "正确率",
         "words.menu_edit" => "编辑",
         "words.menu_delete" => "删除",
@@ -569,6 +650,55 @@ mod tests {
                 let s = t(lang, key);
                 assert_ne!(s, key, "{key} is untranslated in {lang}");
                 assert!(!s.is_empty(), "{key} is empty in {lang}");
+            }
+        }
+    }
+
+    /// Every Class badge must resolve in every locale. The badge is the only thing that says what
+    /// a word is, and an unresolved key would print `pos.abbr.ja.verb` in the middle of the list.
+    #[test]
+    fn class_abbreviations_resolve_in_every_locale() {
+        use crate::db::labels::{
+                EN_POS, JA_POS, TRANSITIVITY_KEYS, class_abbr_key, transitivity_abbr_key,
+            };
+        for lang in ["en", "zh-TW", "zh-CN"] {
+            for (word_lang, list) in [("ja", JA_POS), ("en", EN_POS)] {
+                for pos in list {
+                    let key = class_abbr_key(word_lang, pos);
+                    let s = t(lang, key);
+                    assert_ne!(s, key, "{key} is untranslated in {lang}");
+                    assert!(!s.is_empty(), "{key} is empty in {lang}");
+                }
+            }
+            for tr in TRANSITIVITY_KEYS {
+                let key = transitivity_abbr_key(tr);
+                let s = t(lang, key);
+                assert_ne!(s, key, "{key} is untranslated in {lang}");
+            }
+        }
+    }
+
+    /// The badge draws from the transitivity and part-of-speech namespaces without saying which,
+    /// so a repeated abbreviation would mean two things on two rows. 其他 takes 其 for this reason:
+    /// its natural 他 is already 他動詞.
+    #[test]
+    fn class_abbreviations_are_unique_within_each_locale() {
+        use crate::db::labels::{
+                EN_POS, JA_POS, TRANSITIVITY_KEYS, class_abbr_key, transitivity_abbr_key,
+            };
+        for lang in ["en", "zh-TW", "zh-CN"] {
+            let mut seen: Vec<(&str, &str)> = Vec::new();
+            let keys = TRANSITIVITY_KEYS
+                .iter()
+                .map(|k| transitivity_abbr_key(k))
+                .chain(JA_POS.iter().map(|p| class_abbr_key("ja", p)))
+                .chain(EN_POS.iter().map(|p| class_abbr_key("en", p)));
+            for key in keys {
+                let s = t(lang, key);
+                if let Some((prev, _)) = seen.iter().find(|(_, v)| *v == s) {
+                    panic!("{lang}: {key} and {prev} both render {s:?}");
+                }
+                seen.push((key, s));
             }
         }
     }

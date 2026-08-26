@@ -91,6 +91,8 @@ pub fn view(app: &App) -> Element<'_, Message> {
         sort_header(t("words.col_word"), SortField::Word, filter),
         sort_header(t("words.col_reading"), SortField::Reading, filter),
         sort_header(t("words.col_meaning"), SortField::Meaning, filter),
+        sort_header(t("words.col_class"), SortField::Class, filter),
+        sort_header(t("words.col_comparison"), SortField::Comparison, filter),
         sort_header(t("words.col_rate"), SortField::CorrectRate, filter),
     ]
     .spacing(0);
@@ -111,7 +113,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
         let rows = words
             .into_iter()
             .fold(column![].spacing(0), |col, entry| {
-                col.push(word_row(entry, hovered))
+                col.push(word_row(entry, hovered, &app.settings.ui_language))
             });
         scrollable(rows)
             .height(Length::Fill)
@@ -162,17 +164,31 @@ fn sort_header(
     button(text(format!("{label}{indicator}")))
         .style(button::secondary)
         .on_press(Message::WordListSort(field))
-        .width(if field == SortField::CorrectRate {
-            Length::Fixed(130.0)
-        } else {
-            Length::Fill
-        })
+        .width(column_width(field))
         .into()
+}
+
+/// Column widths, shared by the header and the rows so the two never drift apart.
+///
+/// Only Word, Reading and Meaning flex. Class holds at most a few characters — sized for the
+/// widest Latin abbreviation (`Interj`), not for two CJK ones. Comparison is fixed because it is
+/// blank for most rows and must not take flexible width from Meaning.
+fn column_width(field: SortField) -> Length {
+    match field {
+        SortField::Class => Length::Fixed(70.0),
+        SortField::Comparison => Length::Fixed(140.0),
+        SortField::CorrectRate => Length::Fixed(130.0),
+        _ => Length::Fill,
+    }
 }
 
 // ── Word row ──────────────────────────────────────────────────────────────────
 
-fn word_row(entry: WordEntry, hovered_id: Option<i64>) -> Element<'static, Message> {
+fn word_row(
+    entry: WordEntry,
+    hovered_id: Option<i64>,
+    ui_language: &str,
+) -> Element<'static, Message> {
     let id = entry.id;
     let is_hovered = hovered_id == Some(id);
     let rate = if entry.practice_count == 0 {
@@ -184,19 +200,49 @@ fn word_row(entry: WordEntry, hovered_id: Option<i64>) -> Element<'static, Messa
         )
     };
 
+    // The Class badge describes the row's own word, so it sits beside it — separated from
+    // Comparison by Reading and Meaning. Rendered next to the companion it would read as though it
+    // described that word instead.
+    let class = match labels::class_of(
+        &entry.language,
+        entry.part_of_speech.as_deref(),
+        entry.transitivity.as_deref(),
+    ) {
+        Some(("transitivity", key)) => {
+            crate::locale::t(ui_language, labels::transitivity_abbr_key(&key)).to_owned()
+        }
+        Some((_, key)) => {
+            crate::locale::t(ui_language, labels::class_abbr_key(&entry.language, &key)).to_owned()
+        }
+        None => String::new(),
+    };
+    let comparison = labels::comparison_value(
+        &entry.language,
+        entry.part_of_speech.as_deref(),
+        &entry.forms,
+    )
+    .map(|v| v.to_owned())
+    .unwrap_or_else(|| "—".to_owned());
+
     let row_content = row![
         container(text(entry.word))
             .padding([4, 8])
-            .width(Length::Fill),
+            .width(column_width(SortField::Word)),
         container(text(entry.reading.unwrap_or_default()))
             .padding([4, 8])
-            .width(Length::Fill),
+            .width(column_width(SortField::Reading)),
         container(text(entry.meaning))
             .padding([4, 8])
-            .width(Length::Fill),
+            .width(column_width(SortField::Meaning)),
+        container(text(class))
+            .padding([4, 8])
+            .width(column_width(SortField::Class)),
+        container(text(comparison))
+            .padding([4, 8])
+            .width(column_width(SortField::Comparison)),
         container(text(rate))
             .padding([4, 8])
-            .width(Length::Fixed(130.0)),
+            .width(column_width(SortField::CorrectRate)),
     ]
     .spacing(0);
 

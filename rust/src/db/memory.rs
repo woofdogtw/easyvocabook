@@ -1,5 +1,6 @@
 use rusqlite::Result;
 
+use crate::db::labels;
 use crate::db::sqlite::{DbTableBase, DbTableSQLite};
 use crate::db::types::*;
 
@@ -7,6 +8,15 @@ use crate::db::types::*;
 pub struct DbTableMemory {
     entries: Vec<WordEntry>,
     book_info: Option<BookInfo>,
+}
+
+/// Sort key for the Class column: `namespace:key`, so transitivity and part-of-speech values do
+/// not interleave. Words with no class sort last rather than mixing in with the empty string.
+fn class_sort_key(e: &WordEntry) -> String {
+    match labels::class_of(&e.language, e.part_of_speech.as_deref(), e.transitivity.as_deref()) {
+        Some((ns, key)) => format!("{ns}:{key}"),
+        None => "\u{10FFFF}".to_owned(),
+    }
 }
 
 impl DbTableMemory {
@@ -111,6 +121,15 @@ impl DbTableMemory {
                     ra.cmp(rb)
                 }
                 SortField::Meaning => a.meaning.cmp(&b.meaning),
+                SortField::Class => class_sort_key(a).cmp(&class_sort_key(b)),
+                SortField::Comparison => {
+                    let ca = labels::comparison_value(&a.language, a.part_of_speech.as_deref(), &a.forms)
+                        .unwrap_or("");
+                    let cb = labels::comparison_value(&b.language, b.part_of_speech.as_deref(), &b.forms)
+                        .unwrap_or("");
+                    // Words with no companion sort together at one end rather than interleaving.
+                    ca.is_empty().cmp(&cb.is_empty()).then_with(|| ca.cmp(cb))
+                }
                 SortField::CorrectRate => {
                     let rate_a = correct_rate(a);
                     let rate_b = correct_rate(b);
@@ -246,6 +265,53 @@ mod tests {
         let words: Vec<_> = results.iter().map(|e| e.word.as_str()).collect();
         assert_eq!(words[0], "abandon");
         assert_eq!(words[1], "bank");
+    }
+
+    fn ja_verb(id: i64, word: &str, transitivity: &str, partner: Option<&str>) -> WordEntry {
+        let mut e = make_entry(id, word, "ja", &["m"]);
+        e.part_of_speech = Some("verb".into());
+        e.transitivity = Some(transitivity.into());
+        if let Some(p) = partner {
+            e.forms = vec![WordForm { id: 0, label: "transitive_pair".into(), value: p.into(), reading: None }];
+        }
+        e
+    }
+
+    /// Class sorts on the key, so words of a kind group together. Key order is not the order the
+    /// badges suggest — see design.md — but grouping is what the column is sorted for.
+    #[test]
+    fn sort_by_class_groups_words_of_a_kind() {
+        let mut m = DbTableMemory::new();
+        m.insert_entry(ja_verb(1, "a", "transitive", None));
+        let mut noun = make_entry(2, "b", "ja", &["m"]);
+        noun.part_of_speech = Some("noun".into());
+        m.insert_entry(noun);
+        m.insert_entry(ja_verb(3, "c", "transitive", None));
+        let out = m.list_words(&WordFilter {
+            sort: SortField::Class,
+            ..Default::default()
+        });
+        let ids: Vec<i64> = out.iter().map(|e| e.id).collect();
+        // pos:noun sorts before transitivity:transitive, and the two verbs stay adjacent.
+        assert_eq!(ids, vec![2, 1, 3]);
+    }
+
+    /// Sorting by Comparison gathers the words that have a companion apart from those showing `—`.
+    #[test]
+    fn sort_by_comparison_puts_partnerless_words_last() {
+        let mut m = DbTableMemory::new();
+        m.insert_entry(ja_verb(1, "a", "intransitive", None));
+        m.insert_entry(ja_verb(2, "b", "intransitive", Some("上げる")));
+        m.insert_entry(ja_verb(3, "c", "intransitive", None));
+        m.insert_entry(ja_verb(4, "d", "intransitive", Some("開ける")));
+        let out = m.list_words(&WordFilter {
+            sort: SortField::Comparison,
+            ..Default::default()
+        });
+        let ids: Vec<i64> = out.iter().map(|e| e.id).collect();
+        // The two with a partner come first, sorted between themselves; the blanks trail.
+        assert_eq!(&ids[2..], &[1, 3]);
+        assert!(ids[0] == 4 || ids[0] == 2);
     }
 
     #[test]

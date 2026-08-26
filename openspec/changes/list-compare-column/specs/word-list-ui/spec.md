@@ -23,7 +23,9 @@ columns: Word, Reading, Meaning (primary), Class, Comparison, Correct Rate.
   to the Comparison, so that it cannot be read as describing the companion instead of the word
 - Clicking a column header SHALL toggle sort order (ascending → descending → ascending)
 - Sort fields: word (alphabetical), reading (alphabetical), meaning (alphabetical), class
-  (alphabetical by key), comparison (alphabetical), correct rate (numeric) — all six columns sort
+  (alphabetical by namespace then key, so part-of-speech and transitivity badges form separate
+  blocks and words with no class sort last), comparison (alphabetical), correct rate (numeric) —
+  all six columns sort
 - Sort SHALL be performed in `DbTableMemory`, not via SQL
 
 #### Scenario: Sort by correct rate ascending
@@ -81,8 +83,10 @@ not shown as a number on Android; it remains available through the sort control.
 Tapping a row SHALL open a read-only detail bottom sheet. Long-pressing a row SHALL show a
 `DropdownMenu` with options: Edit, Delete, More Info, Homophones (matching the PC context menu).
 
-Sort SHALL be controlled by a sort button in the top bar cycling through: Word ↑, Word ↓,
-Correct Rate ↑, Correct Rate ↓. Sort is performed on the in-memory `DbTableMemory` list.
+Sort SHALL be controlled by a sort button in the top bar cycling through: Word ↑, Word ↓, Class ↑,
+Class ↓. Sort is performed on the in-memory `DbTableMemory` list. Correct rate is neither displayed
+nor sortable on Android: a sort key the list never shows produces an order the user cannot account
+for. The desktop, which does display the number, keeps sorting by it.
 
 #### Scenario: Android long-press shows context menu
 - **WHEN** the user long-presses a word row in the Android word list
@@ -104,5 +108,7 @@ Correct Rate ↑, Correct Rate ↓. Sort is performed on the in-memory `DbTableM
 - **THEN** the second line shows `—` in place of the companion
 
 #### Scenario: Android correct rate remains sortable without being displayed
-- **WHEN** the user cycles the sort button to Correct Rate ↑
-- **THEN** the list sorts by correct rate even though no row displays the percentage
+- **WHEN** the user cycles the sort button past Word ↓
+- **THEN** the next sort is Class ↑, not correct rate — the Android row shows no percentage, so it
+  offers no sort whose key is invisible
+- **NOTE** the scenario name predates this decision and is renamed in the main spec after archiving

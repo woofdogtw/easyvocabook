@@ -25,8 +25,9 @@ Comparison, Correct Rate. All six columns sort; Class sorts on the classificatio
   companion word. (rust)
 - Android drops the correct-rate **number** and lays each row out as a 2×2 grid — word (with
   reading) and badge on the first line, meaning and companion on the second, each cell wrapping
-  independently. Sorting is unaffected: it is a top-bar cycle button, not column headers, so
-  Correct Rate ↑/↓ stay. (kotlin)
+  independently. Its sort cycle drops Correct Rate for Class: with no percentage on the row,
+  sorting by one produces an order the user cannot account for, while the Class badge is on screen.
+  The desktop, which still shows the number, still sorts by it. (kotlin)
 - Abbreviated label strings are added for badge use, and must be **unique across the union of the
   transitivity and part-of-speech keys** — the badge draws from both namespaces without saying
   which, so a repeated character would mean two things on two rows (`其他` therefore abbreviates to
@@ -63,7 +64,9 @@ four to six; the Android row gains
 ## Impact
 
 - `rust/src/ui/word_list.rs` — two columns, their headers, and a three-way column width
-- `rust/src/db/labels.rs` — dead `pos_display` deleted, file-wide `allow(dead_code)` removed
+- `rust/src/db/labels.rs` — the change's core: `class_of`, `comparison_label`, `comparison_value`
+  and the two badge-key lookups all land here, where both `db` and `ui` can reach them. Also where
+  the dead `pos_display` and the file-wide `allow(dead_code)` are removed
 - `rust/src/db/sqlite.rs`, `rust/src/network/sync.rs`, `rust/src/db/types.rs` — stated reasons on
   the remaining `allow(dead_code)` sites
 - `rust/src/db/types.rs` — `SortField` gains class and comparison variants

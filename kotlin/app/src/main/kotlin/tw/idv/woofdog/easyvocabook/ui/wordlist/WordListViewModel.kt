@@ -7,10 +7,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import tw.idv.woofdog.easyvocabook.AppRepository
+import tw.idv.woofdog.easyvocabook.ui.Labels
 import tw.idv.woofdog.easyvocabook.data.model.WordEntry
 import tw.idv.woofdog.easyvocabook.data.model.WordFilter
 
-enum class SortOrder { WORD_ASC, WORD_DESC, RATE_ASC, RATE_DESC }
+// Class replaces correct rate here. The Android row does not show a percentage, and sorting on a
+// value the list never displays produces an order the user cannot account for. The Class badge is
+// on screen, so sorting by it is legible. The desktop still sorts by rate, where the number shows.
+private fun classSortKey(w: WordEntry): String =
+    Labels.classOf(w.language, w.partOfSpeech, w.transitivity)
+        ?.let { "${it.namespace}:${it.key}" }
+        ?: "\uFFFF"   // words with no class sort last, behind both blocks
+
+enum class SortOrder { WORD_ASC, WORD_DESC, CLASS_ASC, CLASS_DESC }
 
 data class WordListUiState(
     val words: List<WordEntry> = emptyList(),
@@ -81,16 +90,10 @@ class WordListViewModel(application: Application) : AndroidViewModel(application
                 SortOrder.WORD_DESC -> raw.sortedByDescending { it.word.lowercase() }
                 // Unpracticed words (practice_count == 0) sort first in ASC, last in DESC,
                 // mirroring the desktop behaviour so users can spot unstudied words easily.
-                SortOrder.RATE_ASC -> raw.sortedWith(
-                    compareBy(nullsFirst()) { w ->
-                        if (w.practiceCount == 0) null else w.correctCount.toDouble() / w.practiceCount
-                    }
-                )
-                SortOrder.RATE_DESC -> raw.sortedWith(
-                    compareByDescending(nullsLast()) { w ->
-                        if (w.practiceCount == 0) null else w.correctCount.toDouble() / w.practiceCount
-                    }
-                )
+                // Sorted on `namespace:key` so part-of-speech and transitivity badges form
+                // separate blocks rather than interleaving, matching the desktop.
+                SortOrder.CLASS_ASC -> raw.sortedBy { classSortKey(it) }
+                SortOrder.CLASS_DESC -> raw.sortedByDescending { classSortKey(it) }
             }
             _state.value = s.copy(words = sorted)
         }

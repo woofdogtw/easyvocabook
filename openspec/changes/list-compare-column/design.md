@@ -53,15 +53,25 @@ it — separated by Reading and Meaning on desktop, on the opposite line on Andr
 This is why the Android layout is a 2×2 grid rather than a single wrapped line: a line that wraps
 where the text happens to run could place badge and companion side by side at some widths.
 
-### Desktop keeps Correct Rate; Android drops the number only
+**The two platforms end up relying on different mechanisms.** On the desktop, Reading and Meaning
+physically separate the two columns. On a phone there is no room for that, and the badge sits on
+the line directly above the companion — near enough that distance alone would not settle it. What
+settles it there is the styling: a tinted, rounded chip in a smaller type reads as an attribute of
+the word rather than as another word. Verified on a device rather than assumed.
+
+### Desktop keeps Correct Rate; Android drops both the number and its sort
 
 Desktop sorts by clicking column headers, so removing the column would remove the only way to sort
 by accuracy — and "which words do I keep failing" is the one thing accuracy is good for. Six
 columns fit; keeping it costs nothing.
 
-Android sorts through a cycling button that is independent of what the row displays, so dropping
-the number there loses no capability. The number is the redundant part: per-row it says little, and
-the sort already answers the question it exists for.
+Android sorts through a cycling button that is independent of what the row displays, so the number
+could have been dropped while keeping the sort. Trying it showed why that is worse: an order
+produced by a value no row shows cannot be accounted for by the person looking at it. The cycle
+therefore offers Class instead, whose key is on screen in every row.
+
+The capability that leaves Android with it — finding the words you keep failing — stays on the
+desktop, where the percentage is visible and the column header sorts it.
 
 The result is a deliberate asymmetry, and it is the honest one — the platforms differ in how they
 sort, so they differ in what they can afford to drop.
@@ -156,16 +166,27 @@ the four ambitransitive verbs recorded, three name a partner (開きます→開
 A rule that hid them would suppress true information to make a category tidier. One rule — show the
 companion if the word has one, `—` otherwise — covers every case.
 
-### Class sorts by key, which is not the order the badges suggest
+### Class sorts by namespace first, so the two kinds of badge form blocks
 
-Sorting Class alphabetically by key yields `ambitransitive, i-adj, intransitive, na-adj, noun,
-transitive, …` — so 自他, い, 自, な, 名, 他. Words of the same kind do group together, which is
-what the requirement asks and what makes the column worth sorting, but the three transitivity
-values are not adjacent to each other.
+The sort key is `namespace:key` — `pos:noun`, `transitivity:intransitive` — rather than the bare
+key. Since `pos` precedes `transitivity` alphabetically, every part-of-speech row sorts as one
+block and every transitivity row as another:
 
-Sorting by the displayed abbreviation instead would reorder by locale, and a hand-written order
-would be one more table to keep in step with two others. The key order is accepted; it is recorded
-here so the sequence is not mistaken for a defect during verification.
+```
+名 (pos:noun) … 動 (pos:verb) … い (pos:i-adj) … | 自他 (transitivity:ambitransitive) … 自 … 他
+```
+
+Sorting on the bare key would interleave them — `ambitransitive, i-adj, intransitive, na-adj,
+noun` puts 自他, い, 自, な, 名 in a row — which groups words of a kind but splits the three
+transitivity values apart. The namespace prefix keeps each kind whole, which is what the column is
+sorted for.
+
+Within a block the order is the key's, not the badge's. Sorting on the displayed abbreviation
+would reorder by locale, and a hand-written order would be one more table to keep in step with two
+others.
+
+Words with no class at all sort last, behind both blocks. Their cell is empty, and an empty string
+would otherwise sort them to the front, ahead of every word that does have a badge.
 
 ## Risks / Trade-offs
 

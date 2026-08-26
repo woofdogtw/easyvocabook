@@ -1,3 +1,9 @@
+// File-wide because these are data carriers, not code: every field is written from SQL and read
+// back out on sync, but several are never accessed by name, which dead-code analysis reports as
+// unused. Narrowing this to individual fields would mean an attribute on most of them.
+//
+// It hides only unread *fields*. If a function here ever goes unused, that is worth knowing —
+// check with `cargo check` after temporarily removing this line.
 #![allow(dead_code)]
 
 /// Metadata stored in `db_info`.
@@ -104,6 +110,12 @@ pub enum SortField {
     Word,
     Reading,
     Meaning,
+    /// The Class badge, sorted by its key so words of a kind group together. Key order, not the
+    /// displayed abbreviation: sorting on the abbreviation would reorder by locale.
+    Class,
+    /// The companion word shown in the Comparison column. Sorting on it gathers the words that
+    /// have one apart from those showing `—`.
+    Comparison,
     CorrectRate,
 }
 
