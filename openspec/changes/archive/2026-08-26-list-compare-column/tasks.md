@@ -116,7 +116,11 @@
       on adjacent lines and it is the **chip styling** — tinted, rounded, smaller type — that keeps
       them apart, not distance. design.md said distance did the work on both platforms; corrected, and that 自他両用 verbs
       show their partner where one is recorded (開きます→開ける) and `—` where none is (閉じます)
-- [ ] 5.10 After archiving, rename the scenario `Android unpracticed word shows dash` in
+- [x] 5.10 After archiving, rename the scenario `Android unpracticed word shows dash` in
       `openspec/specs/word-list-ui/spec.md` to match what it now says. A scenario cannot be renamed
       from inside a change, so the main spec is edited directly afterwards — the same follow-up
-      `word-form-reading` and `verb-transitivity` both needed
+      `word-form-reading` and `verb-transitivity` both needed. **Two** needed renaming in the end:
+      `Android unpracticed word shows dash` → `Android row shows no correct rate`, and
+      `Android correct rate remains sortable without being displayed` → `Android sort cycle offers
+      Class, not correct rate`. The second was created by this change and went stale within it,
+      when hand-testing showed an invisible sort key is not usable
